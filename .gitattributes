@@ -1,0 +1,9 @@
+# Normalize to LF in the repo; Windows checkouts would otherwise churn every file (and break shell hooks).
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.exe binary
+*.png binary
+*.jpg binary
+*.webp binary
+*.woff2 binary

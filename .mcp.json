@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "smoothsend": {
+      "type": "stdio",
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@smoothsend/mcp@1.2.0"],
+      "env": {}
+    }
+  }
+}

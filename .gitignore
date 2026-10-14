@@ -1,0 +1,43 @@
+# Secrets — never commit. Deployer key lives in ~/.foundry/keystores, not here.
+.env
+.env.*
+!.env.example
+*.password
+*.key
+keystore*/
+
+# Dependencies / build output
+node_modules/
+.pnpm-store/
+.next/
+out/
+dist/
+build/
+.turbo/
+.vercel/
+coverage/
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/*/31337/
+contracts/broadcast/**/dry-run/
+
+# Git worktrees for parallel work
+.worktrees/
+.claude/worktrees/
+
+# Claude Code — per-machine settings stay local; shared settings.json is tracked
+.claude/settings.local.json
+
+# Impeccable: platform-specific engine binary (19 MB); the launcher re-downloads it on first run
+.claude/skills/impeccable/scripts/bin/
+.impeccable/*.local.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+
+# Private planning docs (grant/strategy notes) — own local git repo, never pushed with the app
+.private/
