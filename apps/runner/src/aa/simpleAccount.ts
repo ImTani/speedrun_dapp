@@ -141,6 +141,7 @@ export async function handleOps(
 		abi: entryPoint07Abi,
 		functionName: "handleOps",
 		args: [[op], bundler.account.address],
+		account: bundler.account,
 		chain: bundler.chain ?? null,
 		gas: 8_000_000n,
 	});
