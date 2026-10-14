@@ -1,0 +1,21 @@
+{
+	"name": "@arena/runner",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"start": "tsx src/main.ts",
+		"gas-probe": "tsx scripts/gas-probe.ts",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@arena/strategies": "workspace:*",
+		"viem": "2.57.4"
+	},
+	"devDependencies": {
+		"@types/node": "24.19.2",
+		"tsx": "4.23.15",
+		"vitest": "5.0.4"
+	}
+}
