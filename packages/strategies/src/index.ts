@@ -8,6 +8,7 @@ export {
 	STRATEGY_KNOBS,
 	validateConfig,
 } from "./knobs.ts";
+export { pairings, permutation } from "./pairings.ts";
 export { PAYOFF, scoreTurn } from "./payoff.ts";
 export { RollPurpose, roll } from "./random.ts";
 export * from "./types.ts";
