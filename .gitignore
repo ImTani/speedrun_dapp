@@ -41,3 +41,6 @@ Thumbs.db
 
 # Private planning docs (grant/strategy notes) — own local git repo, never pushed with the app
 .private/
+
+# Soldeer-installed Solidity deps (pinned in contracts/soldeer.lock)
+contracts/dependencies/
