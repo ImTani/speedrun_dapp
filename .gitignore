@@ -53,3 +53,4 @@ apps/web/.impeccable/review/
 apps/web/.impeccable/hook.cache.json
 apps/web/.impeccable/questions/
 *.stackdump
+contracts/broadcast/**/*.lock

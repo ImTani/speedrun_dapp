@@ -7,6 +7,7 @@
 		"start": "tsx src/main.ts",
 		"gas-probe": "tsx scripts/gas-probe.ts",
 		"m0": "tsx scripts/m0-spike.ts",
+		"roles": "tsx scripts/roles.ts",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run"
 	},
