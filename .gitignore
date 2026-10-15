@@ -44,3 +44,6 @@ Thumbs.db
 
 # Soldeer-installed Solidity deps (pinned in contracts/soldeer.lock)
 contracts/dependencies/
+
+# Locally generated test keys (M0 spike agent owners)
+.secrets/
