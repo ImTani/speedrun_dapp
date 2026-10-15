@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Tear-off — return</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Yesteryear&family=Oswald:wght@500;700&family=Libre+Franklin:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--board:#f2e6cf;--red:#b3122e;--gold:#c9a227;--ink:#2b2420;--sage:#4c5b40;--leaf:#fbf7ee;--ease:cubic-bezier(.2,.8,.2,1)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:390px;height:844px;overflow:hidden;margin:0 auto}
+body{background:#8c6a4a;font-family:"Libre Franklin",sans-serif;color:var(--ink);padding:14px 14px 0;user-select:none;touch-action:none}
+.cal{background:var(--board);height:830px;border-radius:3px 3px 0 0;box-shadow:0 12px 30px rgba(0,0,0,.35);position:relative;overflow:hidden}
+.nail{position:absolute;top:8px;left:50%;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--ink)}
+.plate{height:340px;margin:26px 16px 0;background:var(--red);position:relative;overflow:hidden;cursor:pointer}
+.plate svg{position:absolute;inset:0}
+.sun{transform-origin:179px 150px;animation:turn 40s linear infinite}
+@keyframes turn{to{transform:rotate(360deg)}}
+.figure{transform-origin:179px 340px}
+.plate.bow .figure{animation:bow .7s var(--ease)}
+@keyframes bow{40%{transform:rotate(-4deg) scale(1.03)}}
+.chip{position:absolute;top:12px;left:12px;background:var(--board);color:var(--red);font:700 12px/1 "Oswald";letter-spacing:.14em;text-transform:uppercase;padding:9px 12px}
+.chip.r{left:auto;right:12px;background:var(--gold);color:var(--ink)}
+.chip b{display:inline-block}
+.chip b.up{animation:up .5s var(--ease)}
+@keyframes up{40%{transform:translateY(-4px) scale(1.2)}}
+.merchant{text-align:center;margin-top:12px}
+.merchant .name{font:46px/1 "Yesteryear";color:var(--red)}
+.merchant .line{font:700 12px/1 "Oswald";letter-spacing:.24em;text-transform:uppercase;margin-top:6px}
+.rule{height:2px;background:var(--gold);margin:12px 16px 0}
+.pad{position:absolute;left:16px;right:16px;bottom:0;height:318px}
+.edge{position:absolute;left:4px;right:4px;height:10px;background:var(--leaf);border:1px solid #d9cdb4}
+.leaf{position:absolute;left:0;right:0;top:0;bottom:12px;background:var(--leaf);border:1px solid #d9cdb4;padding:16px 18px;transform-origin:50% 0;touch-action:none;cursor:grab}
+.perf{position:absolute;top:0;left:0;right:0;height:6px;background:radial-gradient(circle at 4px 0,#8c6a4a 2.5px,transparent 3px) 0 0/10px 6px repeat-x}
+.mo{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px}
+.mo b{font:700 22px/1 "Oswald";letter-spacing:.12em;text-transform:uppercase;color:var(--red)}
+.mo span{font:700 12px/1 "Oswald";letter-spacing:.14em;text-transform:uppercase}
+.day{display:flex;gap:16px;align-items:center;margin-top:12px}
+.big{font:700 104px/.85 "Oswald"}
+.what .k{font:700 12px/1 "Oswald";letter-spacing:.18em;text-transform:uppercase;color:var(--sage)}
+.what .t{font:700 20px/1.3 "Libre Franklin";margin-top:6px}
+.what .s{font:500 14px/1.45 "Libre Franklin";margin-top:6px}
+.what .pts{display:inline-block;margin-top:8px;font:700 18px/1 "Oswald";color:var(--red);letter-spacing:.06em}
+.foot{position:absolute;left:18px;right:18px;bottom:14px;display:flex;justify-content:space-between;align-items:center;border-top:1px dashed var(--ink);padding-top:12px}
+.foot span{font:700 15px/1 "Oswald";letter-spacing:.16em;text-transform:uppercase;color:var(--red)}
+.foot span i{display:inline-block;font-style:normal;animation:nudge 1.3s ease-in-out infinite}
+@keyframes nudge{50%{transform:translateY(-4px)}}
+.foot small{font:500 13px/1.3 "Libre Franklin"}
+.collect{background:var(--red);color:var(--board);border:0;font:700 14px/1 "Oswald";letter-spacing:.14em;text-transform:uppercase;padding:12px 16px;cursor:pointer;transition:transform .12s}
+.collect.pressed{transform:scale(.95)}
+.collect:disabled{background:var(--ink)}
+.empty{position:absolute;inset:0 0 12px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;text-align:center;padding:20px}
+.empty .t{font:700 22px/1.25 "Oswald";letter-spacing:.06em;text-transform:uppercase}
+.empty .s{font:500 14px/1.45 "Libre Franklin";max-width:260px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:1ms!important;transition-duration:1ms!important}}
+</style></head><body>
+<div class="cal">
+ <div class="nail"></div>
+ <div class="plate" id="plate">
+  <svg viewBox="0 0 358 340" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+   <g class="sun"><circle cx="179" cy="150" r="118" fill="#c9a227"/><g fill="#b3122e" opacity=".18"><path d="M179 32 L186 150 L172 150Z"/><path d="M179 268 L186 150 L172 150Z"/><path d="M61 150 L179 143 L179 157Z"/><path d="M297 150 L179 143 L179 157Z"/></g></g>
+   <g class="figure"><path d="M120 340 C122 250 148 222 179 222 C210 222 236 250 238 340Z" fill="#2b2420"/><circle cx="179" cy="178" r="34" fill="#2b2420"/><path d="M150 170 h58 v10 h-58z" fill="#f2e6cf"/></g>
+   <path d="M60 340 L120 280 L130 340Z M298 340 L238 280 L228 340Z" fill="#6d7f5e"/>
+  </svg>
+  <div class="chip">Rank F · Lv <b id="lv">7</b></div><div class="chip r">Gilt <b id="gilt">1,240</b></div>
+ </div>
+ <div class="merchant"><div class="name">Vesper</div><div class="line">Keeps faith · strikes back twice</div></div>
+ <div class="rule"></div>
+ <div class="pad" id="pad"></div>
+</div>
+<script>
+const L=[{d:11,k:"The morning sitting",t:"Vesper met The Iron Hermit",s:"Kept faith and was betrayed. The Hermit will be remembered.",p:"+0 fortune"},
+ {d:12,k:"The evening sitting",t:"Vesper met La Víbora",s:"Five turns of kept faith. A clean night.",p:"+15 fortune"},
+ {d:13,k:"The evening sitting",t:"Vesper met Doc Static",s:"One slip, forgiven. The partnership held.",p:"+9 fortune"},
+ {d:14,k:"The evening sitting",t:"Vesper met Old Marrow",s:"Marrow struck first. Vesper struck back twice.",p:"+5 fortune"}];
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches,$=s=>document.querySelector(s),pad=$("#pad");let torn=0;
+function build(){pad.innerHTML="";const left=L.length-torn;
+ for(let e=0;e<Math.min(3,left-1);e++){const x=document.createElement("div");x.className="edge";x.style.bottom=e*4+"px";pad.appendChild(x)}
+ if(left===0){const b=document.createElement("div");b.className="empty";
+  b.innerHTML=`<div class="t">You're caught up</div><div class="s">7h 40m of training waits to be collected before tonight's sitting.</div><button class="collect" id="collect">Collect 320 Insight · 85 Gilt</button>`;
+  pad.appendChild(b);const c=$("#collect");c.addEventListener("pointerdown",()=>c.classList.add("pressed"));["pointerup","pointerleave"].forEach(e=>c.addEventListener(e,()=>c.classList.remove("pressed")));c.addEventListener("click",collect);return}
+ const l=L[torn],f=document.createElement("div");f.className="leaf";
+ f.innerHTML=`<div class="perf"></div><div class="mo"><b>October</b><span>${left} ${left===1?"leaf":"leaves"} to tear</span></div>
+  <div class="day"><div class="big">${l.d}</div><div class="what"><div class="k">${l.k}</div><div class="t">${l.t}</div><div class="s">${l.s}</div><div class="pts">${l.p}</div></div></div>
+  <div class="foot"><span>Drag up to tear <i>↑</i></span><small>or tap</small></div>`;
+ pad.appendChild(f);drag(f);if(!reduce&&torn>0)f.animate([{opacity:.4},{opacity:1}],{duration:250})}
+function tear(f,vx=0){const a=f.animate([{transform:getComputedStyle(f).transform==="none"?"none":getComputedStyle(f).transform},{transform:`translate(${vx*40+30}px,-460px) rotate(${-14+vx*10}deg)`,opacity:.2}],{duration:reduce?1:520,easing:"cubic-bezier(.5,0,.75,0)",fill:"forwards"});
+ a.onfinish=()=>{torn++;build()}}
+function drag(f){let y0=null,x0=0,dy=0,dx=0,moved=false;
+ f.addEventListener("pointerdown",e=>{y0=e.clientY;x0=e.clientX;dy=dx=0;moved=false;f.setPointerCapture(e.pointerId);f.style.transition="none"});
+ f.addEventListener("pointermove",e=>{if(y0===null)return;dy=Math.min(0,e.clientY-y0);dx=e.clientX-x0;if(Math.abs(dy)>6)moved=true;
+  f.style.transform=`translateY(${dy*.9}px) rotate(${(dy/40)*(dx>0?-1:1)}deg)`});
+ f.addEventListener("pointerup",()=>{if(y0===null)return;y0=null;
+  if(!moved||dy<-90)tear(f,dx/100);else{f.style.transition="transform .35s cubic-bezier(.3,1.5,.5,1)";f.style.transform="none"}})}
+function bump(el,t){el.textContent=t;el.classList.remove("up");void el.offsetWidth;el.classList.add("up")}
+function collect(e){const b=e.currentTarget;b.disabled=true;b.textContent="Collected";const g=$("#gilt");let n=1240;
+ const t=setInterval(()=>{n=Math.min(1325,n+9);g.textContent=n.toLocaleString("en-US");if(n>=1325){clearInterval(t);bump(g,"1,325")}},reduce?1:28);
+ setTimeout(()=>bump($("#lv"),"8"),reduce?0:400);const p=$("#plate");p.classList.remove("bow");void p.offsetWidth;p.classList.add("bow")}
+$("#plate").addEventListener("click",()=>{const p=$("#plate");p.classList.remove("bow");void p.offsetWidth;p.classList.add("bow")});
+build();
+</script>
+</body></html>

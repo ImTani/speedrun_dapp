@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gathering — Apostasy: Sede Vacante</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral+SC:wght@500;600&family=Spectral:ital,wght@1,400;1,500&display=swap">
+<style>
+/* Fixed 390×844 composition for this mock; the shipped surface scales the scene to the device. */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:#050407;height:100%}
+#stage{position:relative;width:390px;height:844px;margin:0 auto;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;cursor:default}
+#c{position:absolute;inset:0;width:390px;height:844px;display:block}
+.vign{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 95% at 50% 46%,transparent 55%,rgba(5,4,7,var(--vig,.13)) 100%)}
+/* The two fittings are objects in the scene; these are their touch and keyboard handles. */
+.fit{position:absolute;width:52px;height:52px;margin:-26px 0 0 -26px;background:none;border:0;border-radius:50%;cursor:pointer}
+.fit:focus-visible{outline:1px solid rgba(176,141,82,.6);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+</style></head>
+<body>
+<div id="stage">
+ <canvas id="c"></canvas><div class="vign"></div>
+ <button class="fit" id="ring" aria-label="Leave the Gathering"></button>
+ <button class="fit" id="hour" aria-label="Pass to the outcome (hold: always pass)"></button>
+ <p class="sr" id="say" aria-live="polite"></p>
+</div>
+<script src="../vendor/three.iife.js"></script>
+<script src="glass.js"></script><script src="glassgl.js"></script><script src="masks.js"></script>
+<script>
+(async () => {
+const T = THREE, $ = (s) => document.querySelector(s);
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const Q = new URLSearchParams(location.search);
+const SW = 390, SH = 844, DPR = Math.min(devicePixelRatio || 1, 2);
+
+// Owner-tuned 2026-10-15 in the 2D Gathering. In this scene: inward pulls both projections toward the
+// centre, zc is where they land (high = by the wall), spread is how far back the light stands, caus is
+// filament strength, expo is the exposure, vig the edge darkening. Pool depth (rz) is now set by geometry.
+const LOOK = { inward: .17, zc: 2.75, rz: 1.18, spread: .8, caus: .34, expo: 1.15, vig: .13 };
+
+/* ---------- The Meeting, as settled on-chain ---------- */
+const OPP = { name: "Old Marrow", aspect: "madness", Aspect: "Madness" }, YOU = { name: "Vesper", aspect: "echo", Aspect: "Echo" };
+const TURNS = [["K", "K"], ["K", "D"], ["D", "D"], ["D", "K"], ["K", "K"]]; // [Vesper, Old Marrow]
+const PAY = { KK: [3, 3], KD: [0, 5], DK: [5, 0], DD: [1, 1] };
+const SAY = { KK: ["Both kindle", "Their light runs together on the stone.", "Three lights each."], KD: ["Old Marrow devours", "Vesper's light is drawn across the floor.", "Marrow takes five."],
+	DK: ["Vesper devours", "Echo answers what it was given.", "Vesper takes five."], DD: ["Both devour", "Each takes, and the light gutters between them.", "One light each."] };
+const WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty", "twenty-one", "twenty-two", "twenty-three", "twenty-four", "twenty-five"];
+function outcome() {
+	let y = 0, o = 0, yd = 0, od = 0;
+	for (const [a, b] of TURNS) { const [p, q] = PAY[a + b]; y += p; o += q; if (a === "D") yd++; if (b === "D") od++; }
+	const times = (n) => n === 1 ? "once" : n === 2 ? "twice" : `${WORDS[n]} times`;
+	const h = y > o ? `${YOU.name} outshone ${OPP.name}` : y < o ? `${OPP.name} drew more light` : "An even Gathering";
+	return { y, o, h, a: `${YOU.name} gathered ${WORDS[y]} Light, ${OPP.name} ${WORDS[o]}.`, b: `${OPP.name} devoured ${od ? times(od) : "never"}; ${YOU.Aspect} ${yd ? "answered " + times(yd) : "never devoured"}.`, c: "Third of twenty-four tonight. Vesper's resonance deepens." };
+}
+
+/* ---------- Renderer: one WebGL context for everything ---------- */
+const canvas = $("#c");
+let R;
+try { R = new T.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" }); } catch (e) { R = null; }
+if (!R) { location.replace("gathering.html" + location.search); return; }
+R.setPixelRatio(DPR);
+R.setSize(SW, SH, false);
+R.toneMapping = T.ACESFilmicToneMapping;
+R.toneMappingExposure = LOOK.expo;
+R.shadowMap.enabled = true;
+R.shadowMap.type = T.PCFShadowMap;
+const scene = new T.Scene();
+scene.background = new T.Color(0x050407);
+const cam = new T.PerspectiveCamera(60, SW / SH, .1, 40);
+const CAM = { pos: new T.Vector3(0, 3.4, 5.8), at: new T.Vector3(0, .9, 1.2) };
+const CAM_END = { pos: new T.Vector3(0, 3.55, 5.35), at: new T.Vector3(0, .5, 1.95) };
+// Review only: ?top looks straight down at the floor to check the projections.
+if (Q.has("top")) { CAM.pos.set(0, 6.5, 1.75); CAM.at.set(0, 0, 1.7); CAM_END.pos.copy(CAM.pos); CAM_END.at.copy(CAM.at); }
+cam.position.copy(CAM.pos); cam.lookAt(CAM.at);
+
+/* ---------- Geometry of the wall ---------- */
+const WIN = { w: 1, h: 1.4, rect: .9, r: .5, sill: 1.3, glassZ: -.395 };
+const YC = WIN.sill + WIN.h / 2;
+const SIDES = { opp: { wx: -.62, data: OPP, theme: "marrow", seed: 23 }, you: { wx: .62, data: YOU, theme: "vesper", seed: 13 } };
+
+/* ---------- Procedural stone: generated, Kuwahara-painted once, lit live through its normals ---------- */
+function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+function noise(seed) {
+	const r = rng(seed), P = new Float32Array(256 * 256);
+	for (let i = 0; i < P.length; i++) P[i] = r();
+	const at = (i, j, per) => P[(((j % per) + per) % per) * 256 + (((i % per) + per) % per)];
+	const vn = (x, y, per) => {
+		const xi = Math.floor(x), yi = Math.floor(y); let fx = x - xi, fy = y - yi;
+		fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy);
+		const a = at(xi, yi, per), b = at(xi + 1, yi, per), c = at(xi, yi + 1, per), d = at(xi + 1, yi + 1, per);
+		return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
+	};
+	// Tileable fbm: x,y in [0,1), base period `per`.
+	return (x, y, per, oct = 4) => { let s = 0, a = .5, p = per; for (let k = 0; k < oct; k++) { s += a * vn(x * p, y * p, p); p *= 2; a *= .5; } return s / (1 - Math.pow(.5, oct)); };
+}
+// Kuwahara over a wrapped image: each pixel takes the mean of whichever of its four quadrants is calmest.
+function kuwahara(src, w, h, r) {
+	const px = (x, y) => (((y + h) % h) * w + ((x + w) % w)) * 4;
+	// Summed-area tables over the wrapped image, padded by r so quadrant lookups never leave the table.
+	const tw = w + 2 * r, th = h + 2 * r, TW = tw + 1, TS = [0, 1, 2, 3, 4].map(() => new Float64Array(TW * (th + 1)));
+	for (let y = 0; y < th; y++) {
+		const acc = [0, 0, 0, 0, 0];
+		for (let x = 0; x < tw; x++) {
+			const i = px(x - r, y - r), R0 = src[i], G0 = src[i + 1], B0 = src[i + 2], L = .3 * R0 + .5 * G0 + .2 * B0;
+			acc[0] += R0; acc[1] += G0; acc[2] += B0; acc[3] += L; acc[4] += L * L;
+			const o = (y + 1) * TW + (x + 1);
+			for (let c = 0; c < 5; c++) TS[c][o] = TS[c][o - TW] + acc[c];
+		}
+	}
+	const box = (c, x0, y0, x1, y1) => TS[c][y1 * TW + x1] - TS[c][y0 * TW + x1] - TS[c][y1 * TW + x0] + TS[c][y0 * TW + x0];
+	const out = new Uint8ClampedArray(src.length), n = (r + 1) * (r + 1);
+	for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+		const cx = x + r, cy = y + r; let best = 1e18, br = 0, bg = 0, bb = 0;
+		for (const [qx, qy] of [[cx - r, cy - r], [cx, cy - r], [cx - r, cy], [cx, cy]]) {
+			const x1 = qx + r + 1, y1 = qy + r + 1, m = box(3, qx, qy, x1, y1) / n, v = box(4, qx, qy, x1, y1) / n - m * m;
+			if (v < best) { best = v; br = box(0, qx, qy, x1, y1) / n; bg = box(1, qx, qy, x1, y1) / n; bb = box(2, qx, qy, x1, y1) / n; }
+		}
+		const o = (y * w + x) * 4; out[o] = br; out[o + 1] = bg; out[o + 2] = bb; out[o + 3] = 255;
+	}
+	return out;
+}
+function normalFromHeight(hgt, w, h, k) {
+	const c = document.createElement("canvas"); c.width = w; c.height = h;
+	const x = c.getContext("2d"), im = x.createImageData(w, h);
+	const H = (i, j) => hgt[((j + h) % h) * w + ((i + w) % w)];
+	for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+		const dx = (H(i + 1, j) - H(i - 1, j)) * k, dy = (H(i, j + 1) - H(i, j - 1)) * k, l = Math.hypot(dx, dy, 1), o = (j * w + i) * 4;
+		im.data[o] = (-dx / l * .5 + .5) * 255; im.data[o + 1] = (dy / l * .5 + .5) * 255; im.data[o + 2] = (1 / l * .5 + .5) * 255; im.data[o + 3] = 255;
+	}
+	x.putImageData(im, 0, 0); return c;
+}
+function toCanvas(data, w, h) { const c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").putImageData(new ImageData(data, w, h), 0, 0); return c; }
+function stone({ seed, size = 512, kind }) {
+	const fb = noise(seed), alb = new Uint8ClampedArray(size * size * 4), hgt = new Float32Array(size * size), hr = rng(seed + 7);
+	const tone = new Float32Array(64 * 64).map(() => hr());
+	for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) {
+		const u = i / size, v = j / size;
+		let base, edge, ht, cell;
+		if (kind === "ashlar") {
+			// Coursed ashlar: courses 64px (0.25), blocks 128px (0.5), alternate courses offset half a block.
+			const row = Math.floor(j / 64), off = row % 2 ? 64 : 0, col = Math.floor(((i + off) % size) / 128);
+			const ly = j % 64, lx = (i + off) % 128;
+			edge = Math.min(ly, 63 - ly, lx, 127 - lx);
+			cell = tone[(row % 8) * 64 + (col % 4)];
+			base = [118, 104, 96];
+		} else {
+			// Floor flags 128px (0.6); faint veining.
+			const row = Math.floor(j / 128), off = row % 2 ? 64 : 0, col = Math.floor(((i + off) % size) / 128), ly = j % 128, lx = (i + off) % 128;
+			edge = Math.min(ly, 127 - ly, lx, 127 - lx);
+			cell = tone[(row % 4) * 64 + (col % 4) + 9];
+			base = [96, 88, 84];
+		}
+		const big = fb(u, v, 3, 3), fine = fb(u, v, 32, 3), mid = fb(u + .31, v + .17, 8, 4);
+		const joint = kind === "ashlar" ? 1.4 : .9;
+		const groove = edge < joint ? 0 : Math.min(1, (edge - joint) / (kind === "ashlar" ? 5 : 2.5));
+		let k = (.8 + (cell - .5) * .26) * (.8 + .45 * big) * (.9 + .2 * mid);
+		if (kind !== "ashlar") { const vein = Math.abs(Math.sin((u * 3 + v * 1.4) * Math.PI * 4 + mid * 9)); k *= .93 + .16 * Math.pow(1 - vein, 14); }
+		k *= (kind === "ashlar" ? .7 : .8) + (kind === "ashlar" ? .3 : .2) * groove;
+		const o = (j * size + i) * 4, warm = (cell - .5) * 8;
+		alb[o] = base[0] * k + warm; alb[o + 1] = base[1] * k; alb[o + 2] = base[2] * k - warm * .5; alb[o + 3] = 255;
+		ht = groove * (.86 + .14 * fine) + .05 * mid;
+		hgt[j * size + i] = ht;
+	}
+	const map = new T.CanvasTexture(toCanvas(kuwahara(alb, size, size, kind === "ashlar" ? 5 : 4), size, size));
+	const nrm = new T.CanvasTexture(normalFromHeight(hgt, size, size, kind === "ashlar" ? 2 : .9));
+	map.colorSpace = T.SRGBColorSpace;
+	for (const t of [map, nrm]) { t.wrapS = t.wrapT = T.RepeatWrapping; t.anisotropy = 4; }
+	return { map, nrm };
+}
+const ASHLAR = stone({ seed: 0x80aa973e, kind: "ashlar" }), FLAGS = stone({ seed: 0x973e80aa, kind: "flags" });
+ASHLAR.map.repeat.set(1 / 2.9, 1 / 2.9); ASHLAR.nrm.repeat.set(1 / 2.9, 1 / 2.9);
+FLAGS.map.repeat.set(1 / 3.2, 1 / 3.2); FLAGS.nrm.repeat.set(1 / 3.2, 1 / 3.2);
+
+/* ---------- The wall: glass near the outer face, a splayed embrasure opening toward the room ---------- */
+// Like a cathedral lancet: jambs widen inward and the sill slopes down, so the light reaches the floor and
+// rakes the reveals on its way. BACK is the glazed opening; FRONT is where the embrasure meets the room.
+const BACK = { half: WIN.w / 2 - .02, sill: WIN.sill + .02, spring: WIN.sill + WIN.rect, r: WIN.r - .02, z: -.37 };
+const FRONT = { half: .56, sill: .93, spring: WIN.sill + WIN.rect + .1, r: .56, z: 0 };
+const SEG = { jamb: 10, arc: 36, sill: 10 };
+function outline(cx, o) {
+	const pts = [], x0 = cx - o.half, x1 = cx + o.half;
+	for (let i = 0; i < SEG.jamb; i++) pts.push([x0, o.sill + ((o.spring - o.sill) * i) / SEG.jamb]);
+	for (let i = 0; i < SEG.arc; i++) { const a = Math.PI - (Math.PI * i) / SEG.arc; pts.push([cx + Math.cos(a) * o.half, o.spring + Math.sin(a) * o.r]); }
+	for (let i = 0; i < SEG.jamb; i++) pts.push([x1, o.spring - ((o.spring - o.sill) * i) / SEG.jamb]);
+	for (let i = 0; i < SEG.sill; i++) pts.push([x1 - ((x1 - x0) * i) / SEG.sill, o.sill]);
+	return pts;
+}
+const holePath = (pts) => { const p = new T.Path(); p.moveTo(...pts[0]); for (const q of pts.slice(1)) p.lineTo(...q); p.closePath(); return p; };
+const wallRect = () => { const s = new T.Shape(); s.moveTo(-3.4, 0); s.lineTo(3.4, 0); s.lineTo(3.4, 5); s.lineTo(-3.4, 5); s.closePath(); return s; };
+const frontShape = wallRect(), backShape = wallRect();
+for (const s of Object.values(SIDES)) { frontShape.holes.push(holePath(outline(s.wx, FRONT))); backShape.holes.push(holePath(outline(s.wx, BACK))); }
+// The reveals: a loft from the glazed outline to the room outline, faces turned into the opening.
+function embrasure(cx) {
+	const b = outline(cx, BACK), f = outline(cx, FRONT), n = b.length, pos = [], uv = [];
+	let run = 0;
+	for (let i = 0; i < n; i++) {
+		const j = (i + 1) % n, step = Math.hypot(f[j][0] - f[i][0], f[j][1] - f[i][1]);
+		const B0 = [b[i][0], b[i][1], BACK.z], B1 = [b[j][0], b[j][1], BACK.z], F0 = [f[i][0], f[i][1], FRONT.z], F1 = [f[j][0], f[j][1], FRONT.z];
+		const u0 = run, u1 = run + step, vb = 0, vf = .45; run = u1;
+		pos.push(...B0, ...F0, ...B1, ...B1, ...F0, ...F1);
+		uv.push(u0, vb, u0, vf, u1, vb, u1, vb, u0, vf, u1, vf);
+	}
+	const g = new T.BufferGeometry();
+	g.setAttribute("position", new T.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new T.Float32BufferAttribute(uv, 2));
+	g.computeVertexNormals();
+	// The sill faces up; if it came out facing down, turn every face around.
+	const sillNy = g.attributes.normal.getY((SEG.jamb * 2 + SEG.arc + 2) * 6);
+	if (sillNy < 0) { const p = g.attributes.position; for (let k = 0; k < p.count; k += 3) { const t = [p.getX(k + 1), p.getY(k + 1), p.getZ(k + 1)]; p.setXYZ(k + 1, p.getX(k + 2), p.getY(k + 2), p.getZ(k + 2)); p.setXYZ(k + 2, ...t); } const u = g.attributes.uv; for (let k = 0; k < u.count; k += 3) { const t = [u.getX(k + 1), u.getY(k + 1)]; u.setXY(k + 1, u.getX(k + 2), u.getY(k + 2)); u.setXY(k + 2, ...t); } g.computeVertexNormals(); }
+	return g;
+}
+const stoneMat = new T.MeshStandardMaterial({ map: ASHLAR.map, normalMap: ASHLAR.nrm, normalScale: new T.Vector2(1, 1), roughness: .93, color: 0xffffff, shadowSide: T.DoubleSide });
+const wallParts = [new T.ShapeGeometry(frontShape, 1), (() => { const g = new T.ExtrudeGeometry(backShape, { depth: .05, bevelEnabled: false }); g.translate(0, 0, BACK.z - .05); return g; })(), embrasure(SIDES.opp.wx), embrasure(SIDES.you.wx)];
+const wall = new T.Group();
+for (const g of wallParts) { const m = new T.Mesh(g, stoneMat); m.castShadow = m.receiveShadow = true; wall.add(m); }
+scene.add(wall);
+// Colonnette between the windows, with base and capital; stringcourse under the sills; hood mouldings.
+const trimMat = new T.MeshStandardMaterial({ map: ASHLAR.map, normalMap: ASHLAR.nrm, roughness: .88, color: 0xd8d0c8, shadowSide: T.DoubleSide });
+function add(geo, mat, x, y, z, shadow = true) { const m = new T.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = shadow; m.receiveShadow = true; scene.add(m); return m; }
+add(new T.CylinderGeometry(.042, .046, FRONT.spring, 20), trimMat, 0, FRONT.spring / 2, .05);
+add(new T.BoxGeometry(.15, .07, .13), trimMat, 0, FRONT.spring + .035, .05);
+add(new T.BoxGeometry(.14, .1, .12), trimMat, 0, .05, .05);
+add(new T.BoxGeometry(6.8, .075, .11), trimMat, 0, FRONT.sill - .035, .055);
+add(new T.BoxGeometry(6.8, .05, .07), trimMat, 0, FRONT.sill - .1, .035);
+// Each hood runs from the outer sill, over the arch, down to meet its twin above the capital.
+const HOOD_R = FRONT.half + .15;
+for (const s of Object.values(SIDES)) {
+	const out = Math.sign(s.wx), end = Math.acos(Math.min(1, Math.abs(s.wx) / HOOD_R)), pts = [];
+	pts.push(new T.Vector3(s.wx + out * HOOD_R, FRONT.sill + .02, .02));
+	for (let k = 0; k <= 28; k++) { const a = (Math.PI - end) * (k / 28); const ang = out < 0 ? Math.PI - a : a; pts.push(new T.Vector3(s.wx + Math.cos(ang) * HOOD_R, FRONT.spring + Math.sin(ang) * HOOD_R, .02)); }
+	add(new T.TubeGeometry(new T.CatmullRomCurve3(pts, false, "centripetal"), 120, .026, 8, false), trimMat, 0, 0, 0);
+}
+// Floor
+const floorMat = new T.MeshStandardMaterial({ map: FLAGS.map, normalMap: FLAGS.nrm, normalScale: new T.Vector2(.5, .5), roughness: .84, color: 0xffffff });
+const floor = new T.Mesh(new T.PlaneGeometry(9, 9), floorMat);
+floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, 4.5); floor.receiveShadow = true;
+scene.add(floor);
+// Floor UVs in world units so the flags keep their size.
+{ const p = floor.geometry.attributes.position, uv = floor.geometry.attributes.uv; for (let i = 0; i < p.count; i++) uv.setXY(i, p.getX(i), p.getY(i)); }
+
+/* ---------- Windows: the locked glass shader, with the Aspect mask painted into the glass ---------- */
+const GW = 320, GH = 448;
+const MASK_EYES = { mercy: [[34, 39], [66, 39]], hunger: [[34, 34], [66, 34]], echo: [[31, 38], [69, 38]], rancour: [[31, 35], [69, 35]], appetite: [[32, 37], [68, 37]], inquisitor: [[33, 27], [67, 27]], madness: [[34, 42], [68, 44]] };
+// The mask sits over the hooded face: 89.2×75 of the window's 300×420 drawing, top-left at (105.4, 202.7).
+const MASK_BOX = [105.4 / 300, 202.7 / 420, 89.2 / 300, 75 / 420];
+const eyeUV = (aspect) => MASK_EYES[aspect].map(([x, y]) => [MASK_BOX[0] + (x / 100) * MASK_BOX[2], MASK_BOX[1] + (y / 84) * MASK_BOX[3]]);
+async function glassLayers(s) {
+	const opts = { theme: s.theme, seed: s.seed, width: GW };
+	const [col, lead, leadBlur, glow, mask] = await Promise.all([
+		GL.raster(G.windowSVG({ ...opts, mode: "color" }), GW, GH),
+		GL.raster(G.windowSVG({ ...opts, mode: "lead" }), GW, GH),
+		GL.raster(G.windowSVG({ ...opts, mode: "lead" }), GW, GH, 2.2 * DPR),
+		GL.raster(G.windowSVG({ ...opts, mode: "glow", width: GW >> 2 }), GW >> 2, GH >> 2, 1.8 * DPR),
+		GL.raster(MASK.mask(s.data.aspect, 200).replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" '), Math.round(MASK_BOX[2] * GW), Math.round(MASK_BOX[3] * GH)),
+	]);
+	// Grisaille: the mask is painted onto the glass, so its light shows through the mask.
+	const x = col.getContext("2d");
+	x.save(); x.globalCompositeOperation = "multiply"; x.globalAlpha = .92; x.filter = "contrast(1.15) brightness(1.05)";
+	x.drawImage(mask, MASK_BOX[0] * GW, MASK_BOX[1] * GH); x.restore();
+	x.save(); x.globalCompositeOperation = "destination-in"; x.drawImage(await GL.raster(G.windowSVG({ ...opts, mode: "color" }), GW, GH), 0, 0); x.restore();
+	// What the light carries onto the stone: the same glass, softened.
+	const blur = document.createElement("canvas"); blur.width = 160; blur.height = 224;
+	const bx = blur.getContext("2d"); bx.filter = "blur(2.5px)"; bx.drawImage(col, 0, 0, 160, 224);
+	// Average transmitted colour, for the light the floor throws back onto the wall.
+	const d = bx.getImageData(0, 0, 160, 224).data; let r = 0, g = 0, b = 0, n = 0;
+	for (let i = 0; i < d.length; i += 16) { const a = d[i + 3] / 255; r += (d[i] / 255) ** 2 * a; g += (d[i + 1] / 255) ** 2 * a; b += (d[i + 2] / 255) ** 2 * a; n += a; }
+	return { col, lead, leadBlur, glow, blur, avg: new T.Color(r / n, g / n, b / n) };
+}
+const tex = (c, flip = false) => { const t = new T.CanvasTexture(c); t.flipY = flip; t.generateMipmaps = false; t.minFilter = T.LinearFilter; t.wrapS = t.wrapT = T.ClampToEdgeWrapping; return t; };
+const GLASS_VERT = `precision highp float;
+in vec3 position; in vec2 uv; uniform mat4 projectionMatrix, modelViewMatrix; out vec2 vUv;
+void main(){ vUv = vec2(uv.x, 1. - uv.y); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`;
+// The mask's eyes: faint embers behind the eye holes that can turn toward a touch.
+const GLASS_FRAG = GL.WINDOW_FRAG.replace("#version 300 es\n", "")
+	.replace("uniform float uHot,", "uniform vec4 uEyes; uniform vec2 uLook; uniform float uEyeGlow;\nuniform float uHot,")
+	.replace("o = vec4(c * base.a, base.a);", `for (int k = 0; k < 2; k++) {
+    vec2 ep = k == 0 ? uEyes.xy : uEyes.zw;
+    vec2 d = (vUv - ep - uLook) / vec2(.0068, .0042);
+    c += vec3(1., .38, .2) * exp(-dot(d, d)) * uEyeGlow;
+  }
+  o = vec4(c * base.a, base.a);`);
+
+/* ---------- The light behind each window: a projector carrying its glass, filaments and all ---------- */
+const MAP_FRAG = `
+uniform sampler2D uCol; uniform vec4 uRect; uniform float uT, uRed, uDim, uSwell, uCaus, uInterf, uCloud, uSide;
+varying vec2 vUv;
+float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+vec2 h22(vec2 p){ float n = h21(p); return vec2(n, h21(p + n)); }
+float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
+  return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y); }
+float fbm(vec2 p){ float s = 0., a = .5; for (int k = 0; k < 4; k++) { s += a * vn(p); p = p * 2.03 + 7.1; a *= .5; } return s; }
+float caus(vec2 p, float t){
+  p += vec2(fbm(p * .55 + t * .05), fbm(p * .55 + 4.3 - t * .04)) * 1.6;
+  vec2 i = floor(p), f = fract(p); float f1 = 9., f2 = 9.;
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 nb = vec2(x, y), pt = .5 + .45 * sin(t * .7 + 6.2831 * h22(i + nb));
+    float d = length(nb + pt - f);
+    if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) { f2 = d; }
+  }
+  return pow(1. - smoothstep(0., .32, f2 - f1), 2.2);
+}
+vec3 crimson(vec3 c, float k){ float l = dot(c, vec3(.3, .5, .2)); return mix(c, vec3(1., .1, .14) * (l * 1.6 + .04), k); }
+void main(){
+  // Where this ray crossed the window (art space, y up). Outside it the wall's shadow takes over.
+  vec2 a = (vUv - uRect.xy) / (uRect.zw - uRect.xy);
+  vec4 g = texture2D(uCol, clamp(a, .01, .99));
+  vec3 c = g.rgb * g.rgb * g.a;
+  c = c / (c + .14) * .46;                                             // pale panes stop drowning the deep ones
+  c = mix(c, pow(c, vec3(.82)) * vec3(1.12, 1., .82), uSwell);       // kindling: the glass runs warm
+  c = crimson(c, uRed);
+  vec2 q = a * vec2(5.5, 7.7);
+  float cz = caus(q, uT) + .55 * caus(q * 1.7 + 3.1, uT * 1.3);
+  c *= .5 + uCaus * 1.4 * cz;
+  // Cloud passing behind the window.
+  float cl = smoothstep(.25, .75, fbm(a * vec2(1.4, 1.) * 1.6 + vec2(uCloud, uCloud * .3)));
+  c *= 1. - uDim * (.55 + .45 * cl);
+  // Two coherent lights crossing: fringes, angled per window so they beat where the pools overlap.
+  float fr = smoothstep(-.3, .3, sin((a.x * (uSide > .5 ? 1. : -1.) * .8 + a.y * .6) * 22. + uT * 1.5)) * 2. - 1.;
+  c *= 1. + uInterf * .8 * fr;
+  gl_FragColor = vec4(c, 1.);
+}`;
+const QUAD_VERT = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }`;
+const mapScene = new T.Scene(), mapCam = new T.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+/* ---------- Medallions: Light, counted in glass along each arch ---------- */
+// Set in the face around the room-side arch: up the outer jamb, over, and down toward the colonnette.
+const MEDAL_N = 25;
+function medalPoints(wx) {
+	const pts = [], R = FRONT.half + .072, out = Math.sign(wx), side = FRONT.spring - FRONT.sill - .05;
+	const end = Math.acos(Math.min(1, (Math.abs(wx) - .11) / R)), arc = (Math.PI - end) * R, total = side + arc;
+	for (let i = 0; i < MEDAL_N; i++) {
+		let d = (i / (MEDAL_N - 1)) * total;
+		if (d <= side) { pts.push([wx + out * R, FRONT.sill + .05 + d]); continue; }
+		d -= side;
+		const a = d / R, ang = out < 0 ? Math.PI - a : a;
+		pts.push([wx + Math.cos(ang) * R, FRONT.spring + Math.sin(ang) * R]);
+	}
+	return pts;
+}
+
+/* ---------- Carved lettering: height map cut into the stone, gilded in the cut ---------- */
+await Promise.all([document.fonts.load('600 64px "Spectral SC"'), document.fonts.load('italic 400 40px "Spectral"'), document.fonts.load('italic 500 40px "Spectral"')]).catch(() => {});
+function carve(w, h, draw) {
+	const m = document.createElement("canvas"); m.width = w; m.height = h;
+	const mx = m.getContext("2d"); mx.fillStyle = "#000"; mx.fillRect(0, 0, w, h); mx.fillStyle = "#fff"; mx.textAlign = "center"; mx.textBaseline = "alphabetic"; draw(mx);
+	const a = document.createElement("canvas"); a.width = w; a.height = h;
+	const ax = a.getContext("2d"); ax.filter = "blur(.6px)"; ax.drawImage(m, 0, 0);
+	const b = document.createElement("canvas"); b.width = w; b.height = h;
+	const bx = b.getContext("2d"); bx.fillStyle = "#fff"; bx.fillRect(0, 0, w, h); bx.filter = "invert(1) blur(2.2px)"; bx.drawImage(m, 0, 0);
+	return { alpha: a, bump: b };
+}
+function carvedPlane(wd, ht, px, draw, color, bumpScale) {
+	const c = carve(Math.round(wd * px), Math.round(ht * px), draw);
+	const alphaMap = new T.CanvasTexture(c.alpha), bumpMap = new T.CanvasTexture(c.bump);
+	const mat = new T.MeshStandardMaterial({ color, roughness: .5, metalness: 0, alphaMap, bumpMap, bumpScale, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+	const mesh = new T.Mesh(new T.PlaneGeometry(wd, ht), mat); mesh.receiveShadow = true;
+	mesh.userData.redraw = (fn) => { const n = carve(c.alpha.width, c.alpha.height, fn); alphaMap.image = n.alpha; bumpMap.image = n.bump; alphaMap.needsUpdate = bumpMap.needsUpdate = true; };
+	return mesh;
+}
+const fitText = (x, s, max, font) => { let size = parseInt(font.match(/(\d+)px/)[1]); x.font = font; while (x.measureText(s).width > max && size > 8) { size -= 2; x.font = font.replace(/\d+px/, size + "px"); } };
+// Names engraved under each sill.
+for (const s of Object.values(SIDES)) {
+	const you = s === SIDES.you;
+	const p = carvedPlane(1.2, .34, 420, (x) => {
+		x.letterSpacing = "6px"; fitText(x, s.data.name.toUpperCase(), 440, '600 76px "Spectral SC"'); x.fillText(s.data.name.toUpperCase(), 252, 72);
+		x.letterSpacing = "1px"; fitText(x, "", 470, 'italic 400 40px "Spectral"'); x.fillText(`wears ${s.data.Aspect}${you ? " · your fragment" : ""}`, 252, 128);
+	}, 0xc49a5c, 4.5);
+	p.position.set(s.wx, FRONT.sill - .32, .004); scene.add(p);
+}
+// The turn's words, cut into the floor between the pools; the verdict, cut nearer to you.
+const turnText = carvedPlane(2.1, .58, 480, () => {}, 0xb8935a, 2.5);
+turnText.rotation.x = -Math.PI / 2; turnText.position.set(0, .003, 1.6); scene.add(turnText);
+const endText = carvedPlane(2.6, 1.3, 400, () => {}, 0xb8935a, 2.5);
+endText.rotation.x = -Math.PI / 2; endText.position.set(0, .003, 2.25); scene.add(endText);
+turnText.material.opacity = endText.material.opacity = 0;
+function writeTurn(key) {
+	const [l1, l2, l3] = SAY[key];
+	turnText.userData.redraw((x) => {
+		x.letterSpacing = "5px"; fitText(x, l1.toUpperCase(), 900, '600 92px "Spectral SC"'); x.fillText(l1.toUpperCase(), 504, 104);
+		x.letterSpacing = "0px"; fitText(x, l2, 960, 'italic 500 50px "Spectral"'); x.fillText(l2, 504, 186);
+		x.font = 'italic 500 50px "Spectral"'; x.fillText(l3, 504, 248);
+	});
+}
+function writeEnd() {
+	const r = outcome();
+	endText.userData.redraw((x) => {
+		x.letterSpacing = "4px"; fitText(x, r.h.toUpperCase(), 820, '600 86px "Spectral SC"'); x.fillText(r.h.toUpperCase(), 520, 120);
+		x.letterSpacing = "0px";
+		for (const [s, y] of [[r.a, 214], [r.b, 278], [r.c, 362]]) { fitText(x, s, 820, 'italic 500 46px "Spectral"'); x.fillText(s, 520, y); }
+		x.font = 'italic 400 34px "Spectral"'; x.fillText("touch the stone to watch again", 520, 470);
+	});
+	$("#say").textContent = `${r.h}. ${r.a} ${r.b} ${r.c}`;
+}
+
+/* ---------- The inlaid eye in the floor: brass, red glass, and a real light ---------- */
+const eyeCanvas = (() => {
+	const c = document.createElement("canvas"); c.width = c.height = 256; const x = c.getContext("2d");
+	x.translate(128, 128);
+	const almond = (sx, sy) => { x.beginPath(); x.moveTo(-sx, 0); x.quadraticCurveTo(0, -sy, sx, 0); x.quadraticCurveTo(0, sy, -sx, 0); x.closePath(); };
+	almond(122, 96); x.fillStyle = "#4a3a22"; x.fill();
+	almond(108, 80); x.fillStyle = "#120c0d"; x.fill();
+	x.beginPath(); x.arc(0, 0, 40, 0, 7); x.fillStyle = "#7a1420"; x.fill();
+	x.beginPath(); x.ellipse(0, 0, 7, 32, 0, 0, 7); x.fillStyle = "#0b0607"; x.fill();
+	return c;
+})();
+const eyeEm = (() => { const c = document.createElement("canvas"); c.width = c.height = 256; const x = c.getContext("2d"); x.translate(128, 128); x.beginPath(); x.arc(0, 0, 40, 0, 7); x.fillStyle = "#fff"; x.fill(); x.beginPath(); x.ellipse(0, 0, 7, 32, 0, 0, 7); x.fillStyle = "#000"; x.fill(); return c; })();
+const eyeMap = new T.CanvasTexture(eyeCanvas); eyeMap.colorSpace = T.SRGBColorSpace;
+const eyeMat = new T.MeshStandardMaterial({ map: eyeMap, emissiveMap: new T.CanvasTexture(eyeEm), emissive: 0xff2a1a, emissiveIntensity: 0, roughness: .35, transparent: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+const EYE_Z = 3.2;
+const eyeDisc = new T.Mesh(new T.PlaneGeometry(.52, .52), eyeMat);
+eyeDisc.rotation.x = -Math.PI / 2; eyeDisc.position.set(0, .002, EYE_Z); eyeDisc.receiveShadow = true; scene.add(eyeDisc);
+const eyeLight = new T.PointLight(0xff3020, 0, 2.4, 2); eyeLight.position.set(0, .42, EYE_Z); scene.add(eyeLight);
+
+/* ---------- Fittings: an iron ring on the wall (leave) and an hourglass on the floor (pass) ---------- */
+const iron = new T.MeshStandardMaterial({ color: 0x3a3330, roughness: .55, metalness: .6 });
+const brass = new T.MeshStandardMaterial({ color: 0x8a6a3a, roughness: .45, metalness: .5 });
+const ringPivot = new T.Group(); ringPivot.position.set(-1.12, 3.2, .05); scene.add(ringPivot);
+add(new T.BoxGeometry(.06, .07, .05), iron, -1.12, 3.23, .025);
+const ring = new T.Mesh(new T.TorusGeometry(.085, .013, 10, 36), iron); ring.position.set(0, -.09, .02); ring.castShadow = true; ringPivot.add(ring);
+const hourglass = new T.Group(); hourglass.position.set(.8, 0, 3.4); scene.add(hourglass);
+{
+	const cap = new T.CylinderGeometry(.075, .075, .018, 24);
+	for (const y of [.009, .229]) { const m = new T.Mesh(cap, brass); m.position.y = y; m.castShadow = true; hourglass.add(m); }
+	for (const a of [0, 2.1, 4.2]) { const m = new T.Mesh(new T.CylinderGeometry(.006, .006, .22, 6), brass); m.position.set(Math.cos(a) * .06, .119, Math.sin(a) * .06); m.castShadow = true; hourglass.add(m); }
+	const prof = []; for (let i = 0; i <= 20; i++) { const t = i / 20; prof.push(new T.Vector2(.012 + .038 * Math.pow(Math.abs(Math.cos(t * Math.PI)), .7), .02 + t * .2)); }
+	const bulb = new T.Mesh(new T.LatheGeometry(prof, 24), new T.MeshStandardMaterial({ color: 0x6a6070, roughness: .15, transparent: true, opacity: .32, depthWrite: false }));
+	hourglass.add(bulb);
+	const sand = new T.Mesh(new T.ConeGeometry(.034, .04, 20), new T.MeshStandardMaterial({ color: 0x6b5631, roughness: .9 })); sand.position.y = .042; hourglass.add(sand);
+}
+
+/* ---------- Lights ---------- */
+scene.add(new T.HemisphereLight(0x2a2436, 0x0b0908, .55));
+// A candle behind you, off the frame: the faint warm fill that lets carved letters read in the dark.
+const candle = new T.PointLight(0xffb46a, 2.2, 9, 1.6); candle.position.set(2.4, 2.6, 6.6); scene.add(candle);
+const W = {};
+for (const [k, s] of Object.entries(SIDES)) {
+	const L = await glassLayers(s);
+	const eyes = eyeUV(s.data.aspect);
+	const u = {
+		uCol: { value: tex(L.col) }, uLead: { value: tex(L.lead) }, uLeadBlur: { value: tex(L.leadBlur) }, uGlow: { value: tex(L.glow) },
+		uRes: { value: new T.Vector2(GW, GH) }, uL: { value: new T.Vector2(.5, .36) }, uT: { value: 0 }, uSwell: { value: 0 }, uDim: { value: 0 }, uRed: { value: 0 }, uCrack: { value: 0 },
+		uEyes: { value: new T.Vector4(eyes[0][0], eyes[0][1], eyes[1][0], eyes[1][1]) }, uLook: { value: new T.Vector2() }, uEyeGlow: { value: .3 },
+	};
+	const P = GL.PRESETS.locked;
+	for (const [p, n] of Object.entries({ hot: "uHot", amb: "uAmb", moon: "uMoon", leak: "uLeak", rim: "uRim", grime: "uGrime", bloom: "uBloom", bloomGlass: "uBloomGlass", streak: "uStreak", relief: "uRelief", expo: "uExpo" })) u[n] = { value: P[p] };
+	const glass = new T.Mesh(new T.PlaneGeometry(WIN.w, WIN.h), new T.RawShaderMaterial({ glslVersion: T.GLSL3, vertexShader: GLASS_VERT, fragmentShader: GLASS_FRAG, uniforms: u, transparent: true, premultipliedAlpha: true }));
+	glass.position.set(s.wx, YC, WIN.glassZ); scene.add(glass);
+	// The projector: a spot whose map is the glass as the light carries it (re-rendered every frame).
+	const rt = new T.WebGLRenderTarget(256, 256, { type: T.HalfFloatType, depthBuffer: false });
+	const mu = { uCol: { value: tex(L.blur, true) }, uRect: { value: new T.Vector4(0, 0, 1, 1) }, uT: { value: 0 }, uRed: { value: 0 }, uDim: { value: 0 }, uSwell: { value: 0 }, uCaus: { value: LOOK.caus }, uInterf: { value: 0 }, uCloud: { value: 0 }, uSide: { value: k === "you" ? 1 : 0 } };
+	const quad = new T.Mesh(new T.PlaneGeometry(2, 2), new T.ShaderMaterial({ vertexShader: QUAD_VERT, fragmentShader: MAP_FRAG, uniforms: mu, depthTest: false, depthWrite: false }));
+	quad.frustumCulled = false; mapScene.add(quad);
+	const spot = new T.SpotLight(0xfff1dc, 0, 0, .5, .15, 0);
+	spot.map = rt.texture; spot.castShadow = !Q.has("nosh");
+	spot.shadow.mapSize.set(1024, 1024); spot.shadow.bias = -.0004; spot.shadow.normalBias = .015; spot.shadow.radius = 3; spot.shadow.camera.near = 1; spot.shadow.camera.far = 18;
+	spot.target.position.set(s.wx, YC, WIN.glassZ);
+	scene.add(spot, spot.target);
+	// Light thrown back off the lit floor onto the wall: the pool's colour, at the pool.
+	const emit = new T.PointLight(L.avg.clone().lerp(new T.Color(1, .8, .6), .35), 0, 3.4, 2); emit.position.set(s.wx, YC + .1, .45); scene.add(emit);
+	const bounce = new T.PointLight(L.avg.clone().lerp(new T.Color(1, .85, .7), .3), 0, 3.2, 2); scene.add(bounce);
+	// Medallions along the arch.
+	const glow = k === "you" ? new T.Color(1, .5, .12) : new T.Color(.5, .22, .85);
+	const medals = medalPoints(s.wx).map(([x, y]) => {
+		const m = new T.Mesh(new T.CircleGeometry(.028, 18), new T.MeshStandardMaterial({ color: k === "you" ? 0x6a4824 : 0x48365e, roughness: .12, metalness: .1, emissive: glow, emissiveIntensity: 0 }));
+		m.position.set(x, y, .006); scene.add(m);
+		const rim = new T.Mesh(new T.RingGeometry(.028, .036, 18), iron); rim.position.set(x, y, .007); scene.add(rim);
+		return m;
+	});
+	W[k] = { s, u, glass, mu, quad, rt, spot, bounce, emit, medals, glow, lit: 0, weak: [], crawl: -1, crawlTo: -1,
+		// eased state and its targets
+		cur: { i: 0, x: 0, z: 0, red: 0, dim: 0, swell: 0, interf: 0, crack: 0 }, tg: { i: 1, x: 0, z: 0, red: 0, dim: 0, swell: 0, interf: 0, crack: 0 },
+		swellT: -9, lookT: -9 };
+}
+
+/* ---------- Where each light stands, solved from where its projection should land ---------- */
+const lightBack = () => 3.2 / LOOK.spread;
+const homeZ = () => .5 + (3.9 - LOOK.zc) * 1.2;
+function tOf(zLand) { const D = lightBack(), Ly = YC + (D * YC) / zLand; return Ly / (Ly - YC); }
+const homeX = (k) => tOf(homeZ()) * SIDES[k].wx * (1 - LOOK.inward);
+function sourceFor(wx, xLand, zLand) {
+	const D = lightBack(), Ly = YC + (D * YC) / zLand, t = Ly / (Ly - YC);
+	return new T.Vector3((t * wx - xLand) / (t - 1), Ly, -D);
+}
+function home(k, i = 1) { Object.assign(W[k].tg, { i, x: homeX(k), z: homeZ(), red: 0, dim: 0, swell: 0, interf: 0 }); }
+for (const k of ["opp", "you"]) { home(k); Object.assign(W[k].cur, W[k].tg); }
+turnText.position.z = homeZ() + .12;
+
+/* ---------- Finger shadow: an unseen finger between the light and the stone ---------- */
+const finger = new T.Mesh(new T.CapsuleGeometry(.03, .24, 4, 10), new T.MeshBasicMaterial({ colorWrite: false, depthWrite: false }));
+finger.castShadow = true; finger.visible = false; scene.add(finger);
+
+/* ---------- Frame ---------- */
+const clock = { t: 0, prev: performance.now(), cloud: 0 };
+let speed = 1, rushing = false, eye = 0, eyeTg = 0, camBlend = 0, camBlendTg = 0, txtA = 0, txtTg = 0, endA = 0, endTg = 0;
+const par = { x: 0, y: 0, tx: 0, ty: 0 };
+const corners = [new T.Vector3(), new T.Vector3(), new T.Vector3(), new T.Vector3()];
+const ease = (a, b, rate, dt) => reduce ? b : a + (b - a) * (1 - Math.exp(-rate * dt));
+function eyeGlowAt(k, t) {
+	const w = W[k], cyc = ((t + (k === "you" ? 6.8 : 2.5)) % 9) / 9;
+	let g = .22 + (cyc > .62 && cyc < .92 ? .4 * Math.min(1, (cyc - .62) * 30) * Math.min(1, (.92 - cyc) * 30) : 0);
+	g += Math.max(0, 1 - (t - w.lookT) / 1.6) * .9;
+	return g;
+}
+function frame(now) {
+	const dt = Math.min(1, (now - clock.prev) / 1000); clock.prev = now;
+	if (!reduce) { clock.t += dt; clock.cloud += dt * (rushing ? 2.4 : .06); }
+	const t = clock.t;
+	for (const k of ["opp", "you"]) {
+		const w = W[k], c = w.cur, g = w.tg;
+		for (const p of ["i", "x", "z", "red", "dim", "interf", "crack"]) c[p] = ease(c[p], g[p], p === "x" || p === "z" ? 2.2 : p === "red" ? 3.2 : 3.6, dt);
+		const sw = Math.max(0, 1 - (t - w.swellT) / 1.1) * Math.min(1, (t - w.swellT) * 6);
+		c.swell = ease(c.swell, g.swell, 3, dt);
+		// Place the source, aim it through the window, fit the beam to the opening.
+		const S = sourceFor(w.s.wx, c.x, c.z);
+		w.spot.position.copy(S); w.spot.updateMatrixWorld(); w.spot.target.updateMatrixWorld();
+		corners[0].set(w.s.wx - .5, WIN.sill, WIN.glassZ); corners[1].set(w.s.wx + .5, WIN.sill, WIN.glassZ);
+		corners[2].set(w.s.wx - .5, WIN.sill + WIN.h, WIN.glassZ); corners[3].set(w.s.wx + .5, WIN.sill + WIN.h, WIN.glassZ);
+		// The beam is fitted to the opening from wherever the source stands.
+		const axis = w.spot.target.position.clone().sub(S).normalize();
+		w.spot.angle = Math.max(...corners.map((v) => Math.acos(Math.min(1, v.clone().sub(S).normalize().dot(axis))))) * 1.12 + .02;
+		w.spot.shadow.updateMatrices(w.spot);
+		const m = w.spot.shadow.matrix, uv = corners.map((v) => v.clone().applyMatrix4(m));
+		// art u runs world-left to world-right; art v runs sill to apex
+		w.mu.uRect.value.set((uv[0].x + uv[2].x) / 2, (uv[0].y + uv[1].y) / 2, (uv[1].x + uv[3].x) / 2, (uv[2].y + uv[3].y) / 2);
+		w.spot.intensity = 4.6 * c.i * (1 + sw * .5);
+		w.spot.color.setRGB(1, .93 + c.swell * .02, .84 - c.swell * .1);
+		w.mu.uT.value = t; w.mu.uRed.value = c.red; w.mu.uDim.value = c.dim; w.mu.uSwell.value = Math.max(c.swell, sw); w.mu.uCaus.value = LOOK.caus; w.mu.uInterf.value = c.interf; w.mu.uCloud.value = clock.cloud;
+		// The glass is lit by the same source: its hot spot follows the light as it moves.
+		w.u.uL.value.set(Math.min(.9, Math.max(.1, .5 + (S.x - w.s.wx) * .035)), .36);
+		w.u.uT.value = t; w.u.uSwell.value = sw; w.u.uDim.value = c.dim; w.u.uRed.value = c.red; w.u.uCrack.value = c.crack;
+		w.u.uEyeGlow.value = eyeGlowAt(k, t) * (1 - c.dim * .5);
+		w.u.uLook.value.multiplyScalar(reduce ? 0 : Math.exp(-dt * .7));
+		// The floor throws a little of that light back onto the wall.
+		w.bounce.position.set(c.x, .22, c.z); w.bounce.intensity = 1.4 * c.i * (1 - c.dim * .6);
+		w.emit.intensity = 1.6 * c.i * (1 - c.dim * .6); w.emit.color.copy(w.emitBase || (w.emitBase = w.emit.color.clone())).lerp(new T.Color(1, .1, .12), c.red * .45);
+		w.bounce.color.copy(new T.Color(1, .82, .62)).lerp(new T.Color(1, .12, .14), c.red * .8);
+		// Medallions: lit ones hold their glow; the crawling light runs ahead of the next to fill.
+		if (w.crawlTo >= 0) { w.crawl = reduce ? w.crawlTo : Math.min(w.crawlTo, w.crawl + dt * 14 * speed); while (w.lit < Math.floor(w.crawl) + 1 && w.lit <= w.crawlTo) w.lit++; }
+		w.medals.forEach((md, j) => {
+			const on = j < w.lit ? (w.weak[j] ? .22 : .5) : 0, head = w.crawl < w.crawlTo - .01 ? Math.exp(-((j - w.crawl) ** 2) * 1.2) * .9 : 0;
+			md.material.emissiveIntensity = ease(md.material.emissiveIntensity, on + head, 9, dt);
+		});
+	}
+	eye = ease(eye, eyeTg, 3, dt); eyeMat.emissiveIntensity = eye * .5; eyeLight.intensity = eye * 1.5;
+	txtA = ease(txtA, txtTg, 3, dt); turnText.material.opacity = txtA;
+	endA = ease(endA, endTg, 1.6, dt); endText.material.opacity = endA;
+	camBlend = ease(camBlend, camBlendTg, 1.1, dt);
+	par.x = ease(par.x, par.tx, 6, dt); par.y = ease(par.y, par.ty, 6, dt);
+	cam.position.lerpVectors(CAM.pos, CAM_END.pos, camBlend).add(new T.Vector3(par.x * .45, par.y * .25, 0));
+	const at = new T.Vector3().lerpVectors(CAM.at, CAM_END.at, camBlend); cam.lookAt(at);
+	ringPivot.rotation.z = ring.userData.swing ? ring.userData.swing(t) : 0;
+	hourglass.rotation.z = ease(hourglass.rotation.z, fast() ? Math.PI / 2 : 0, 6, dt);
+	hourglass.position.y = Math.abs(Math.sin(hourglass.rotation.z)) * .075;
+	R.toneMappingExposure = LOOK.expo;
+	for (const k of ["opp", "you"]) { mapScene.children.forEach((q) => (q.visible = q === W[k].quad)); R.setRenderTarget(W[k].rt); R.render(mapScene, mapCam); }
+	R.setRenderTarget(null);
+	R.render(scene, cam);
+	placeFittings();
+	if (running) requestAnimationFrame(frame);
+}
+let running = true;
+document.addEventListener("visibilitychange", () => { running = !document.hidden; if (running) { clock.prev = performance.now(); requestAnimationFrame(frame); } });
+function placeFittings() {
+	for (const [el, obj] of [[$("#ring"), ring], [$("#hour"), hourglass]]) {
+		const v = obj.getWorldPosition(new T.Vector3()).project(cam);
+		el.style.left = ((v.x + 1) / 2) * SW + "px"; el.style.top = ((1 - v.y) / 2) * SH + "px";
+	}
+}
+$(".vign").style.setProperty("--vig", Math.min(.9, LOOK.vig * 4.5));
+
+/* ---------- The rite ---------- */
+let hurry = false, skipped = false, gen = 0, over = false;
+function wait(ms) { return new Promise((res) => { let acc = 0, prev = performance.now(); (function f() { if (skipped) return res(); if (hurry) { hurry = false; return res(); } const n = performance.now(); acc += (n - prev) * speed; prev = n; acc >= ms ? res() : setTimeout(f, 16); })(); }); }
+const buzz = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch {} };
+const fast = () => localStorage.getItem("apostasy.skipAnimations") === "1";
+function fill(k, n, weak) {
+	const w = W[k];
+	for (let j = w.lit; j < Math.min(MEDAL_N, w.lit + n); j++) w.weak[j] = weak;
+	w.crawl = Math.max(w.crawl, w.lit - 1); w.crawlTo = Math.min(MEDAL_N - 1, Math.max(w.crawlTo, w.lit + n - 1));
+	if (n === 0) return;
+}
+function setLit(k, n, weakSet) { const w = W[k]; w.lit = n; w.crawl = n - 1; w.crawlTo = n - 1; w.weak = weakSet || []; }
+function settleAll() { for (const k of ["opp", "you"]) home(k); eyeTg = 0; txtTg = 0; }
+async function turn(i, my) {
+	const [y, o] = TURNS[i], key = y + o, [py, po] = PAY[key];
+	// 1. Hush: a cloud crosses behind both windows; the words of the last turn are already dark.
+	for (const k of ["opp", "you"]) { W[k].tg.i = .55; W[k].tg.dim = .55; }
+	writeTurn(key);
+	await wait(620); if (my !== gen) return;
+	// 2. Reveal: each light answers. Kindle surges warm; devour turns the glass crimson.
+	for (const [k, c] of [["you", y], ["opp", o]]) {
+		const w = W[k]; w.tg.dim = 0; w.tg.i = 1;
+		if (c === "K") { w.swellT = clock.t; w.tg.i = 1.3; w.tg.swell = 1; } else { w.tg.red = 1; w.tg.i = 1.15; }
+	}
+	buzz(12); await wait(600); if (my !== gen) return;
+	// 3. Exchange: the lights move, and the words in the floor come up where they fall.
+	const vz = homeZ() + .12;
+	if (key === "KK") { for (const k of ["opp", "you"]) Object.assign(W[k].tg, { x: Math.sign(SIDES[k].wx) * .14, z: vz, i: 1.05, interf: 1 }); }
+	if (key === "KD") { Object.assign(W.opp.tg, { x: homeX("you") * .35, z: vz + .15, i: 1.5, red: 1 }); Object.assign(W.you.tg, { i: .28, dim: .7 }); W.you.tg.crack = Math.min(1, W.you.tg.crack + .5); eyeTg = 1; buzz([30, 40, 60]); }
+	if (key === "DK") { Object.assign(W.you.tg, { x: homeX("opp") * .35, z: vz + .15, i: 1.5, red: 1 }); Object.assign(W.opp.tg, { i: .28, dim: .7 }); W.opp.tg.crack = Math.min(1, W.opp.tg.crack + .5); eyeTg = 1; buzz([30, 40, 60]); }
+	if (key === "DD") { for (const k of ["opp", "you"]) Object.assign(W[k].tg, { i: .6, red: .7, dim: .35 }); eyeTg = .6; buzz(40); }
+	txtTg = 1;
+	$("#say").textContent = SAY[key].join(" ");
+	await wait(1100); if (my !== gen) return;
+	// 4. Tally: light crawls along each arch, filling medallions.
+	fill("you", py, key === "DD"); await wait(150); fill("opp", po, key === "DD");
+	await wait(520 + Math.max(py, po) * 90); if (my !== gen) return;
+	if (Q.has("still")) return new Promise(() => {});
+	// 5. Settle
+	settleAll(); for (const k of ["opp", "you"]) W[k].tg.i = .85;
+	await wait(700); if (my !== gen) return;
+}
+function finish() {
+	skipped = true; gen++; over = true;
+	const r = outcome();
+	const weakFor = (side) => { const ws = []; for (const [a, b] of TURNS) { const n = PAY[a + b][side]; for (let k = 0; k < n; k++) ws.push(a + b === "DD"); } return ws; };
+	setLit("you", r.y, weakFor(0)); setLit("opp", r.o, weakFor(1));
+	for (const k of ["opp", "you"]) { home(k, 1.15); W[k].tg.crack = Math.min(1, .5 * TURNS.filter((tt) => tt.join("") === (k === "you" ? "KD" : "DK")).length); }
+	// Both lights come forward to lay the verdict open on the floor.
+	W.opp.tg.x = -.42; W.you.tg.x = .42; W.opp.tg.z = W.you.tg.z = 2.35;
+	txtTg = 0; eyeTg = .35; writeEnd(); endTg = 1; camBlendTg = 1;
+}
+async function play() {
+	const my = ++gen; skipped = false; over = false; endTg = 0; camBlendTg = 0;
+	$("#say").textContent = "";
+	setLit("you", 0); setLit("opp", 0);
+	for (const k of ["opp", "you"]) { home(k); W[k].tg.crack = 0; }
+	const from = Math.min(TURNS.length - 1, +(Q.get("from") || 0));
+	for (let i = 0; i < from; i++) {
+		const [a, b] = TURNS[i], [p, q] = PAY[a + b];
+		fill("you", p, a + b === "DD"); fill("opp", q, a + b === "DD"); W.you.lit = W.you.crawlTo + 1; W.opp.lit = W.opp.crawlTo + 1;
+		if (a + b === "KD") W.you.tg.crack = Math.min(1, W.you.tg.crack + .5);
+		if (a + b === "DK") W.opp.tg.crack = Math.min(1, W.opp.tg.crack + .5);
+	}
+	for (const k of ["opp", "you"]) W[k].crawl = W[k].crawlTo;
+	await wait(500);
+	for (let i = from; i < TURNS.length; i++) { if (skipped || my !== gen) return; await turn(i, my); }
+	if (my === gen && !Q.has("still")) finish();
+}
+
+/* ---------- Touch ---------- */
+const ray = new T.Raycaster(), ndc = new T.Vector2();
+const glasses = () => [W.opp.glass, W.you.glass];
+let holdT = null, down = null;
+function pick(e) {
+	const r = canvas.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+	ray.setFromCamera(ndc, cam);
+	return ray.intersectObjects([...glasses(), floor], false)[0];
+}
+function lookAt(hit) {
+	const w = W.opp.glass === hit.object ? W.opp : W.you, e = w.u.uEyes.value;
+	const uvp = new T.Vector2(hit.uv.x, 1 - hit.uv.y), c = new T.Vector2((e.x + e.z) / 2, (e.y + e.w) / 2);
+	const d = uvp.sub(c); const l = d.length() || 1;
+	w.u.uLook.value.copy(d.multiplyScalar(.0045 / l * Math.min(1, l * 6)));
+	w.lookT = clock.t;
+}
+function placeFinger(hit) {
+	// The finger hovers between the stone and the light, so its shadow falls where you touch.
+	const toL = W[hit.point.x < 0 ? "opp" : "you"].spot.position.clone().sub(hit.point).normalize();
+	finger.position.copy(hit.point).addScaledVector(toL, .42);
+	finger.quaternion.setFromUnitVectors(new T.Vector3(0, 1, 0), cam.position.clone().sub(finger.position).normalize().lerp(new T.Vector3(0, 1, 0), .3).normalize());
+	finger.visible = true;
+}
+$("#stage").addEventListener("pointerdown", (e) => {
+	if (e.target.closest(".fit")) return;
+	if (over) { play(); return; }
+	const hit = pick(e);
+	down = { x: e.clientX, y: e.clientY, moved: false };
+	if (hit && hit.object !== floor) { lookAt(hit); return; }
+	if (hit) placeFinger(hit);
+	hurry = true;
+	holdT = setTimeout(() => { speed = 3; rushing = true; }, 220);
+});
+$("#stage").addEventListener("pointermove", (e) => {
+	if (!down) return;
+	const dx = e.clientX - down.x, dy = e.clientY - down.y;
+	if (Math.hypot(dx, dy) > 6) down.moved = true;
+	if (!reduce) { par.tx = Math.max(-1, Math.min(1, -dx / 160)); par.ty = Math.max(-1, Math.min(1, dy / 200)); }
+	if (finger.visible) { const hit = pick(e); if (hit && hit.object === floor) placeFinger(hit); }
+});
+["pointerup", "pointercancel", "pointerleave"].forEach((n) => $("#stage").addEventListener(n, () => { clearTimeout(holdT); speed = 1; rushing = false; down = null; par.tx = par.ty = 0; finger.visible = false; }));
+// Ring: it swings when touched. Hourglass: tap passes to the outcome; hold lays it on its side (always pass).
+$("#ring").addEventListener("click", () => { const t0 = clock.t; ring.userData.swing = (t) => reduce ? 0 : Math.sin((t - t0) * 9) * .35 * Math.exp(-(t - t0) * 2.2); });
+let hourHold = null, hourHeld = false;
+$("#hour").addEventListener("pointerdown", () => { hourHeld = false; hourHold = setTimeout(() => { hourHeld = true; localStorage.setItem("apostasy.skipAnimations", fast() ? "0" : "1"); $("#hour").setAttribute("aria-pressed", String(fast())); if (fast() && !over) finish(); }, 650); });
+["pointerup", "pointerleave", "pointercancel"].forEach((n) => $("#hour").addEventListener(n, () => clearTimeout(hourHold)));
+$("#hour").addEventListener("click", () => { if (!hourHeld && !over) finish(); });
+$("#hour").setAttribute("aria-pressed", String(fast()));
+
+/* ---------- Owner tuning (?tune) ---------- */
+if (Q.has("tune")) {
+	const K = [["inward", "Pull toward centre", 0, 1, .01], ["zc", "Where it lands (high = by the wall)", 1.2, 3.9, .01], ["spread", "Source distance (lower = farther)", .3, 1.5, .01], ["caus", "Filament strength", 0, 1.5, .01], ["expo", "Scene brightness", .4, 1.8, .01], ["vig", "Vignette", 0, 1, .01]];
+	const box = document.createElement("div");
+	box.style.cssText = "position:fixed;top:16px;left:calc(50% + 215px);width:260px;background:#f4f1ea;color:#1d1b19;border-radius:12px;padding:14px 16px;font:500 13px/1.4 system-ui,sans-serif;z-index:50;user-select:text";
+	box.innerHTML = "<b>Gathering light tuner</b>" + K.map(([k, l, a, b, st]) => `<label style="display:block;margin:8px 0">${l} <output id="o-${k}" style="float:right">${LOOK[k].toFixed(2)}</output><input style="width:100%" type="range" min="${a}" max="${b}" step="${st}" value="${LOOK[k]}" data-k="${k}"></label>`).join("") + '<button id="copy">Copy values</button>';
+	document.body.appendChild(box);
+	box.querySelectorAll("input").forEach((i) => i.addEventListener("input", () => { LOOK[i.dataset.k] = +i.value; box.querySelector("#o-" + i.dataset.k).textContent = (+i.value).toFixed(2); if (!over) for (const k of ["opp", "you"]) { W[k].tg.x = homeX(k); W[k].tg.z = homeZ(); } $(".vign").style.setProperty("--vig", Math.min(.9, LOOK.vig * 4.5)); }));
+	box.querySelector("#copy").addEventListener("click", (e) => { navigator.clipboard.writeText(JSON.stringify(LOOK)); e.target.textContent = "Copied: paste it to Claude"; });
+}
+
+requestAnimationFrame(frame);
+if (Q.has("end")) finish();
+else setTimeout(() => (fast() ? finish() : play()), reduce ? 0 : 700);
+})();
+</script>
+</body></html>

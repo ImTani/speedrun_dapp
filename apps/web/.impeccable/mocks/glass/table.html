@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Table — stained glass</title>
+<link rel="stylesheet" href="glass.css">
+<style>
+/* Top-down: a dark walnut table with a velvet field inlaid in brass */
+body{background:#120d0c;background-image:repeating-linear-gradient(92deg,rgba(255,255,255,.025) 0 2px,transparent 2px 9px),repeating-linear-gradient(88deg,rgba(0,0,0,.25) 0 1px,transparent 1px 13px)}
+.field{position:absolute;left:12px;right:12px;top:62px;bottom:88px;background:#1f1029;border:1px solid var(--brass);border-radius:14px;box-shadow:inset 0 0 0 5px #1f1029,inset 0 0 0 6px rgba(184,146,74,.45),inset 0 18px 40px rgba(0,0,0,.55)}
+.field::before{content:"";position:absolute;inset:0;border-radius:14px;background-image:radial-gradient(rgba(255,255,255,.035) 1px,transparent 1.2px);background-size:5px 5px}
+.herocard{position:absolute;left:24px;top:78px;width:150px;padding:8px 8px 10px;background:#efe4cc;border-radius:10px;box-shadow:0 14px 26px rgba(0,0,0,.6);transform:rotate(-4deg);cursor:pointer;transition:transform .3s var(--snap)}
+.herocard.pressed{transform:rotate(-4deg) scale(.97)}
+.herocard .num{display:flex;justify-content:space-between;font:700 15px/1 "Grenze Gotisch",serif;color:var(--night);padding:0 2px 6px}
+.herocard .nm{text-align:center;font:700 22px/1 "Grenze Gotisch",serif;color:var(--night);margin-top:6px}
+.herocard .window{display:flex;justify-content:center}
+.side{position:absolute;left:192px;right:26px;top:96px}
+.side .disp{padding-right:28px}
+.side .disp{font-size:30px;line-height:1.05}
+.side p{font:italic 400 15px/1.45 "Spectral",serif;color:var(--bone-dim);margin-top:6px}
+.tokens{display:flex;gap:10px;margin-top:14px}
+.token{width:52px;height:52px;border-radius:50%;background:#2a1a33;border:1px solid var(--brass);display:grid;place-items:center;box-shadow:0 6px 12px rgba(0,0,0,.5);cursor:pointer;transition:transform .2s var(--snap)}
+.token.pressed{transform:scale(.9)}
+.candle{position:absolute;width:30px;top:70px}
+.candle .wax{width:14px;height:34px;margin:0 auto;background:#efe4cc;border:2px solid var(--night);border-radius:2px}
+.candle .fl{width:12px;height:18px;margin:0 auto -2px;background:#f2c25a;border:2px solid var(--night);border-radius:50% 50% 50% 50%/60% 60% 40% 40%;transform-origin:50% 100%;animation:fl 1.8s ease-in-out infinite}
+@keyframes fl{30%{transform:scale(.9,1.1) skewX(-5deg)}60%{transform:scale(1.05,.95) skewX(4deg)}}
+.deckwrap{position:absolute;left:26px;right:26px;top:372px;height:180px}
+.empty{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:12px;text-align:center}
+.empty .t{font:700 24px/1.15 "Grenze Gotisch",serif}
+.empty p{font:italic 400 15px/1.45 "Spectral",serif;color:var(--bone-dim)}
+.cta{position:absolute;left:26px;right:26px;bottom:106px}
+.cta .pane-btn{width:100%;justify-content:space-between}
+</style></head>
+<body>
+<div class="hud"><div class="purse"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 1 L15 8 L8 15 L1 8Z" fill="#f2c25a" stroke="#0b0a10" stroke-width="1.5"/></svg><b id="gilt">1,240</b></div><div class="purse">Insight <b id="lv">7</b></div></div>
+<div class="field"></div>
+<div class="candle" style="right:30px"><div class="fl"></div><div class="wax"></div></div>
+<div class="herocard" id="hc" data-press><div class="num"><span>XIII</span><span>Rank F</span></div><div class="window" id="win"></div><div class="nm">Vesper</div></div>
+<div class="side"><div class="disp">Four readings were laid while you slept.</div><p id="mood">Keeps faith. Strikes back twice.</p>
+ <div class="tokens"><div class="token" data-press title="Tower">${T}</div></div></div>
+<div class="deckwrap"><div class="deck" id="deck"></div></div>
+<div class="cta"><div class="pane-btn" id="lay"><span>Lay tonight's spread</span><small>Sitting · 20:00</small></div></div>
+<div id="tabs"></div>
+<script src="glass.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+$("#win").innerHTML=G.windowSVG({theme:"vesper",seed:13,width:132});
+document.querySelector(".tokens").innerHTML=["tower","draw","curios"].map(k=>`<div class="token" data-press>${G.glyph(k,30)}</div>`).join("");
+$("#tabs").outerHTML=G.tabbar("sitting");
+let torn=0;const R=G.READINGS;
+function deck(){const d=$("#deck");d.innerHTML="";const left=R.length-torn;
+ for(let e=Math.min(3,left-1)-1;e>=0;e--){const x=document.createElement("div");x.className="edge";x.style.top=168+e*5+"px";d.appendChild(x)}
+ if(left===0){d.innerHTML=`<div class="empty"><div class="t">The candle burned 7h 40m</div><p>320 Insight and 85 Gilt wait on the table.</p><div class="pane-btn" id="gather"><span>Gather</span></div></div>`;G.press(d);$("#gather").addEventListener("click",gather,{once:true});return}
+ const s=document.createElement("div");s.className="slip";s.innerHTML=G.slipHTML(R[torn],left);d.appendChild(s);
+ if(torn&&!G.reduce)s.animate([{opacity:0,transform:"translateY(8px)"},{opacity:1,transform:"none"}],{duration:280,easing:"cubic-bezier(.16,1,.3,1)"});
+ G.tearable(s,()=>{torn++;deck()})}
+function gather(e){const b=e.currentTarget;G.motes(b,$("#gilt"),8);setTimeout(()=>{G.countUp($("#gilt"),1240,1325);$("#lv").textContent="8";$("#lv").classList.add("bump")},G.reduce?0:850);b.classList.add("done");b.querySelector("span").textContent="Gathered"}
+$("#hc").addEventListener("click",()=>{G.swell($("#win"));const m=$("#mood"),L=["Keeps faith. Strikes back twice.","Opens trusting. Forgives one in ten.","Remembers the last four turns."];m.style.opacity=0;setTimeout(()=>{m.textContent=L[(L.indexOf(m.textContent)+1)%L.length];m.style.opacity=1},220)});
+$("#lay").addEventListener("click",e=>{const b=e.currentTarget;b.classList.add("done");b.querySelector("span").textContent="Spread laid";b.querySelector("small").textContent="Sealed for 20:00"});
+deck();G.press();G.tabs();
+</script>
+</body></html>

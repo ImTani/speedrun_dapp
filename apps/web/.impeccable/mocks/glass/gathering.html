@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gathering — Apostasy: Sede Vacante</title>
+<link rel="stylesheet" href="glass.css">
+<style>
+/* Fixed 390×844 composition for this mock; the shipped surface scales the scene to the device. */
+body{background:#0a080c}
+#env{position:absolute;left:0;top:0;width:390px;height:844px}
+body.painted #ashlar,body.painted .niche svg.emb,body.painted #floor{visibility:hidden}
+body.painted .band{background:transparent;box-shadow:none}
+/* Gilt lettering painted on the stone */
+.gilt{position:absolute;top:316px;width:170px;text-align:center;pointer-events:none}
+.gn{font:700 21px/1 "Grenze Gotisch",serif;color:#a98652;text-shadow:0 1px 0 rgba(0,0,0,.7),0 0 1px rgba(169,134,82,.4);letter-spacing:.02em}
+.ga{margin-top:5px;font:italic 400 14px/1.2 "Spectral",serif;color:#7d6c55}
+.gc{margin-top:8px;font:700 18px/1 "Grenze Gotisch",serif;opacity:0;transition:opacity .35s}
+.gilt.show .gc{opacity:1}.gc.k{color:#d8b26a}.gc.d{color:#c4424f}
+/* Light, counted in glass medallions set into the arch */
+.medals{position:absolute;inset:0;pointer-events:none}
+.medal{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#2a2230,#120e16 70%);border:1px solid #07060a}
+.medal::after{content:"";position:absolute;left:-7px;top:-7px;width:23px;height:23px;border-radius:50%;opacity:0;transition:opacity .5s;background:radial-gradient(rgba(var(--g),.55),rgba(var(--g),0) 70%);mix-blend-mode:screen}
+.medal.lit{background:radial-gradient(circle at 40% 35%,#fff3cf,rgb(var(--g)) 55%,rgba(var(--g),.6))}
+.medal.lit::after{opacity:1}
+.medal.lit.weak{filter:brightness(.6) saturate(.7)}
+#cOpp{--g:198,160,230}#cYou{--g:240,176,96}
+body.painted .sill{color:#6f6352}
+#grain{position:absolute;inset:0;width:390px;height:844px;pointer-events:none;z-index:8;mix-blend-mode:overlay;opacity:.22}
+.vign{position:absolute;inset:0;pointer-events:none;z-index:8;background:radial-gradient(120% 95% at 50% 46%,transparent 55%,rgba(6,4,8,.6) 100%)}
+/* ---------- Wall ---------- */
+#wall{position:absolute;left:0;top:0;width:390px;height:430px}
+#wall svg.ashlar{position:absolute;inset:0}
+.band{position:absolute;left:62px;right:102px;top:14px;height:38px;display:grid;place-items:center;background:#17131c;
+ box-shadow:inset 0 3px 6px rgba(0,0,0,.85),inset 0 -1px 0 rgba(255,255,255,.06),inset 0 0 0 1px #0a080c}
+.band .t{font:700 18px/1 "Grenze Gotisch",serif;color:#a8977a;text-shadow:0 1px 0 rgba(255,255,255,.08),0 -1px 0 rgba(0,0,0,.9)}
+.niche{position:absolute;top:66px;width:170px;height:238px}
+#nOpp{left:12px}#nYou{left:208px}
+.niche svg.emb{position:absolute;inset:0}
+.win{position:absolute;left:11px;top:14px;width:148px;height:207px}
+.win canvas,.win svg.win{position:absolute;inset:0;width:148px;height:207px}
+/* Grisaille: the Aspect mask is painted onto the glass, so the window's light (and its crimson bleed) shows through it. */
+.facemask{position:absolute;left:52px;top:100px;width:44px;height:37px;pointer-events:none}
+.facemask svg.mask{mix-blend-mode:multiply;filter:contrast(1.15) brightness(1.05);opacity:.92}
+.meye{position:absolute;width:5px;height:3px;margin:-1.5px 0 0 -2.5px;border-radius:50%;background:radial-gradient(#ffb08a,#d0301a 55%,rgba(208,48,26,0) 75%);mix-blend-mode:screen;opacity:0;animation:meye 9s ease-in-out infinite}
+@keyframes meye{0%,55%{opacity:0}66%,92%{opacity:.85}94%{opacity:0}96%{opacity:.85}100%{opacity:0}}
+.sill{position:absolute;left:0;right:0;top:225px;text-align:center;font:800 12px/1 "Alegreya Sans SC",sans-serif;letter-spacing:.14em;color:#8a7c64;text-shadow:0 1px 0 rgba(255,255,255,.06),0 -1px 0 rgba(0,0,0,.9)}
+.fit{position:absolute;top:12px;width:44px;height:44px;display:grid;place-items:center;cursor:pointer;z-index:9;transition:transform .15s,filter .15s}
+.fit.pressed{transform:scale(.9);filter:brightness(1.3)}
+#back{left:10px;opacity:.55}#hour{top:auto;bottom:14px;right:12px;opacity:.55}
+#hour svg{transition:transform .5s var(--snap),filter .3s}
+#hour.on svg{transform:rotate(180deg);filter:brightness(1.5) saturate(1.2)}
+#hour.on svg .sand{fill:#f2c25a}
+/* ---------- Votives and brass ---------- */
+.rack{position:absolute;top:312px;width:156px;height:52px}
+#rOpp{left:19px}#rYou{left:215px}
+.rack::before,.rack::after{content:"";position:absolute;left:-2px;right:-2px;height:2px;background:#3a3340;box-shadow:0 1px 0 #000}
+.rack::before{top:16px}.rack::after{top:34px}
+.cups{position:absolute;inset:0;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(3,1fr);gap:4px 6px;padding:0 4px}
+.cup{position:relative;align-self:end;justify-self:center;width:10px;height:9px;border-radius:2px 2px 4px 4px;background:linear-gradient(180deg,#3d0d16,#1a050a);border:1px solid #0b0a10;z-index:1}
+.cup .fl{position:absolute;left:50%;bottom:8px;width:6px;height:10px;margin-left:-3px;border-radius:50% 50% 45% 45%/60% 60% 40% 40%;background:#ffd36a;transform:scale(0);transform-origin:50% 100%;transition:transform .35s var(--ease-out)}
+.cup.lit{background:linear-gradient(180deg,#e0533e,#7a1a18)}
+.cup.lit .fl{transform:scale(1);animation:fl 1.4s ease-in-out infinite;animation-delay:var(--d)}
+.cup.weak .fl{background:#e9b45a}.cup.lit.weak .fl{transform:scale(.62)}
+@keyframes fl{50%{transform:scale(.88,1.08) skewX(-6deg)}}
+.plaque{position:absolute;top:372px;width:156px;padding:7px 10px 6px;background:linear-gradient(180deg,#c9a45a,#a07f40);border:1px solid #2a1f0e;box-shadow:inset 0 1px 0 rgba(255,230,170,.35),0 3px 5px rgba(0,0,0,.5)}
+#pOpp{left:19px}#pYou{left:215px}
+.plaque::before,.plaque::after{content:"";position:absolute;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:#2a1f0e}
+.plaque::before{left:3px}.plaque::after{right:3px}
+.plaque .top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.plaque .nm{font:700 17px/1 "Grenze Gotisch",serif;color:#1e1609;text-shadow:0 1px 0 rgba(255,236,190,.35)}
+.plaque .sub{display:flex;align-items:center;justify-content:space-between;margin-top:3px}
+.plaque .asp{font:800 12px/1 "Alegreya Sans SC",sans-serif;letter-spacing:.08em;color:#2a1f0e}
+.plaque .lt{font:700 17px/1 "Grenze Gotisch",serif;color:#1e1609;font-variant-numeric:tabular-nums}
+.plaque .lt small{font:800 12px/1 "Alegreya Sans SC",sans-serif;letter-spacing:.08em}
+.enamel{height:16px;padding:0 6px;display:grid;place-items:center;font:800 12px/1 "Alegreya Sans SC",sans-serif;letter-spacing:.06em;border:1px solid #2a1f0e;opacity:0;transform:scale(.6);transition:opacity .2s,transform .3s var(--snap)}
+.enamel.k{background:#f4d07a;color:#2a1700}.enamel.d{background:#8c1022;color:#ffe3e6}
+.slot{position:relative;display:inline-grid}.slot>*{grid-area:1/1;align-self:center;justify-self:start}
+.plaque .asp{transition:opacity .2s}.plaque.show .asp{opacity:0}
+.plaque.show .enamel{opacity:1;transform:none}
+/* ---------- Floor ---------- */
+#floor{position:absolute;left:0;top:430px;width:390px;height:414px}
+#floorLight{position:absolute;left:0;top:430px;width:390px;height:414px;pointer-events:none;mix-blend-mode:screen;z-index:3}
+#embers{position:absolute;inset:0;width:390px;height:844px;pointer-events:none;z-index:7}
+.inscr{position:absolute;left:24px;right:24px;top:578px;text-align:center;pointer-events:none;z-index:4;transform:perspective(520px) rotateX(34deg);transform-origin:50% 0}
+.brass{color:#b08d52;text-shadow:0 1px 0 rgba(0,0,0,.8)}
+.inscr .l1{font:700 28px/1.1 "Grenze Gotisch",serif;opacity:0;transition:opacity .35s}
+.inscr .l2{margin-top:6px;font:italic 400 17px/1.4 "Spectral",serif;color:#c4b394;opacity:0;transition:opacity .35s .1s}
+.inscr.on .l1,.inscr.on .l2{opacity:1}
+.inscr .l1.d{color:#d65a66}
+.roundels{position:absolute;left:0;right:0;top:780px;display:flex;justify-content:center;gap:14px;z-index:4}
+.rd{width:26px;height:26px;border-radius:50%;background:#16121a;border:2px solid #6f5a32;box-shadow:inset 0 2px 3px rgba(0,0,0,.7);overflow:hidden;display:flex}
+.roundels[hidden]{display:none}.rd i{flex:1}.rd.now{border-color:#e2c27a}
+.whisper{position:absolute;left:0;right:0;bottom:24px;text-align:center;font:italic 400 14px/1 "Spectral",serif;letter-spacing:.02em;color:#6f6250;z-index:4;transition:opacity .3s}
+.verdict{position:absolute;left:20px;right:20px;top:566px;text-align:center;z-index:6;opacity:0;pointer-events:none;transition:opacity .6s;transform:perspective(520px) rotateX(30deg);transform-origin:50% 0}
+.verdict.on{opacity:1}
+.verdict .h{font:700 34px/1.05 "Grenze Gotisch",serif}
+.verdict .p{font:italic 400 17px/1.45 "Spectral",serif;color:#c4b394;margin-top:6px}
+</style></head>
+<body>
+<canvas id="env"></canvas>
+<div id="wall">
+ <svg class="ashlar" id="ashlar" width="390" height="430" viewBox="0 0 390 430" aria-hidden="true"></svg>
+ <div class="niche" id="nOpp"><svg class="emb" id="eOpp" width="170" height="238" viewBox="0 0 170 238"></svg><div class="medals" id="cOpp"></div><div class="win" id="opp"><canvas id="oppGl"></canvas><div class="facemask" id="mOpp"></div></div></div>
+ <div class="niche" id="nYou"><svg class="emb" id="eYou" width="170" height="238" viewBox="0 0 170 238"></svg><div class="medals" id="cYou"></div><div class="win" id="you"><canvas id="youGl"></canvas><div class="facemask" id="mYou"></div></div></div>
+ <div class="gilt" id="pOpp" style="left:12px"><div class="gn">Old Marrow</div><div class="ga">wears Madness</div><div class="gc" id="eChOpp"></div></div>
+ <div class="gilt" id="pYou" style="left:208px"><div class="gn">Vesper</div><div class="ga">wears Echo · your fragment</div><div class="gc" id="eChYou"></div></div>
+</div>
+<div class="fit" id="back" role="button" aria-label="Leave the Gathering"><svg width="30" height="32" viewBox="0 0 30 32"><rect x="12" y="2" width="6" height="7" rx="1" fill="#2a2430" stroke="#0b0a10" stroke-width="1.2"/><circle cx="15" cy="20" r="9.5" fill="none" stroke="#6a5e70" stroke-width="3.4"/><circle cx="15" cy="20" r="9.5" fill="none" stroke="#0b0a10" stroke-width=".8"/><path d="M8.5 15 A9.5 9.5 0 0 1 15 10.5" fill="none" stroke="#a89cad" stroke-width="1.2"/></svg></div>
+<div class="fit" id="hour" role="button" aria-label="Pass to the outcome (hold: always pass)"><svg width="26" height="30" viewBox="0 0 26 30"><path d="M5 2 H21 M5 28 H21" stroke="#a8843f" stroke-width="3" stroke-linecap="round"/><path d="M7 4 Q7 13 13 15 Q7 17 7 26 H19 Q19 17 13 15 Q19 13 19 4Z" fill="#1b1620" stroke="#a8843f" stroke-width="1.8"/><path class="sand" d="M10 24 H16 L13 19Z" fill="#6b5631"/></svg></div>
+
+
+<canvas id="floor"></canvas>
+<canvas id="floorLight"></canvas>
+<div class="inscr" id="inscr"><div class="l1 brass" id="l1"></div><div class="l2" id="l2"></div></div>
+<div class="roundels" id="rds" hidden></div>
+<canvas id="embers"></canvas>
+<div class="verdict" id="verdict"><div class="h brass" id="vh"></div><div class="p" id="vp1"></div><div class="p" id="vp2"></div></div>
+<div class="vign"></div>
+<div class="whisper" id="whisper">touch to hasten · hold to rush</div>
+
+<script src="glass.js"></script><script src="glassgl.js"></script><script src="masks.js"></script><script src="floorgl.js"></script><script src="envgl.js"></script>
+<script>
+const $=s=>document.querySelector(s),reduce=G.reduce;
+// Owner-tunable look (?tune), declared first: the painted environment reads it while mounting.
+// Owner-tuned 2026-10-15.
+const LOOK={inward:.17,zc:2.75,rz:1.18,spread:.8,caus:.34,expo:1.15,vig:.13};
+
+/* ---------- The Meeting, as settled on-chain ---------- */
+const OPP={name:"Old Marrow",aspect:"madness",Aspect:"Madness"},YOU={name:"Vesper",aspect:"echo",Aspect:"Echo"};
+const TURNS=[["K","K"],["K","D"],["D","D"],["D","K"],["K","K"]]; // [Vesper, Old Marrow]
+const PAY={KK:[3,3],KD:[0,5],DK:[5,0],DD:[1,1]};
+const SAY={KK:["Both kindle","Their light runs together on the stone. Three lights each."],KD:["Old Marrow devours","Vesper's light is drawn across the floor. Marrow takes five."],
+ DK:["Vesper devours","Echo answers what it was given. Vesper takes five."],DD:["Both devour","Each takes, and the light gutters between them. One light each."]};
+// Where each Aspect mask's eye holes sit (in its 100×84 drawing), so the eyes behind them can glow.
+const MASK_EYES={mercy:[[34,39],[66,39]],hunger:[[34,34],[66,34]],echo:[[31,38],[69,38]],rancour:[[31,35],[69,35]],appetite:[[32,37],[68,37]],inquisitor:[[33,27],[67,27]],madness:[[34,42],[68,44]]};
+function faceMask(el,aspect,delay){el.innerHTML=MASK.mask(aspect,44)+MASK_EYES[aspect].map(([x,y])=>`<i class="meye" style="left:${x*.44}px;top:${y*.44}px;animation-delay:${delay}s"></i>`).join("")}
+faceMask($("#mOpp"),OPP.aspect,-2.5);faceMask($("#mYou"),YOU.aspect,-6.8);
+/* ---------- Ashlar wall, colonnette, stringcourse ---------- */
+(function(){let a=91;const r=()=>(a=Math.imul(a^a>>>15,a|1)^a+Math.imul(a^a>>>7,a|61),((a^a>>>14)>>>0)/4294967296);
+ let s=`<rect width="390" height="430" fill="#100d14"/>`;const H=26;
+ for(let y=0,row=0;y<430;y+=H,row++){let x=row%2?-30:-8;while(x<390){const w=46+r()*40,l=18+r()*10;s+=`<rect x="${x+1}" y="${y+1}" width="${w-2}" height="${H-2}" fill="hsl(275 10% ${l*.55}%)"/><rect x="${x+1}" y="${y+1}" width="${w-2}" height="1" fill="rgba(255,255,255,.035)"/>`;x+=w}}
+ s+=`<defs><linearGradient id="vault" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".55"/><stop offset=".55" stop-color="#000" stop-opacity=".1"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></linearGradient></defs><rect width="390" height="430" fill="url(#vault)"/>`;
+ s+=`<rect x="186" y="70" width="18" height="236" fill="#2b2433"/><rect x="186" y="70" width="5" height="236" fill="#3a3244"/><rect x="200" y="70" width="4" height="236" fill="#15111a"/><rect x="180" y="64" width="30" height="10" fill="#332b3c"/><rect x="180" y="300" width="30" height="8" fill="#332b3c"/>`;
+ s+=`<rect x="0" y="304" width="390" height="6" fill="#2e2737"/><rect x="0" y="304" width="390" height="1" fill="rgba(255,255,255,.06)"/><rect x="0" y="310" width="390" height="2" fill="#07060a"/>`;
+ s+=`<rect x="0" y="422" width="390" height="8" fill="#1b1620"/><rect x="0" y="422" width="390" height="1" fill="rgba(255,255,255,.05)"/>`;
+ $("#ashlar").innerHTML=s})();
+function embrasure(id){$(id).innerHTML=`<path d="M0 238 V82 A85 82 0 0 1 170 82 V238Z" fill="#0a080c"/>
+ <path d="M0 238 V82 A85 82 0 0 1 85 0 L85 14 A74 74 0 0 0 11 88 V224Z" fill="#3a3144"/><path d="M170 238 V82 A85 82 0 0 0 85 0 L85 14 A74 74 0 0 1 159 88 V224Z" fill="#1d1823"/>
+ <path d="M0 221 H170 V238 H0Z" fill="#2c2535"/><path d="M0 221 H170" stroke="rgba(255,255,255,.08)"/><path d="M0 238 V82 A85 82 0 0 1 170 82 V238" fill="none" stroke="#07060a" stroke-width="2"/>`}
+embrasure("#eOpp");embrasure("#eYou");
+/* ---------- Floor: a true plane (inverse depth linear in y), worn veined marble, brass compass ---------- */
+const FH=414,ZF=4,VX=195;
+const fy=Z=>FH*((1/Z-1/ZF)/(1-1/ZF)), fx=(X,Z)=>VX+(X-VX)/Z;
+(function(){const c=$("#floor"),d=Math.min(devicePixelRatio||1,2);c.width=390*d;c.height=FH*d;const x=c.getContext("2d");x.scale(d,d);
+ x.fillStyle="#0f0c12";x.fillRect(0,0,390,FH);let a=7;const r=()=>(a=Math.imul(a^a>>>15,a|1)^a+Math.imul(a^a>>>7,a|61),((a^a>>>14)>>>0)/4294967296);
+ const zs=Array.from({length:10},(_,j)=>ZF-j*(ZF-1)/9);
+ for(let j=0;j<9;j++)for(let i=-12;i<12;i++){const X0=VX+i*70,X1=X0+70,Z0=zs[j],Z1=zs[j+1];
+  const p=[[fx(X0,Z0),fy(Z0)],[fx(X1,Z0),fy(Z0)],[fx(X1,Z1),fy(Z1)],[fx(X0,Z1),fy(Z1)]];
+  x.beginPath();p.forEach((q,k)=>k?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.closePath();x.fillStyle=(i+j)%2?"#1c1722":"#130f17";x.fill();x.strokeStyle="rgba(0,0,0,.65)";x.lineWidth=1;x.stroke()}
+ // veining: soft branching lines, brighter on the pale tiles
+ for(let k=0;k<34;k++){let px=r()*390,py=r()*FH;x.strokeStyle=`rgba(220,210,235,${.04+r()*.06})`;x.lineWidth=.6+r()*.8;x.beginPath();x.moveTo(px,py);for(let s=0;s<7;s++){px+=(r()-.5)*44;py+=(r()-.3)*18;x.lineTo(px,py)}x.stroke()}
+ // wear: a polished path where feet have crossed for centuries
+ const w=x.createRadialGradient(195,300,10,195,300,230);w.addColorStop(0,"rgba(255,245,230,.05)");w.addColorStop(1,"rgba(255,245,230,0)");x.fillStyle=w;x.fillRect(0,0,390,FH);
+ // brass compass at the crossing
+ const cy=fy(1.2),rx=124,ry=32;x.strokeStyle="rgba(201,164,90,.55)";x.lineWidth=1.6;x.beginPath();x.ellipse(195,cy,rx,ry,0,0,6.28);x.stroke();x.beginPath();x.ellipse(195,cy,rx*.8,ry*.78,0,0,6.28);x.stroke();
+ for(let k=0;k<8;k++){const t=k/8*6.28;x.beginPath();x.moveTo(195+Math.cos(t)*rx*.8,cy+Math.sin(t)*ry*.78);x.lineTo(195+Math.cos(t)*rx,cy+Math.sin(t)*ry);x.stroke()}
+ x.strokeStyle="rgba(201,164,90,.6)";x.lineWidth=1.4;x.beginPath();x.moveTo(195-30,cy);x.quadraticCurveTo(195,cy-11,195+30,cy);x.quadraticCurveTo(195,cy+11,195-30,cy);x.stroke();x.beginPath();x.moveTo(195-30,cy);x.lineTo(195+30,cy);x.stroke();
+ const g=x.createLinearGradient(0,0,0,70);g.addColorStop(0,"rgba(0,0,0,.65)");g.addColorStop(1,"rgba(0,0,0,0)");x.fillStyle=g;x.fillRect(0,0,390,70)})();
+/* ---------- Painted environment: chiaroscuro + Kuwahara + grade (envgl.js) ---------- */
+let env=null;
+(async()=>{try{
+ const wallSVG=`<svg xmlns="http://www.w3.org/2000/svg" width="390" height="430" viewBox="0 0 390 430">${$("#ashlar").innerHTML}<g transform="translate(12,66)">${$("#eOpp").innerHTML}</g><g transform="translate(208,66)">${$("#eYou").innerHTML}</g></svg>`;
+ const lights=[{x:97,y:180,r:230,color:[186,150,214],a:1},{x:293,y:180,r:230,color:[230,150,128],a:1},
+  {x:97,y:330,r:110,color:[170,140,190],a:.35},{x:293,y:330,r:110,color:[220,150,110],a:.35},
+  {x:97,y:510,r:190,color:[170,130,200],a:.7},{x:293,y:510,r:190,color:[220,130,118],a:.7},{x:195,y:660,r:230,color:[130,100,140],a:.45}];
+ const eyes=[{x:40,y:68,phase:3,period:17},{x:356,y:96,phase:11,period:13},{x:195,y:59,phase:7,period:19},{x:22,y:478,phase:1,period:15},
+  {x:370,y:500,phase:9,period:11},{x:34,y:792,phase:5,period:21},{x:360,y:770,phase:13,period:16}];
+ env=await ENV.mount({canvas:$("#env"),wallSVG,floorCanvas:$("#floor"),floorTop:430,lights,eyes,floorEye:{x:195,y:430+fy(1.2)},look:LOOK});
+ if(env)document.body.classList.add("painted");
+}catch(e){console.error(e)}})();
+/* ---------- Votive racks ---------- */
+const lit={you:0,opp:0};const rackEl=w=>$(w==="you"?"#cYou":"#cOpp");
+// 25 medallions along the arch: up the left reveal, over the arch, down the right (niche coordinates).
+const MEDAL_PTS=(()=>{const pts=[],cx=85,cy=88,R=79,side=214-cy,arc=Math.PI*R,total=2*side+arc,n=25;
+ for(let i=0;i<n;i++){let d=i/(n-1)*total;if(d<=side){pts.push([cx-R,214-d]);continue}d-=side;if(d<=arc){const a=Math.PI+d/R;pts.push([cx+Math.cos(a)*R,cy+Math.sin(a)*R]);continue}d-=arc;pts.push([cx+R,cy+d])}return pts})();
+function cups(w){rackEl(w).innerHTML=MEDAL_PTS.map(([x,y])=>`<i class="medal" style="left:${x}px;top:${y}px"></i>`).join("")}
+cups("you");cups("opp");
+const nextCup=w=>rackEl(w).children[lit[w]];
+function lightCandle(w,weak){const el=nextCup(w);if(!el)return null;lit[w]++;el.classList.add("lit");if(weak)el.classList.add("weak");return el}
+/* ---------- Windows ---------- */
+const api={};
+async function win(id,theme,seed){$(`#${id}`).insertAdjacentHTML("afterbegin",G.windowSVG({theme,seed,width:148}).replace('class="win"','class="win ph"'));try{const a=await GL.mount({winCanvas:$(`#${id}Gl`),theme,seed});if(a){api[id]=a;$(`#${id} .ph`)?.remove();return}}catch(e){console.error(e)}
+ $(`#${id}Gl`).remove()}
+win("opp","marrow",23);win("you","vesper",13);
+/* ---------- Light on the floor: each window's glass as caustic light on the marble (floorgl.js) ---------- */
+// Owner-tunable look (?tune). inward pulls both pools toward the centre; zc is where they land (4 = by the wall, 1 = by you);
+// spread is the source distance (lower = light from farther back, tighter projection).
+const ZC=()=>LOOK.zc,homeX=sx=>{const wall=VX+(sx-VX)*ZF;return wall+(VX-wall)*LOOK.inward};
+const FL={A:{x:homeX(97),i:.8,r:1,c:0},B:{x:homeX(293),i:.8,r:1,c:0},drain:{from:0,amount:0,phase:0},look:LOOK};
+const TG={A:{...FL.A},B:{...FL.B},drain:0};
+const HOME={A:FL.A.x,B:FL.B.x};
+function rehome(){HOME.A=homeX(97);HOME.B=homeX(293);TG.A.x=HOME.A;TG.B.x=HOME.B}
+const key2=w=>w==="opp"?"A":"B";
+function updateFloor(dt){const k=Math.min(1,dt*3.2);for(const P of ["A","B"])for(const f of ["x","i","r","c"])FL[P][f]+=(TG[P][f]-FL[P][f])*k;
+ FL.drain.amount+=(TG.drain-FL.drain.amount)*Math.min(1,dt*2.5);FL.drain.phase+=dt*(FL.drain.amount>.01?1:0)}
+function resetFloor(){for(const P of ["A","B"]){TG[P].x=HOME[P];TG[P].i=.8;TG[P].r=1;TG[P].c=0}TG.drain=0}
+FLOOR.mount({canvas:$("#floorLight"),a:{theme:"marrow",seed:23},b:{theme:"vesper",seed:13},zf:ZF,vx:VX,state:FL}).catch(e=>console.error(e));
+const poolY=()=>430+FH*((1/ZC()-1/ZF)/(1-1/ZF));
+const poolScreen=X=>[VX+(X-VX)/ZC(),poolY()];
+/* ---------- Embers: glowing motes lifting from a pool to the exact cup they light ---------- */
+const dp=Math.min(devicePixelRatio||1,2);
+const ec=$("#embers"),ex=ec.getContext("2d");ec.width=390*dp;ec.height=844*dp;ex.scale(dp,dp);
+let parts=[],speed=1;
+const centerOf=el=>{const r=el.getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2-2]};
+function ember(from,toEl,{dur=820,delay=0,col=[255,196,96],land}={}){const b=centerOf(toEl);parts.push({k:"e",a:from,b,c:[(from[0]+b[0])/2+(Math.random()-.5)*40,Math.min(from[1],b[1])-30-Math.random()*30],t:-delay/dur,v:1000/dur,col,land,tr:[]})}
+function spark(p,n,col){for(let i=0;i<n;i++){const a=-Math.PI/2+(Math.random()-.5)*2.2,s=24+Math.random()*44;parts.push({k:"p",x:p[0],y:p[1],vx:Math.cos(a)*s,vy:Math.sin(a)*s,l:1,col})}}
+let lastT=performance.now();
+(function loop(n){const dt=Math.min(.05,(n-lastT)/1000)*speed;lastT=n;updateFloor(dt);ex.clearRect(0,0,390,844);ex.globalCompositeOperation="lighter";
+ parts=parts.filter(p=>{if(p.k==="e"){p.t+=dt*p.v;if(p.t<0)return true;const t=Math.min(1,p.t),e=t*t*(3-2*t),u=1-e,x=u*u*p.a[0]+2*u*e*p.c[0]+e*e*p.b[0],y=u*u*p.a[1]+2*u*e*p.c[1]+e*e*p.b[1];
+   p.tr.push([x,y]);if(p.tr.length>8)p.tr.shift();p.tr.forEach((q,i)=>{const al=(i+1)/p.tr.length*.3;ex.fillStyle=`rgba(${p.col},${al})`;ex.beginPath();ex.arc(q[0],q[1],1.6+i*.25,0,6.28);ex.fill()});
+   const fl=.85+.15*Math.sin(n/35+p.c[0]),g=ex.createRadialGradient(x,y,0,x,y,6);g.addColorStop(0,`rgba(255,248,225,${fl})`);g.addColorStop(.35,`rgba(${p.col},${.7*fl})`);g.addColorStop(1,`rgba(${p.col},0)`);
+   ex.fillStyle=g;ex.beginPath();ex.arc(x,y,6,0,6.28);ex.fill();if(p.t>=1){p.land&&p.land();return false}return true}
+  p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=110*dt;p.l-=dt*1.7;if(p.l<=0)return false;ex.fillStyle=`rgba(${p.col},${p.l})`;ex.beginPath();ex.arc(p.x,p.y,1.4,0,6.28);ex.fill();return true});
+ requestAnimationFrame(loop)})(lastT);
+/* ---------- Turn grammar ---------- */
+$("#rds").innerHTML=TURNS.map((_,i)=>`<div class="rd" data-i="${i}"><i></i><i></i></div>`).join("");
+const roundel=(el,y,o)=>{el.innerHTML=`<i style="background:${o==="K"?"#c9a24e":"#8c1022"}"></i><i style="background:${y==="K"?"#c9a24e":"#8c1022"}"></i>`}; // left half = left window (Marrow)
+let hurry=false,skipped=false,gen=0,crackYou=0,crackOpp=0;
+function wait(ms){return new Promise(res=>{let acc=0,prev=performance.now();(function f(){if(skipped)return res();if(hurry){hurry=false;return res()}const n=performance.now();acc+=(n-prev)*speed;prev=n;acc>=ms?res():setTimeout(f,16)})()})}
+const buzz=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch{}};
+function enamel(w,c){const e=$(w==="you"?"#eChYou":"#eChOpp");e.textContent=c==="K"?"kindles":"devours";e.className="gc "+(c==="K"?"k":"d");$(w==="you"?"#pYou":"#pOpp").classList.add("show")}
+const poolPt=w=>poolScreen(FL[key2(w)].x);
+async function turn(i,my){const [y,o]=TURNS[i],key=y+o,[py,po]=PAY[key],rd=$(`.rd[data-i="${i}"]`);rd.classList.add("now");
+ // 1. Hush
+ for(const w of ["you","opp"]){TG[key2(w)].i=.45;api[w]?.dim(.25)}await wait(520);if(my!==gen)return;
+ // 2. Reveal: the glass answers
+ for(const [w,c] of [["you",y],["opp",o]]){const P=TG[key2(w)];api[w]?.dim(0);P.i=1;if(c==="K"){api[w]?.swell();P.i=1.25;P.r=1.15}else{api[w]?.red(1);P.c=1}enamel(w,c)}
+ buzz(12);await wait(560);if(my!==gen)return;
+ // 3. Exchange on the floor, named by the inscription
+ const [l1,l2]=SAY[key];$("#l1").textContent=l1;$("#l1").className="l1 brass"+(key==="KK"?"":" d");$("#l2").textContent=l2;$("#inscr").classList.add("on");
+ if(key!=="KK")env?.eye(key==="DD"?.55:1);
+ if(key==="KK"){TG.A.x=VX-150;TG.B.x=VX+150;TG.A.i=TG.B.i=1.45;TG.A.r=TG.B.r=1.2}
+ if(key==="KD"){FL.drain.from=1;TG.drain=1;TG.B.i=.25;TG.B.r=.7;TG.A.i=1.5;TG.A.r=1.2;TG.A.c=1;api.you?.dim(.55);api.you?.crack(crackYou=Math.min(1,crackYou+.5));buzz([30,40,60])}
+ if(key==="DK"){FL.drain.from=0;TG.drain=1;TG.A.i=.25;TG.A.r=.7;TG.B.i=1.5;TG.B.r=1.2;TG.B.c=1;api.opp?.dim(.55);api.opp?.crack(crackOpp=Math.min(1,crackOpp+.5));buzz([30,40,60])}
+ if(key==="DD"){TG.A.i=TG.B.i=.5;TG.A.r=TG.B.r=.8;TG.A.c=TG.B.c=.7;api.you?.dim(.35);api.opp?.dim(.35);buzz(40)}
+ await wait(650);if(my!==gen)return;
+ // 4. One ember per point, from the light that earned it, to the exact cup it lights
+ const col=key==="KK"?[255,200,100]:key==="DD"?[226,170,128]:[255,110,110];
+ const src=w=>key==="KK"?[195,poolY()]:poolPt(key==="DD"?w:(key==="KD"?"opp":"you"));
+ const jobs=[];
+ for(let k=0;k<Math.max(py,po);k++)for(const [w,n,off] of [["you",py,0],["opp",po,90]]){if(k>=n)continue;
+  jobs.push(new Promise(res=>setTimeout(()=>{const cup=nextCupAfter(w,k);if(!cup)return res();ember(src(w),cup,{col,dur:800,land:()=>{const el=lightCandle(w,key==="DD");el&&spark(centerOf(el),6,col);buzz(6);api[w]?.swell();res()}})},(k*180+off)/speed)))}
+ await Promise.all(jobs.map(j=>Promise.race([j,wait(4200)])));if(my!==gen)return;
+ // 5. Settle
+ TG.drain=0;rd.classList.remove("now");roundel(rd,y,o);await wait(560);$("#inscr").classList.remove("on");
+ resetFloor();env?.eye(0);for(const w of ["you","opp"]){api[w]?.red(0);api[w]?.dim(0)}["#pYou","#pOpp"].forEach(p=>$(p).classList.remove("show"));await wait(420)}
+const nextCupAfter=(w,k)=>rackEl(w).children[lit[w]+k-countLanding(w)];
+let landing={you:0,opp:0};const countLanding=()=>0;
+/* ---------- Outcome, derived from the turns ---------- */
+const WORDS=["no","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty","twenty-one","twenty-two","twenty-three","twenty-four","twenty-five"];
+function outcome(){let y=0,o=0,yd=0,od=0;for(const [a,b] of TURNS){const [p,q]=PAY[a+b];y+=p;o+=q;if(a==="D")yd++;if(b==="D")od++}
+ const times=n=>n===1?"once":n===2?"twice":`${WORDS[n]} times`;
+ const h=y>o?`${YOU.name} outshone ${OPP.name}`:y<o?`${OPP.name} drew more light`:"An even Gathering";
+ const p1=`${YOU.name} gathered ${WORDS[y]} Light, ${OPP.name} ${WORDS[o]}. ${OPP.name} devoured ${od?times(od):"never"}; ${YOU.Aspect} ${yd?"answered "+times(yd):"never devoured"}.`;
+ return {y,o,h,p1,p2:"Third of twenty-four tonight. Vesper's resonance deepens."}}
+function finish(){skipped=true;gen++;parts=[];resetFloor();$("#inscr").classList.remove("on");["#pYou","#pOpp"].forEach(p=>$(p).classList.remove("show"));
+ const r=outcome();lit.you=lit.opp=0;cups("you");cups("opp");for(let k=0;k<r.y;k++)lightCandle("you");for(let k=0;k<r.o;k++)lightCandle("opp");
+ crackYou=Math.min(1,.5*TURNS.filter(t=>t.join("")==="KD").length);crackOpp=Math.min(1,.5*TURNS.filter(t=>t.join("")==="DK").length);api.you?.crack(crackYou);api.opp?.crack(crackOpp);
+ for(const w of ["you","opp"]){api[w]?.red(0);api[w]?.dim(0)}
+ document.querySelectorAll(".rd").forEach((el,i)=>{el.className="rd";roundel(el,TURNS[i][0],TURNS[i][1])});
+ $("#vh").textContent=r.h;$("#vp1").textContent=r.p1;$("#vp2").textContent=r.p2;$("#verdict").classList.add("on");$("#whisper").textContent="touch the stone to watch again";$("#whisper").style.opacity=1;over=true}
+let over=false;
+async function play(){const my=++gen;skipped=false;over=false;$("#verdict").classList.remove("on");$("#whisper").textContent="touch to hasten · hold to rush";$("#whisper").style.opacity=1;setTimeout(()=>$("#whisper").style.opacity=0,5000);
+ lit.you=lit.opp=0;cups("you");cups("opp");crackYou=crackOpp=0;
+ for(const w of ["you","opp"]){api[w]?.crack(0);api[w]?.dim(0);api[w]?.red(0)}document.querySelectorAll(".rd").forEach(r=>{r.className="rd";r.innerHTML="<i></i><i></i>"});
+ const from=Math.min(TURNS.length-1,+new URLSearchParams(location.search).get("from")||0);
+ for(let i=0;i<from;i++){const [a,b]=TURNS[i],[p,q]=PAY[a+b];for(let k=0;k<p;k++)lightCandle("you",a+b==="DD");for(let k=0;k<q;k++)lightCandle("opp",a+b==="DD");roundel($(`.rd[data-i="${i}"]`),a,b);
+  if(a+b==="KD")api.you?.crack(crackYou=Math.min(1,crackYou+.5));if(a+b==="DK")api.opp?.crack(crackOpp=Math.min(1,crackOpp+.5))}
+ for(let i=from;i<TURNS.length;i++){if(skipped||my!==gen)return;await turn(i,my)}if(my===gen)finish()}
+/* ---------- Touch ---------- */
+let holdT=null;
+document.addEventListener("pointerdown",e=>{if(e.target.closest(".fit"))return;if(over){play();return}hurry=true;holdT=setTimeout(()=>{speed=3},220)});
+["pointerup","pointercancel"].forEach(n=>document.addEventListener(n,()=>{clearTimeout(holdT);speed=1}));
+document.querySelectorAll(".fit").forEach(b=>{b.addEventListener("pointerdown",()=>b.classList.add("pressed"));["pointerup","pointerleave","pointercancel"].forEach(n=>b.addEventListener(n,()=>b.classList.remove("pressed")))});
+let hourHold=null,hourHeld=false;
+$("#hour").addEventListener("pointerdown",()=>{hourHeld=false;hourHold=setTimeout(()=>{hourHeld=true;localStorage.setItem("apostasy.skipAnimations",fast()?"0":"1");syncFast();if(fast())finish()},650)});
+["pointerup","pointerleave","pointercancel"].forEach(n=>$("#hour").addEventListener(n,()=>clearTimeout(hourHold)));
+$("#hour").addEventListener("click",()=>{if(!hourHeld)finish()});
+const fast=()=>localStorage.getItem("apostasy.skipAnimations")==="1",syncFast=()=>{$("#hour").classList.toggle("on",fast())};
+
+syncFast();setTimeout(()=>fast()?finish():play(),reduce?0:900);
+</script>
+<style>
+#tuner{position:fixed;top:16px;left:calc(50% + 215px);width:270px;background:#f4f1ea;color:#1d1b19;border-radius:12px;padding:14px 16px;font:500 13px/1.4 system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.35);z-index:50;user-select:text;touch-action:auto}
+#tuner h3{font:700 14px/1.2 system-ui,sans-serif;margin-bottom:6px}#tuner label{display:grid;grid-template-columns:1fr 44px;gap:2px 8px;margin:8px 0}
+#tuner label span{font-weight:600}#tuner small{grid-column:1/-1;color:#5c564d;font-size:12px}#tuner output{text-align:right;font-variant-numeric:tabular-nums}
+#tuner input{grid-column:1/-1;width:100%;accent-color:#7a3b2a}#tuner button{font:600 12px/1 system-ui;padding:7px 10px;border-radius:7px;border:1px solid #b9b2a6;background:#fff;cursor:pointer;margin-top:6px}
+@media (max-width:900px){#tuner{left:auto;right:8px;top:auto;bottom:8px;width:250px;max-height:45vh;overflow:auto}}
+</style>
+<script>
+if(new URLSearchParams(location.search).has("tune")){
+ const K=[["inward","Pull toward centre",0,1,.01,"0 = straight below each window, 1 = both at the centre."],["zc","Where it lands",1.2,3.9,.01,"High = by the wall, low = near you."],
+  ["spread","Source distance",.3,1.5,.01,"Lower = light from farther back: tighter, less divergent pools."],["rz","Pool depth",.4,2,.01,"How far the pools stretch toward you."],
+  ["caus","Filament strength",0,1.5,.01,"Bright caustic lines vs soft wash."],["expo","Scene brightness",.4,1.8,.01,"Overall darkness of the painting."],["vig","Vignette",0,1,.01,"Darkening at the edges."]];
+ const box=document.createElement("div");box.id="tuner";box.innerHTML="<h3>Gathering light tuner</h3>"+K.map(([k,l,a,b,st,h])=>`<label><span>${l}</span><output id="o-${k}">${LOOK[k].toFixed(2)}</output><input type="range" min="${a}" max="${b}" step="${st}" value="${LOOK[k]}" data-k="${k}"><small>${h}</small></label>`).join("")+'<button id="copy">Copy values</button>';
+ document.body.appendChild(box);
+ box.addEventListener("pointerdown",e=>e.stopPropagation());
+ box.querySelectorAll("input").forEach(i=>i.addEventListener("input",()=>{LOOK[i.dataset.k]=+i.value;box.querySelector("#o-"+i.dataset.k).textContent=(+i.value).toFixed(2);if(i.dataset.k==="inward")rehome()}));
+ box.querySelector("#copy").addEventListener("click",e=>{navigator.clipboard.writeText(JSON.stringify(LOOK));e.target.textContent="Copied: paste it to Claude"});
+}
+</script>
+</body></html>

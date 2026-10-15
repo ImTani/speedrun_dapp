@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Stage — stained glass</title>
+<link rel="stylesheet" href="glass.css">
+<style>
+.nave{position:absolute;inset:0}
+.window{position:absolute;left:50%;top:58px;margin-left:-118px;cursor:pointer}
+.rank{position:absolute;right:-22px;bottom:34px;width:58px;height:58px}
+.plaque{position:absolute;left:50%;top:400px;transform:translateX(-50%);text-align:center;width:300px}
+.plaque .disp{font-size:34px;line-height:1}
+.plaque p{font:italic 400 15px/1.45 "Spectral",serif;color:var(--bone-dim);margin-top:4px;transition:opacity .25s}
+.deckwrap{position:absolute;left:18px;right:18px;top:486px;height:178px}
+.empty{position:absolute;inset:0;display:flex;align-items:center;gap:16px;padding:0 6px}
+.empty .t{font:700 24px/1.15 "Grenze Gotisch",serif}
+.empty p{font:italic 400 15px/1.45 "Spectral",serif;color:var(--bone-dim);margin-top:4px}
+.empty .pane-btn{margin-left:auto;flex:none}
+.cta{position:absolute;left:18px;right:18px;bottom:92px}
+.cta .pane-btn{width:100%;justify-content:space-between}
+</style></head>
+<body class="stonework"><div class="nave">
+ <div class="hud"><div class="purse"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 1 L15 8 L8 15 L1 8Z" fill="#f2c25a" stroke="#0b0a10" stroke-width="1.5"/></svg><b id="gilt">1,240</b></div><div class="purse">Insight <b id="lv">7</b></div></div>
+ <div class="window" id="win"></div>
+ <div class="plaque"><div class="disp">Vesper</div><p id="mood">Keeps faith. Strikes back twice. Forgets nothing.</p></div>
+ <div class="deckwrap"><div class="deck" id="deck"></div></div>
+ <div class="cta"><div class="pane-btn" id="lay"><span>Lay tonight's spread</span><small>Sitting · 20:00</small></div></div>
+</div>
+<div id="tabs"></div>
+<script src="glass.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+$("#win").innerHTML=G.windowSVG({theme:"vesper",seed:13,width:236})+`<svg class="rank" viewBox="0 0 58 58"><circle cx="29" cy="29" r="27" fill="#a3172f" stroke="#0b0a10" stroke-width="4"/><circle cx="29" cy="29" r="21" fill="none" stroke="#dcb874" stroke-width="1.5"/><text x="29" y="38" text-anchor="middle" font-family="Grenze Gotisch" font-weight="700" font-size="28" fill="#efe4cc">F</text></svg>`;
+$("#tabs").outerHTML=G.tabbar("vesper");
+let torn=0;const R=G.READINGS;
+function deck(){const d=$("#deck");d.innerHTML="";const left=R.length-torn;
+ for(let e=Math.min(3,left-1)-1;e>=0;e--){const x=document.createElement("div");x.className="edge";x.style.top=168+e*5+"px";d.appendChild(x)}
+ if(left===0){d.innerHTML=`<div class="empty"><svg width="34" height="70" viewBox="0 0 34 70"><rect x="10" y="26" width="14" height="40" rx="2" fill="#efe4cc" stroke="#0b0a10" stroke-width="2"/><path d="M17 4 C24 14 23 22 17 24 C11 22 10 14 17 4Z" fill="#f2c25a" stroke="#0b0a10" stroke-width="2"/></svg><div><div class="t">The candle burned 7h 40m</div><p>320 Insight and 85 Gilt wait for you.</p></div><div class="pane-btn" id="gather"><span>Gather</span></div></div>`;
+  G.press(d);$("#gather").addEventListener("click",gather,{once:true});return}
+ const s=document.createElement("div");s.className="slip";s.innerHTML=G.slipHTML(R[torn],left);d.appendChild(s);
+ if(torn&&!G.reduce)s.animate([{opacity:0,transform:"translateY(8px)"},{opacity:1,transform:"none"}],{duration:280,easing:"cubic-bezier(.16,1,.3,1)"});
+ G.tearable(s,()=>{torn++;deck()})}
+function gather(e){const b=e.currentTarget;G.motes(b,$("#gilt"),8);setTimeout(()=>{G.countUp($("#gilt"),1240,1325);$("#lv").textContent="8";$("#lv").classList.add("bump")},G.reduce?0:850);
+ b.classList.add("done");b.querySelector("span").textContent="Gathered";G.swell($("#win"))}
+$("#win").addEventListener("click",()=>{G.swell($("#win"));const m=$("#mood"),L=["Keeps faith. Strikes back twice. Forgets nothing.","Opens trusting. Forgives one in ten.","Remembers the last four turns."];m.style.opacity=0;setTimeout(()=>{m.textContent=L[(L.indexOf(m.textContent)+1)%L.length];m.style.opacity=1},220)});
+$("#lay").addEventListener("click",e=>{const b=e.currentTarget;b.classList.add("done");b.querySelector("span").textContent="Spread laid";b.querySelector("small").textContent="Sealed for 20:00";G.swell($("#win"))});
+deck();G.press();G.tabs();
+</script>
+</body></html>

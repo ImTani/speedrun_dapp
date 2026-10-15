@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Card is the screen — stained glass</title>
+<link rel="stylesheet" href="glass.css">
+<style>
+body{background:#08070b}
+.stack{position:absolute;left:10px;right:10px;top:10px;bottom:86px}
+/* A full tarot card: bone stock, brass rule, numeral band, illustration, name band */
+.tcard{position:absolute;inset:0;isolation:isolate;z-index:1;background:#e9dcc0;border-radius:18px;padding:10px;box-shadow:0 18px 34px rgba(0,0,0,.7);touch-action:none;transform-origin:50% 0}
+.tcard .in{position:absolute;inset:10px;border:2px solid var(--night);border-radius:10px;background:#120e17;overflow:hidden}
+.tcard .band{position:absolute;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:0 16px;color:var(--night);background:#e9dcc0;font:700 22px/1 "Grenze Gotisch",serif;z-index:2}
+.tcard .band.top{top:0;height:46px;border-bottom:2px solid var(--night)}
+.tcard .band.bot{bottom:0;height:auto;min-height:150px;flex-direction:column;align-items:stretch;justify-content:center;gap:6px;padding:14px 16px;border-top:2px solid var(--night)}
+.band .ttl{font:700 34px/1 "Grenze Gotisch",serif;text-align:center}
+.band .sub{font:italic 400 15px/1.45 "Spectral",serif;text-align:center;color:#3a2e26}
+.band .meta{display:flex;justify-content:space-between;align-items:center;font:800 12px/1 "Alegreya Sans SC",sans-serif;letter-spacing:.1em;color:#5a4630}
+.band .meta b{font:700 26px/1 "Grenze Gotisch",serif;letter-spacing:0;color:#7a1325}
+.band .hint{display:flex;align-items:center;gap:6px}
+.art{position:absolute;left:0;right:0;top:46px;bottom:150px;display:flex;justify-content:center;align-items:flex-end;background:#120e17}
+.art .window{margin-bottom:-4px}
+.hud{top:58px;left:10px;right:10px;padding:10px 14px}
+.tcard.rev .art .window{transform:none}
+.verdict{position:absolute;left:16px;top:58px;z-index:3;font:800 12px/1 "Alegreya Sans SC",sans-serif;letter-spacing:.12em;padding:7px 10px;border-radius:14px;background:rgba(11,10,16,.8);border:1px solid var(--brass);color:var(--brass-l)}
+.gatherrow{display:flex;justify-content:center;margin-top:4px}
+</style></head>
+<body>
+<div class="stack" id="stack"></div>
+<div id="tabs"></div>
+<script src="glass.js"></script>
+<script>
+const $=s=>document.querySelector(s),R=G.READINGS;let idx=-1,gathered=false;
+const roman=["XIII","IX","IV","XVII","XI"];
+function heroCard(){return `<div class="in"><div class="band top"><span>XIII</span><span>Rank F</span></div>
+ <div class="art"><div class="window" id="win">${G.windowSVG({theme:"vesper",seed:13,width:330})}</div></div>
+ <div class="hud" style="position:absolute"><div class="purse"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 1 L15 8 L8 15 L1 8Z" fill="#f2c25a" stroke="#0b0a10" stroke-width="1.5"/></svg><b id="gilt">${gathered?"1,325":"1,240"}</b></div><div class="purse">Insight <b id="lv">${gathered?8:7}</b></div></div>
+ <div class="band bot"><div class="ttl">Vesper</div>
+ ${idx>=R.length-1?`<div class="sub">The candle burned 7h 40m: 320 Insight and 85 Gilt.</div><div class="gatherrow"><div class="pane-btn${gathered?" done":""}" id="gather"><span>${gathered?"Gathered":"Gather"}</span></div></div>`
+  :`<div class="sub">Four readings were laid while you slept.</div><div class="meta"><span>Keeps faith · strikes back twice</span><span class="hint">${G.upArrow} Tear to reveal</span></div>`}
+ </div></div>`}
+function readingCard(i){const r=R[i];return `<div class="in"><div class="band top"><span>${roman[i+1]}</span><span>${r.day.split(" · ")[0]}</span></div>
+ <div class="art"><div class="window">${G.windowSVG({theme:r.theme,seed:20+i,width:330,reversed:!r.them})}</div></div>
+ <div class="verdict">${r.them?"Upright · kept faith":"Reversed · betrayed"}</div>
+ <div class="band bot"><div class="ttl">${r.opp}</div><div class="sub">${r.what}</div>
+ <div class="meta"><span>Fortune <b>+${r.pts}</b></span><span class="hint">${G.upArrow} Tear · ${R.length-i-1} left</span></div></div></div>`}
+function render(){const st=$("#stack");st.innerHTML="";
+ // the card underneath (what a tear reveals)
+ const nextIdx=idx+1, under=document.createElement("div");under.className="tcard";
+ under.innerHTML=nextIdx<R.length?readingCard(nextIdx):heroCard();
+ const top=document.createElement("div");top.className="tcard";top.innerHTML=idx<0?heroCard():readingCard(idx);
+ top.style.zIndex=2;if(idx<R.length){st.append(under,top)}else{st.append(top)}
+ G.press(top);
+ const g=top.querySelector("#gather");if(g&&!gathered)g.addEventListener("click",e=>{e.stopPropagation();gathered=true;G.motes(g,top.querySelector("#gilt"),8);
+  setTimeout(()=>{G.countUp(top.querySelector("#gilt"),1240,1325);const lv=top.querySelector("#lv");lv.textContent="8";lv.classList.add("bump")},G.reduce?0:850);g.classList.add("done");g.querySelector("span").textContent="Gathered";G.swell(top.querySelector(".window"))});
+ if(idx<R.length-1||idx<0) G.tearable(top,()=>{idx++;if(idx>=R.length)idx=R.length;render()});
+ else if(idx===R.length-1) G.tearable(top,()=>{idx=R.length;render()});
+ if(idx===R.length){top.addEventListener("click",()=>G.swell(top.querySelector(".window")))}
+}
+$("#tabs").outerHTML=G.tabbar("vesper");
+render();G.press();G.tabs();
+</script>
+</body></html>

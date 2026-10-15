@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stained glass — three layouts</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#d9d6d0;color:#1d1b19;font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding:28px 0 40px}
+header{padding:0 32px 22px;max-width:1100px}
+header h1{font-size:22px;font-weight:700}
+header p{margin-top:6px;color:#4a4642}
+.row{display:flex;gap:34px;overflow-x:auto;padding:4px 32px 24px;scroll-snap-type:x mandatory}
+figure{flex:none;scroll-snap-align:start;width:414px}
+.meta{height:118px}
+.kick{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#7a3b2a}
+.meta h2{font-size:19px;margin-top:3px}
+.meta p{margin-top:4px;color:#4a4642;font-size:14px;line-height:1.4}
+.phone{width:414px;height:868px;border-radius:44px;background:#111;padding:12px;box-shadow:0 18px 40px rgba(0,0,0,.25)}
+.phone iframe{width:390px;height:844px;border:0;border-radius:32px;display:block;background:#fff}
+.open{display:inline-block;margin-top:12px;color:#1d1b19;font-weight:600}
+</style></head><body>
+<header>
+ <h1>Stained glass, three layouts</h1>
+ <p>Same art, same tear-away results, same tabs; only the layout differs. Click to tap; drag a result upward to tear it. Every name and number is sample data.</p>
+</header>
+<div class="row">
+ <figure><div class="meta"><div class="kick">Layout A</div><h2>The Stage</h2><p>The hero window stands lit above everything; results tear away below it.</p></div>
+  <div class="phone"><iframe src="glass/stage.html" title="The Stage"></iframe></div><a class="open" href="glass/stage.html" target="_blank">Open on its own ↗</a></figure>
+ <figure><div class="meta"><div class="kick">Layout B</div><h2>The Table</h2><p>Seen from above: the hero card on a velvet table, tokens beside it, the night’s results as a deck in the middle.</p></div>
+  <div class="phone"><iframe src="glass/table.html" title="The Table"></iframe></div><a class="open" href="glass/table.html" target="_blank">Open on its own ↗</a></figure>
+ <figure><div class="meta"><div class="kick">Layout C</div><h2>Card is the screen</h2><p>The whole screen is one tarot card. Tear it to reveal each opponent’s card, reversed if they betrayed.</p></div>
+  <div class="phone"><iframe src="glass/card.html" title="Card is the screen"></iframe></div><a class="open" href="glass/card.html" target="_blank">Open on its own ↗</a></figure>
+</div>
+</body></html>

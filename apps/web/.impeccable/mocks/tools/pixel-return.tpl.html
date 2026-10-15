@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pixel Arcana — return</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jersey+10&family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--k:#1b1420;--cloth:#3b2a3f;--cloth2:#33243a;--w:#efe6d2;--o:#e9b23a;--r:#b8323c;--W:#cfc3ab}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:390px;height:844px;overflow:hidden;margin:0 auto}
+body{background-color:var(--cloth);color:var(--w);font-family:"Pixelify Sans",sans-serif;position:relative;user-select:none;
+ background-image:linear-gradient(45deg,var(--cloth2) 25%,transparent 25%,transparent 75%,var(--cloth2) 75%),linear-gradient(45deg,var(--cloth2) 25%,transparent 25%,transparent 75%,var(--cloth2) 75%);
+ background-size:6px 6px;background-position:0 0,3px 3px}
+svg{display:block}
+.px{background:var(--k);box-shadow:0 -3px 0 0 var(--k),0 3px 0 0 var(--k),-3px 0 0 0 var(--k),3px 0 0 0 var(--k)}
+.strip{display:flex;justify-content:space-between;margin:15px 15px 0;padding:8px 10px;font:600 13px/1 "Pixelify Sans";color:var(--W)}
+.strip b{color:var(--o);font-weight:600;display:inline-block}
+.strip b.hop{animation:hop .4s steps(2)}
+@keyframes hop{50%{transform:translateY(-3px)}}
+.head{display:flex;gap:14px;padding:22px 18px 0;align-items:flex-end}
+.hero{position:relative;flex:none;cursor:pointer}
+.hero .body{animation:bob 1.2s steps(2) infinite}
+@keyframes bob{50%{transform:translateY(-3px)}}
+.hero.jump .body{animation:jump .5s steps(5)}
+@keyframes jump{40%{transform:translateY(-18px)}}
+.bubble{position:absolute;left:40px;top:-30px;background:var(--w);color:var(--k);font:22px/1 "Jersey 10";padding:3px 7px;box-shadow:0 0 0 3px var(--k);opacity:0}
+.hero.jump .bubble{animation:pop 1s steps(3)}
+@keyframes pop{10%,80%{opacity:1}100%{opacity:0}}
+.rank{position:absolute;right:-6px;top:-6px;width:36px;height:36px;background:var(--r);color:var(--w);font:34px/34px "Jersey 10";text-align:center;box-shadow:0 0 0 3px var(--k)}
+.who h1{font:34px/1.05 "Jersey 10"}
+.name{display:inline-block;margin-top:10px;padding:4px 8px;font:24px/1 "Jersey 10";color:var(--k);background:var(--w);box-shadow:0 0 0 3px var(--k)}
+.spread{display:flex;gap:16px;align-items:flex-end;padding:22px 18px 0}
+.c{position:relative;width:56px;height:80px;cursor:pointer}
+.c .front{display:none}.c.open .front{display:block}.c.open .back{display:none}
+.c.rev .front svg{transform:rotate(180deg)}
+.c.flipping{animation:squash .36s steps(6)}
+@keyframes squash{50%{transform:scaleX(0)}}
+.tag{position:absolute;left:-6px;right:-6px;bottom:-20px;text-align:center;font:600 11px/1 "Pixelify Sans";text-transform:uppercase;opacity:0}
+.c.open .tag{opacity:1}
+.up{color:var(--o)}.dn{color:#ff9a9a}
+.tapme{position:absolute;left:50%;top:-16px;width:0;height:0;margin-left:-5px;border:5px solid transparent;border-top-color:var(--o);animation:point .8s steps(2) infinite}
+.c.open .tapme{display:none}
+@keyframes point{50%{transform:translateY(4px)}}
+.result{margin:34px 18px 0;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;min-height:66px}
+.result .l{font:400 15px/1.4 "Pixelify Sans";max-width:240px}
+.result .l b{font-weight:600;color:var(--o)}
+.result .n{font:44px/1 "Jersey 10";color:var(--W)}
+.haul{display:flex;align-items:flex-end;gap:14px;margin:20px 18px 0;position:relative}
+.flame{animation:flick .5s steps(2) infinite;transform-origin:50% 100%}
+@keyframes flick{50%{transform:scaleX(-1)}}
+.haul .t{flex:1}
+.haul .t .k{font:600 12px/1 "Pixelify Sans";color:var(--o);text-transform:uppercase;letter-spacing:.06em}
+.haul .t .v{font:26px/1 "Jersey 10";margin-top:6px}
+.btn{cursor:pointer}
+.gather{background:var(--o);color:var(--k);font:28px/1 "Jersey 10";padding:10px 14px 8px;box-shadow:0 0 0 3px var(--k),0 6px 0 3px var(--k);position:relative}
+.btn.pressed{transform:translateY(6px);box-shadow:0 0 0 3px var(--k)}
+.gather.done{background:var(--cloth2);color:var(--W)}
+.coin{position:absolute;width:9px;height:9px;background:var(--o);box-shadow:0 0 0 2px var(--k);pointer-events:none;z-index:5}
+.ledger{margin:22px 18px 0}
+.row{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;margin-bottom:9px;font:400 15px/1 "Pixelify Sans";cursor:pointer}
+.row b{font:24px/1 "Jersey 10"}
+.row.best b{color:var(--o)}
+.row.blink{animation:blink .6s steps(2) 2}
+@keyframes blink{50%{background:var(--cloth2)}}
+.lay{position:absolute;left:18px;right:18px;bottom:34px;background:var(--w);color:var(--k);display:flex;justify-content:space-between;align-items:center;padding:14px 14px 12px;box-shadow:0 0 0 3px var(--k),0 7px 0 3px var(--k)}
+.lay span{font:34px/1 "Jersey 10"}
+.lay small{font:600 13px/1 "Pixelify Sans";color:#8f2430;text-transform:uppercase}
+.lay.done{background:var(--o)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important}}
+</style></head><body>
+<div class="strip px"><span>Gilt <b id="gilt">1,240</b></span><span>Insight <b id="ins">Lv 7</b></span><span>Tower <b>Floor 4</b></span></div>
+<div class="head">
+ <div class="hero" id="hero"><div class="body">{{sprite:hero:6}}</div><div class="rank">F</div><div class="bubble">!</div></div>
+ <div class="who"><h1>While you were away, four readings were laid.</h1><div class="name">VESPER</div></div>
+</div>
+<div class="spread" id="spread">
+ <div class="c rev" data-i="0"><div class="back">{{sprite:back:4}}</div><div class="front">{{sprite:face:4}}</div><div class="tag dn">Reversed</div><div class="tapme"></div></div>
+ <div class="c" data-i="1"><div class="back">{{sprite:back:4}}</div><div class="front">{{sprite:face:4}}</div><div class="tag up">Upright</div><div class="tapme"></div></div>
+ <div class="c" data-i="2"><div class="back">{{sprite:back:4}}</div><div class="front">{{sprite:face:4}}</div><div class="tag up">Upright</div><div class="tapme"></div></div>
+ <div class="c rev" data-i="3"><div class="back">{{sprite:back:4}}</div><div class="front">{{sprite:face:4}}</div><div class="tag dn">Reversed</div><div class="tapme"></div></div>
+</div>
+<div class="result px"><div class="l" id="vline">Tap a card to turn it.</div><div class="n" id="vgain"></div></div>
+<div class="haul">
+ <div class="flame">{{sprite:candle:5}}</div>
+ <div class="t"><div class="k" id="hk">Candle burned 7h 40m</div><div class="v" id="hv">320 Insight · 85 Gilt</div></div>
+ <div class="gather btn" id="gather">GATHER</div>
+</div>
+<div class="ledger" id="ledger"></div>
+<div class="lay btn" id="lay"><span id="layt">LAY TONIGHT'S SPREAD</span><small>20:00</small></div>
+<script>
+const R=[{name:"The Iron Hermit",up:false,f:0,line:"Vesper kept faith. <b>The Iron Hermit</b> turned on it."},
+ {name:"La Víbora",up:true,f:15,line:"Faith kept five times with <b>La Víbora</b>."},
+ {name:"Doc Static",up:true,f:9,line:"<b>Doc Static</b> slipped once. Vesper forgave."},
+ {name:"Old Marrow",up:false,f:5,line:"<b>Old Marrow</b> struck first. Vesper struck back."}];
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches,$=s=>document.querySelector(s),opened=[];
+function stepCount(el,from,to,steps=6,fmt=n=>n.toLocaleString("en-US")){let k=0;const go=()=>{k++;el.textContent=fmt(Math.round(from+(to-from)*k/steps));
+ el.classList.remove("hop");void el.offsetWidth;el.classList.add("hop");if(k<steps)setTimeout(go,reduce?0:70)};go()}
+function ledger(){const L=$("#ledger");L.innerHTML="";const score=r=>opened.includes(r.i)?r.f:-1;
+ R.map((r,i)=>({...r,i})).sort((a,b)=>score(b)-score(a)).slice(0,3).forEach((r,k)=>{const o=opened.includes(r.i),d=document.createElement("div");d.className="row px"+(o&&k===0?" best":"");
+  d.innerHTML=`<span>vs ${r.name} · ${o?(r.up?"faith kept":"betrayal"):"turn the card"}</span><b>${o?"+"+r.f:"?"}</b>`;d.dataset.n=r.name;
+  if(!o)d.addEventListener("click",()=>turn(r.i));L.appendChild(d)});}
+function turn(i){const c=$(`.c[data-i="${i}"]`);if(c.classList.contains("open"))return;opened.push(i);
+ c.classList.add("flipping");setTimeout(()=>c.classList.add("open"),reduce?0:180);setTimeout(()=>c.classList.remove("flipping"),400);
+ setTimeout(()=>{$("#vline").innerHTML=R[i].line;stepCount($("#vgain"),0,R[i].f,5,n=>"+"+n);ledger();
+  const row=document.querySelector(`.row[data-n="${R[i].name}"]`);row&&row.classList.add("blink")},reduce?0:360);}
+document.querySelectorAll(".c").forEach(c=>c.addEventListener("click",()=>turn(+c.dataset.i)));
+document.querySelectorAll(".btn").forEach(b=>{b.addEventListener("pointerdown",()=>b.classList.add("pressed"));
+ ["pointerup","pointercancel","pointerleave"].forEach(e=>b.addEventListener(e,()=>b.classList.remove("pressed")))});
+$("#hero").addEventListener("click",e=>{const h=e.currentTarget;h.classList.remove("jump");void h.offsetWidth;h.classList.add("jump")});
+$("#gather").addEventListener("click",e=>{const b=e.currentTarget;if(b.classList.contains("done"))return;const r=b.getBoundingClientRect();
+ for(let k=0;k<8;k++){const c=document.createElement("div");c.className="coin";c.style.left=r.left+10+k*9+"px";c.style.top=r.top+"px";document.body.appendChild(c);
+  const h=-40-(k%3)*18;c.animate([{transform:"translate(0,0)"},{transform:`translate(${(k-4)*6}px,${h}px)`},{transform:`translate(${(k-4)*10}px,${h+12}px)`,opacity:0}],{duration:reduce?1:700,easing:"steps(7)",delay:reduce?0:k*40}).onfinish=()=>c.remove();}
+ setTimeout(()=>{stepCount($("#gilt"),1240,1325,6);$("#ins").textContent="Lv 8"},reduce?0:500);
+ b.classList.add("done");b.textContent="GATHERED";$("#hk").textContent="A new candle is lit";$("#hv").textContent="Burning till dawn";});
+$("#lay").addEventListener("click",()=>{$("#lay").classList.add("done");$("#layt").textContent="SPREAD LAID ✓"});
+turn(0);
+</script>
+</body></html>

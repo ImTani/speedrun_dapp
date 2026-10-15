@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Reading Table — return</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Alegreya+Sans:wght@500;800&display=swap" rel="stylesheet">
+<style>
+:root{--cloth:#4a1424;--cloth2:#3a0e1c;--stock:#f4ead6;--ink:#1a1414;--verm:#d2452b;--ochre:#e9b23a;--cobalt:#2a4f9a;--gilt:#d8b45a;--soft:#e9d9c1;--ease:cubic-bezier(.2,.8,.2,1)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:390px;height:844px;overflow:hidden;margin:0 auto}
+body{background:var(--cloth);color:var(--stock);font-family:"Alegreya Sans",sans-serif;position:relative;user-select:none;
+ background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.10) 0 1px,transparent 1px 3px),repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px)}
+.tap{cursor:pointer;transition:transform .14s var(--ease)}
+.tap.pressed{transform:translateY(2px) scale(.97)}
+.purse{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 0;font:800 12px/1 "Alegreya Sans";letter-spacing:.14em;text-transform:uppercase;color:var(--gilt)}
+.purse b{color:var(--stock);font-size:15px;letter-spacing:.02em;display:inline-block}
+.purse b.bump{animation:bump .5s var(--ease)}
+@keyframes bump{40%{transform:translateY(-4px) scale(1.18)}}
+.head{display:flex;gap:16px;padding:18px 20px 0;align-items:flex-start;position:relative}
+.mycard{width:104px;height:170px;flex:none;background:var(--stock);color:var(--ink);border-radius:7px;padding:6px;transform:rotate(-3deg);box-shadow:0 10px 22px rgba(0,0,0,.45)}
+.mycard.wiggle{animation:wiggle .6s var(--ease)}
+@keyframes wiggle{20%{transform:rotate(-8deg) scale(1.04)}55%{transform:rotate(2deg)}100%{transform:rotate(-3deg)}}
+.frame{height:100%;border:2px solid var(--ink);border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:6px 4px}
+.num{font:20px/1 "IM Fell English SC"}
+.cardname{font:16px/1 "IM Fell English SC";letter-spacing:.06em}
+.rank{position:absolute;left:100px;top:10px;width:34px;height:34px;border-radius:50%;background:var(--verm);color:var(--stock);font:22px/34px "IM Fell English SC";text-align:center;box-shadow:0 0 0 3px var(--cloth)}
+.who h1{font:27px/1.12 "IM Fell English SC";margin-top:2px}
+.who p{font:italic 15px/1.4 "IM Fell English";margin-top:8px;color:var(--soft);transition:opacity .25s}
+.spread{position:relative;height:196px;margin:18px 0 0;perspective:900px}
+.c{position:absolute;top:16px;width:86px;height:140px;cursor:pointer}
+.c .flip{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .6s var(--ease)}
+.c.open .flip{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:7px;background:var(--stock);padding:5px;box-shadow:0 8px 16px rgba(0,0,0,.4)}
+.face .in{height:100%;border:2px solid var(--ink);border-radius:4px}
+.back .in{border-color:var(--gilt);background:repeating-linear-gradient(45deg,var(--cobalt) 0 6px,var(--verm) 6px 8px,var(--cobalt) 8px 14px)}
+.front{transform:rotateY(180deg)}
+.front .in{display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:6px 3px;color:var(--ink)}
+.front .t{font:12px/1.1 "IM Fell English SC";text-align:center}
+.front .o{font:11px/1 "IM Fell English SC";letter-spacing:.04em}
+.rev .fig{transform:rotate(180deg)}
+.c.lift{animation:lift .6s var(--ease)}
+@keyframes lift{35%{translate:0 -14px}}
+.c:nth-child(2){left:16px;transform:rotate(-5deg)}.c:nth-child(3){left:106px;transform:rotate(-1deg)}
+.c:nth-child(4){left:196px;transform:rotate(3deg)}.c:nth-child(5){left:286px;transform:rotate(7deg)}
+.hint{position:absolute;left:0;right:0;top:-2px;text-align:center;font:italic 13px/1 "IM Fell English";color:var(--soft);transition:opacity .4s}
+.verdict{display:flex;justify-content:space-between;align-items:baseline;margin:0 20px;min-height:44px}
+.verdict .l{font:italic 15px/1.4 "IM Fell English";color:var(--soft);max-width:250px;transition:opacity .2s}
+.verdict .l b{font-style:normal;font-family:"IM Fell English SC";color:var(--stock)}
+.verdict .gain{font:32px/1 "IM Fell English SC";color:var(--ochre);transition:opacity .2s}
+.ghost{font:italic 13px/1.3 "IM Fell English";color:rgba(244,234,214,.82);margin:2px 20px 0;min-height:17px;transition:opacity .3s}
+.candle{margin:12px 20px 0;display:flex;gap:16px;align-items:center;border-top:1px solid rgba(216,180,90,.35);border-bottom:1px solid rgba(216,180,90,.35);padding:12px 0}
+.wick{width:26px;height:60px;position:relative;flex:none}
+.wax{position:absolute;bottom:0;left:6px;width:14px;height:34px;background:var(--stock);border-radius:2px 2px 3px 3px;transition:height 1.2s var(--ease)}
+.flame{position:absolute;left:3px;top:-16px;width:8px;height:14px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:var(--ochre);border:1.5px solid var(--ink);transform-origin:50% 100%;animation:flicker 1.6s ease-in-out infinite}
+@keyframes flicker{0%,100%{transform:scale(1) skewX(0)}30%{transform:scale(.92,1.08) skewX(-4deg)}60%{transform:scale(1.04,.94) skewX(3deg)}}
+.haul .k{font:800 11px/1 "Alegreya Sans";letter-spacing:.16em;text-transform:uppercase;color:var(--gilt)}
+.haul .v{font:20px/1.35 "IM Fell English SC";margin-top:6px}
+.gather{margin-left:auto;font:800 13px/1 "Alegreya Sans";letter-spacing:.12em;text-transform:uppercase;color:var(--ink);background:var(--ochre);padding:12px 14px;border-radius:4px;border:0}
+.gather.done{background:transparent;color:var(--gilt);box-shadow:inset 0 0 0 1px var(--gilt)}
+.fly{position:absolute;z-index:9;font:18px/1 "IM Fell English SC";color:var(--ochre);pointer-events:none}
+.ledger{margin:10px 20px 0;position:relative}
+.row{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid rgba(216,180,90,.3);font:italic 15px/1.35 "IM Fell English";color:var(--soft);background:var(--cloth)}
+.row b{font:20px/1 "IM Fell English SC";color:var(--stock)}
+.row.best b{color:var(--ochre)}
+.row.new{animation:ink 1.1s var(--ease)}
+@keyframes ink{0%{opacity:0;transform:translateX(-12px)}40%{opacity:1;transform:none}}
+.lay{position:absolute;left:20px;right:20px;bottom:18px}
+.lay .btn{display:flex;justify-content:space-between;align-items:center;background:var(--stock);color:var(--ink);border-radius:6px;padding:18px;box-shadow:0 6px 0 var(--cloth2);position:relative;overflow:hidden}
+.lay .btn span{font:23px/1 "IM Fell English SC"}
+.lay .btn small{font:800 12px/1 "Alegreya Sans";letter-spacing:.12em;text-transform:uppercase;color:#9e2e18;transition:opacity .2s}
+.seal{position:absolute;right:16px;top:50%;width:46px;height:46px;margin-top:-23px;border-radius:50%;background:var(--verm);color:var(--stock);font:22px/46px "IM Fell English SC";text-align:center;opacity:0;transform:scale(1.8) rotate(-30deg)}
+.btn.sealed .seal{animation:stamp .45s var(--ease) forwards}
+.btn.sealed small{opacity:0}
+@keyframes stamp{to{opacity:1;transform:scale(1) rotate(-12deg)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:1ms!important;transition-duration:1ms!important}}
+</style></head><body>
+<div class="purse"><span>Gilt <b id="gilt">1,240</b></span><span>Insight <b id="ins">Lv 7</b></span><span>Tower <b>Floor 4</b></span></div>
+<div class="head">
+ <div class="mycard tap" id="mycard"><div class="frame">
+  <div class="num">XIII</div>
+  <svg width="62" height="62" viewBox="0 0 62 62" aria-hidden="true"><circle cx="31" cy="31" r="27" fill="none" stroke="#1a1414" stroke-width="2"/><path d="M31 6 L37 31 L31 56 L25 31Z" fill="#d2452b" stroke="#1a1414" stroke-width="1.5"/><circle cx="31" cy="31" r="7" fill="#e9b23a" stroke="#1a1414" stroke-width="1.5"/><path d="M8 31h46" stroke="#2a4f9a" stroke-width="3"/></svg>
+  <div class="cardname">VESPER</div>
+ </div></div>
+ <div class="rank">F</div>
+ <div class="who"><h1>While you were away, four readings were laid.</h1><p id="mood">Keeps faith. Strikes back twice. Forgets nothing.</p></div>
+</div>
+<div class="spread" id="spread"><div class="hint" id="hint">Tap a face-down card to turn it</div></div>
+<div class="verdict"><div class="l" id="vline"></div><div class="gain" id="vgain"></div></div>
+<div class="ghost" id="ghost"></div>
+<div class="candle">
+ <div class="wick"><div class="wax" id="wax"><div class="flame"></div></div></div>
+ <div class="haul"><div class="k" id="hk">The candle burned 7h 40m</div><div class="v" id="hv">320 Insight · 85 Gilt</div></div>
+ <button class="gather tap" id="gather">Gather</button>
+</div>
+<div class="ledger" id="ledger"></div>
+<div class="lay"><div class="btn tap" id="lay"><span>Lay tonight's spread</span><small>Sitting · 20:00</small><div class="seal">✶</div></div></div>
+<script>
+const R=[
+ {name:"The Iron Hermit",up:false,f:0,line:"Vesper held true and was betrayed.",ghost:"Had both kept faith, this reading would have paid +15."},
+ {name:"La Víbora",up:true,f:15,line:"Faith kept, five turns running.",ghost:""},
+ {name:"Doc Static",up:true,f:9,line:"Faith kept, then one stumble. Forgiven.",ghost:""},
+ {name:"Old Marrow",up:false,f:5,line:"Marrow struck first. Vesper struck back twice.",ghost:"Marrow's betrayal cost you both: +15 was on the table."}];
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $=s=>document.querySelector(s);
+const fig=c=>`<svg class="fig" width="34" height="56" viewBox="0 0 40 64"><path d="M20 4 L30 22 L20 60 L10 22Z" fill="${c}" stroke="#1a1414" stroke-width="1.5"/><circle cx="20" cy="14" r="5" fill="#f4ead6" stroke="#1a1414"/></svg>`;
+const spread=$("#spread"),opened=[];
+R.forEach((r,i)=>{const el=document.createElement("div");el.className="c"+(r.up?"":" rev");
+ el.innerHTML=`<div class="flip"><div class="face back"><div class="in"></div></div><div class="face front"><div class="in"><div class="t">${r.name.toUpperCase()}</div>${fig(r.up?"#e9b23a":"#2a4f9a")}<div class="o">${r.up?"UPRIGHT":"REVERSED"}</div></div></div></div>`;
+ el.addEventListener("click",()=>turn(i,el));spread.appendChild(el);});
+function countUp(el,from,to,ms,fmt=n=>n.toLocaleString("en-US")){if(reduce){el.textContent=fmt(to);return}const t0=performance.now();
+ (function f(t){const p=Math.min(1,(t-t0)/ms),e=1-Math.pow(1-p,3);el.textContent=fmt(Math.round(from+(to-from)*e));if(p<1)requestAnimationFrame(f);else{el.classList.remove("bump");void el.offsetWidth;el.classList.add("bump")}})(t0)}
+function verdict(r){const l=$("#vline"),g=$("#vgain"),gh=$("#ghost");l.style.opacity=g.style.opacity=gh.style.opacity=0;
+ setTimeout(()=>{l.innerHTML=`Against <b>${r.name}</b>: ${r.line}`;g.textContent="+0";l.style.opacity=g.style.opacity=1;countUp(g,0,r.f,500,n=>"+"+n);
+  setTimeout(()=>{gh.textContent=r.ghost;gh.style.opacity=1},350)},200)}
+function ledger(newName){const L=$("#ledger"),first=new Map([...L.children].map(c=>[c.dataset.n,c.getBoundingClientRect().top]));
+ const rows=opened.map(i=>R[i]).sort((a,b)=>b.f-a.f);L.innerHTML="";
+ rows.forEach((r,k)=>{const d=document.createElement("div");d.className="row"+(k===0?" best":"")+(r.name===newName?" new":"");d.dataset.n=r.name;
+  d.innerHTML=`<span>${r.name} · ${r.up?"faith kept":"betrayal"}</span><b>+${r.f}</b>`;L.appendChild(d);
+  const y=first.get(r.name);if(y!==undefined&&!reduce){const dy=y-d.getBoundingClientRect().top;if(dy)d.animate([{transform:`translateY(${dy}px)`},{transform:"none"}],{duration:420,easing:"cubic-bezier(.2,.8,.2,1)"})}});}
+function turn(i,el){if(el.classList.contains("open"))return;el.classList.add("open","lift");opened.push(i);$("#hint").style.opacity=opened.length>1?0:1;
+ setTimeout(()=>{verdict(R[i]);ledger(R[i].name)},reduce?0:380);}
+turn(0,spread.querySelectorAll(".c")[0]);
+document.querySelectorAll(".tap").forEach(b=>{const on=()=>b.classList.add("pressed"),off=()=>b.classList.remove("pressed");
+ b.addEventListener("pointerdown",on);["pointerup","pointercancel","pointerleave"].forEach(e=>b.addEventListener(e,off));});
+$("#mycard").addEventListener("click",e=>{const c=e.currentTarget;c.classList.remove("wiggle");void c.offsetWidth;c.classList.add("wiggle");
+ const m=$("#mood"),lines=["Keeps faith. Strikes back twice. Forgets nothing.","Opens trusting. Forgives one in ten.","Remembers the last four turns."];m.style.opacity=0;
+ setTimeout(()=>{m.textContent=lines[(lines.indexOf(m.textContent)+1)%lines.length];m.style.opacity=1},220)});
+$("#gather").addEventListener("click",e=>{const b=e.currentTarget;if(b.classList.contains("done"))return;
+ const from=b.getBoundingClientRect(),to=$("#gilt").getBoundingClientRect();
+ for(let k=0;k<6;k++){const f=document.createElement("div");f.className="fly";f.textContent="✦";document.body.appendChild(f);
+  f.style.left=from.left+from.width/2+"px";f.style.top=from.top+"px";
+  const a=f.animate([{transform:"translate(0,0)",opacity:1},{transform:`translate(${to.left-from.left-from.width/2+(k-3)*4}px,${to.top-from.top}px) scale(.6)`,opacity:.2}],{duration:reduce?1:620+k*70,easing:"cubic-bezier(.5,0,.2,1)",delay:reduce?0:k*45});
+  a.onfinish=()=>f.remove();}
+ setTimeout(()=>{countUp($("#gilt"),1240,1325,700);$("#ins").textContent="Lv 8";$("#ins").classList.add("bump")},reduce?0:650);
+ b.classList.add("done");b.textContent="Gathered";$("#hk").textContent="A fresh candle is lit";$("#hv").textContent="Burning until morning";
+ $("#wax").style.height="10px";setTimeout(()=>$("#wax").style.height="34px",1400);});
+$("#lay").addEventListener("click",e=>{const b=e.currentTarget;b.classList.add("sealed");b.querySelector("span").textContent="Spread laid";});
+</script>
+</body></html>

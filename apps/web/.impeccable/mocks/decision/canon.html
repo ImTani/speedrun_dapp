@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Genre standard — return</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#16234f;--deep:#0c1533;--gold:#f2c14e;--pink:#ff4fa3;--cyan:#3fd0ff;--w:#fff;--pop:cubic-bezier(.3,1.6,.5,1)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{width:390px;height:844px;overflow:hidden;margin:0 auto}
+body{background:linear-gradient(180deg,#24357a 0%,var(--navy) 45%,var(--deep) 100%);color:var(--w);font-family:"Nunito",sans-serif;position:relative;user-select:none}
+.tap{cursor:pointer;transition:transform .12s ease}
+.tap.pressed{transform:scale(.94)}
+.bar{display:flex;gap:6px;padding:14px 10px 0}
+.res{flex:1;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.35);border:1px solid rgba(242,193,78,.5);border-radius:14px;padding:5px 8px;font:900 13px/1 "Nunito"}
+.res i{width:16px;height:16px;border-radius:50%;flex:none}
+.res b{font-weight:900;display:inline-block}
+.res b.pop{animation:pop .45s var(--pop)}
+@keyframes pop{40%{transform:scale(1.35)}}
+.plus{margin-left:auto;width:16px;height:16px;border-radius:4px;background:var(--gold);color:var(--deep);font:900 13px/16px "Nunito";text-align:center}
+.banner{margin:12px 10px 0;height:58px;border-radius:10px;background:linear-gradient(90deg,#c41866,#c4421a);display:flex;align-items:center;justify-content:space-between;padding:0 14px;border:2px solid var(--gold);position:relative;overflow:hidden}
+.banner::after{content:"";position:absolute;top:0;bottom:0;width:60px;left:-80px;background:linear-gradient(100deg,transparent,rgba(255,255,255,.28),transparent);animation:sheen 3.2s ease-in-out infinite}
+@keyframes sheen{60%,100%{left:420px}}
+.banner b{font:900 16px/1.1 "Cinzel"}
+.banner small{font:900 12px/1 "Nunito";background:rgba(0,0,0,.3);padding:6px 9px;border-radius:8px}
+.stage{position:relative;margin:16px auto 0;width:250px;height:330px}
+.frame{position:absolute;inset:0;border-radius:18px;border:6px solid var(--gold);background:radial-gradient(circle at 50% 35%,#3a56b8,#16234f 70%);box-shadow:0 0 0 3px var(--deep),0 18px 30px rgba(0,0,0,.5);overflow:hidden}
+.frame svg{position:absolute;bottom:0;left:0;animation:breathe 3s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes breathe{50%{transform:scaleY(1.015)}}
+.stage.hop .frame svg{animation:hop .55s var(--pop)}
+@keyframes hop{35%{transform:translateY(-16px)}}
+.say{position:absolute;right:-6px;top:40px;background:var(--w);color:var(--deep);font:900 14px/1.2 "Nunito";padding:8px 10px;border-radius:12px;opacity:0;transform:scale(.6)}
+.stage.hop .say{animation:say 1.6s var(--pop)}
+@keyframes say{10%,80%{opacity:1;transform:scale(1)}100%{opacity:0}}
+.rk{position:absolute;top:-14px;left:-14px;width:54px;height:54px;border-radius:50%;background:var(--pink);border:4px solid var(--gold);font:900 26px/46px "Cinzel";text-align:center}
+.nm{position:absolute;left:0;right:0;bottom:-18px;text-align:center}
+.nm span{display:inline-block;background:var(--deep);border:2px solid var(--gold);border-radius:10px;padding:6px 14px;font:900 18px/1 "Cinzel";letter-spacing:.06em}
+.pw{text-align:center;margin-top:30px;font:900 15px/1 "Nunito"}
+.pw b{color:var(--gold)}
+.afk{margin:14px 10px 0;display:flex;align-items:center;gap:12px;background:rgba(0,0,0,.35);border:2px solid var(--gold);border-radius:14px;padding:10px 12px}
+.chest{width:54px;height:44px;border-radius:6px;background:linear-gradient(#c8812f,#7a4a1a);border:3px solid var(--gold);position:relative;flex:none;animation:jiggle 2.4s ease-in-out infinite}
+@keyframes jiggle{0%,70%,100%{transform:none}76%{transform:rotate(-6deg)}82%{transform:rotate(5deg)}88%{transform:rotate(-3deg)}}
+.chest::after{content:"";position:absolute;left:20px;top:12px;width:8px;height:10px;background:var(--gold);border-radius:2px}
+.chest.open{animation:none;transform:translateY(2px)}
+.chest.open::before{content:"";position:absolute;left:-3px;right:-3px;top:-14px;height:12px;background:#a86a26;border:3px solid var(--gold);border-radius:6px 6px 0 0;transform:rotate(-14deg);transform-origin:0 100%}
+.afk .t{font:900 14px/1.2 "Nunito"}
+.afk .t small{display:block;font:700 12px/1.3 "Nunito";color:#c9d3ff}
+.collect{margin-left:auto;background:linear-gradient(#ffe08a,var(--gold));color:var(--deep);font:900 14px/1 "Nunito";padding:11px 12px;border-radius:10px;border:2px solid #fff3c4}
+.collect.done{background:#2b3c80;color:#c9d3ff;border-color:#4a5fb0}
+.coin{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--gold);border:2px solid #b8862a;z-index:9;pointer-events:none}
+.nav{position:absolute;left:0;right:0;bottom:0;height:78px;background:var(--deep);border-top:2px solid var(--gold);display:flex}
+.ind{position:absolute;top:-2px;height:3px;width:20%;background:var(--pink);transition:left .3s var(--pop)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font:900 11px/1 "Nunito";color:#c9d3ff;position:relative;cursor:pointer}
+.tab i{width:26px;height:26px;border-radius:8px;background:#2b3c80;border:2px solid #4a5fb0;transition:transform .3s var(--pop),background .2s}
+.tab.on{color:var(--gold)}.tab.on i{background:var(--gold);border-color:#fff3c4;transform:translateY(-4px) scale(1.1)}
+.dot{position:absolute;top:12px;right:20px;width:9px;height:9px;border-radius:50%;background:#ff3b3b;animation:beat 1.2s ease-in-out infinite}
+@keyframes beat{50%{transform:scale(1.3)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:1ms!important;transition-duration:1ms!important}}
+</style></head><body>
+<div class="bar">
+ <div class="res"><i style="background:var(--gold)"></i><b id="coins">1,240</b><span class="plus">+</span></div>
+ <div class="res"><i style="background:var(--pink)"></i><b id="gems">85</b><span class="plus">+</span></div>
+ <div class="res"><i style="background:var(--cyan)"></i><b id="lv">Lv 7</b></div>
+</div>
+<div class="banner tap"><b>CHAMPIONSHIP<br>in 2 days</b><small>Details</small></div>
+<div class="stage" id="stage">
+ <div class="frame"><svg width="238" height="318" viewBox="0 0 238 318" aria-hidden="true"><circle cx="119" cy="120" r="44" fill="#0c1533"/><path d="M30 318 C34 220 74 186 119 186 C164 186 204 220 208 318Z" fill="#0c1533"/><path d="M84 112h70v14H84z" fill="#3fd0ff"/></svg></div>
+ <div class="rk">F</div><div class="say">Ready for tonight!</div>
+ <div class="nm"><span>VESPER</span></div>
+</div>
+<div class="pw">Power <b>3,420</b> · Arena results: <b>2W 1L</b></div>
+<div class="afk"><div class="chest" id="chest"></div><div class="t" id="afkt">AFK Rewards ready<small>7h 40m · 320 XP · 85 Gems</small></div><button class="collect tap" id="collect">Collect</button></div>
+<div class="nav" id="nav"><div class="ind" id="ind" style="left:0"></div>
+ <div class="tab on"><i></i>Hero<span class="dot"></span></div><div class="tab"><i></i>Tower</div><div class="tab"><i></i>Arena<span class="dot"></span></div><div class="tab"><i></i>Summon</div><div class="tab"><i></i>Shop</div>
+</div>
+<script>
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches,$=s=>document.querySelector(s);
+document.querySelectorAll(".tap").forEach(b=>{b.addEventListener("pointerdown",()=>b.classList.add("pressed"));
+ ["pointerup","pointercancel","pointerleave"].forEach(e=>b.addEventListener(e,()=>b.classList.remove("pressed")))});
+function roll(el,from,to,ms){if(reduce){el.textContent=to.toLocaleString("en-US");return}const t0=performance.now();
+ (function f(t){const p=Math.min(1,(t-t0)/ms);el.textContent=Math.round(from+(to-from)*(1-Math.pow(1-p,3))).toLocaleString("en-US");if(p<1)requestAnimationFrame(f);else{el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop")}})(t0)}
+$("#stage").addEventListener("click",e=>{const s=e.currentTarget;s.classList.remove("hop");void s.offsetWidth;s.classList.add("hop")});
+$("#collect").addEventListener("click",e=>{const b=e.currentTarget;if(b.classList.contains("done"))return;$("#chest").classList.add("open");
+ const from=$("#chest").getBoundingClientRect(),targets=[$("#coins"),$("#gems")];
+ for(let k=0;k<10;k++){const c=document.createElement("div");c.className="coin";if(k%2)c.style.background="var(--pink)";document.body.appendChild(c);
+  const to=targets[k%2].getBoundingClientRect();c.style.left=from.left+20+"px";c.style.top=from.top+"px";
+  c.animate([{transform:"translate(0,0) scale(.6)"},{transform:`translate(${(k-5)*14}px,-50px) scale(1.1)`,offset:.35},{transform:`translate(${to.left-from.left-20}px,${to.top-from.top}px) scale(.5)`,opacity:.3}],{duration:reduce?1:850,easing:"cubic-bezier(.4,0,.2,1)",delay:reduce?0:k*50}).onfinish=()=>c.remove()}
+ setTimeout(()=>{roll($("#coins"),1240,1325,600);roll($("#gems"),85,170,600);$("#lv").textContent="Lv 8";$("#lv").classList.add("pop")},reduce?0:800);
+ b.classList.add("done");b.textContent="Claimed";$("#afkt").innerHTML="Next rewards building<small>Come back in 8h for a full chest</small>";});
+const tabs=[...document.querySelectorAll(".tab")];tabs.forEach((t,i)=>t.addEventListener("click",()=>{tabs.forEach(x=>x.classList.remove("on"));t.classList.add("on");$("#ind").style.left=i*20+"%";const d=t.querySelector(".dot");d&&d.remove()}));
+</script>
+</body></html>

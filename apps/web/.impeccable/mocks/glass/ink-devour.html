@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Gathering — ink study (Devour)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@1,500&family=Grenze+Gotisch:wght@700;900&display=swap">
+<style>
+:root{--ink:1}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:#050403;color:#d8c6a0}
+body{display:grid;place-items:center;overflow:hidden;-webkit-tap-highlight-color:transparent}
+::selection{background:#8e1218;color:#f1e4c4}
+#stage{opacity:0;transition:opacity .5s cubic-bezier(.16,1,.3,1);position:relative;width:390px;height:844px;overflow:hidden;background:#0b0807;transform-origin:center;touch-action:none;user-select:none;cursor:default}
+#cam,#cam>*{position:absolute;left:0;top:0;width:390px;height:844px;display:block}
+#light{mix-blend-mode:screen}
+#cam>.gwin{width:128px;height:179.2px;top:118px}#winA{left:33px}#winB{left:229px}
+.hmask,.heye{position:absolute;pointer-events:none}.hmask{mix-blend-mode:multiply;opacity:.92}.hmask svg{filter:grayscale(1) sepia(.55) brightness(.92) contrast(1.2)}.heye{mix-blend-mode:screen}
+#cam>#floorC{top:430px;height:414px;mix-blend-mode:screen}
+#flash,#redflash{position:absolute;inset:0;opacity:0;pointer-events:none}#flash{background:#f3e6c8}#redflash{background:#c7262c}
+.k{fill:none;stroke:#0b0807;stroke-linejoin:round;stroke-linecap:round}
+.k2{stroke-width:calc(var(--ink) * 2px)}.k3{stroke-width:calc(var(--ink) * 3px)}.k4{stroke-width:calc(var(--ink) * 4.5px)}.k6{stroke-width:calc(var(--ink) * 6px)}
+.screen{mix-blend-mode:screen}
+.lettering{paint-order:stroke;stroke:#0b0807;stroke-linejoin:round}
+#stage.on{opacity:1}
+.fit{position:absolute;width:52px;height:52px;border:0;background:transparent;border-radius:50%;cursor:pointer}
+.fit:focus-visible{outline:2px solid #c9a24f;outline-offset:2px}
+#ring{left:6px;top:10px}#hour{right:8px;bottom:12px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+<main id="stage" aria-label="A Gathering. Old Marrow devours Vesper.">
+<div id="cam"><img id="back" alt=""><canvas id="winA" class="gwin"></canvas><canvas id="winB" class="gwin"></canvas><canvas id="floorC"></canvas><canvas id="light"></canvas><img id="front" alt=""><svg id="scene" viewBox="0 0 390 844" aria-hidden="true"></svg></div>
+<div id="flash"></div><div id="redflash"></div>
+<button class="fit" id="ring" aria-label="Leave the Gathering"></button>
+<button class="fit" id="hour" aria-label="Pass to the outcome"></button>
+<p class="sr" id="sr" aria-live="polite"></p>
+</main>
+<script src="glass.js"></script>
+<script src="masks.js"></script>
+<script src="glassgl.js"></script>
+<script src="floorgl.js"></script>
+<script>
+(() => {
+"use strict";
+const $ = (s) => document.querySelector(s);
+const Q = new URLSearchParams(location.search);
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ---------- Palette: bone, umber, dried blood; the glass is the only saturated colour ----------
+const INK = "#0b0807", BONE = "#d8c6a0", BONE_D = "#a8916a", BLOOD = "#8e1218", BLOOD_L = "#c7262c";
+
+// ---------- Look (owner-tunable with ?tune) ----------
+// Owner-tuned 2026-10-15. caustic = strength of the caustic floor light (?floor=caustic, the default).
+const LOOK = { ink: 0.4, wobble: 3.6, hatch: 0.24, shaft: 0.065, pool: 0.27, halo: 0.36, glow: 1.46, shake: 12, hitstop: 200, flash: 0.45, speed: 1.25, caustic: 1.6 };
+
+document.documentElement.style.setProperty("--ink", LOOK.ink);
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const R = rng(1471);
+const f1 = (n) => n.toFixed(1);
+const jq = (pts, j) => pts.map(([x, y]) => [x + (R() - 0.5) * 2 * j, y + (R() - 0.5) * 2 * j]);
+const P = (pts) => pts.map(([x, y]) => `${f1(x)},${f1(y)}`).join(" ");
+const poly = (pts, fill, extra = "") => `<polygon points="${P(pts)}" fill="${fill}" ${extra}/>`;
+const lerp = (a, b, k) => a + (b - a) * k;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const smooth = (a, b, x) => { const k = clamp((x - a) / (b - a)); return k * k * (3 - 2 * k); };
+const outExp = (k) => (k >= 1 ? 1 : 1 - 2 ** (-10 * k));
+const outBack = (k) => { const c = 1.9; return 1 + (c + 1) * (k - 1) ** 3 + c * (k - 1) ** 2; };
+
+// A tapered brush stroke along a polyline, as a filled polygon (ink lines that swell and thin).
+function brush(pts, w, fill = INK, extra = "") {
+	const L = [], Rt = [];
+	for (let i = 0; i < pts.length; i++) {
+		const [x, y] = pts[i], [ax, ay] = pts[Math.max(0, i - 1)], [bx, by] = pts[Math.min(pts.length - 1, i + 1)];
+		let nx = -(by - ay), ny = bx - ax; const l = Math.hypot(nx, ny) || 1; nx /= l; ny /= l;
+		const k = i / (pts.length - 1), ww = w * Math.sin(Math.PI * (0.08 + 0.84 * k)) * (0.8 + R() * 0.4) / 2;
+		L.push([x + nx * ww, y + ny * ww]); Rt.unshift([x - nx * ww, y - ny * ww]);
+	}
+	return poly(L.concat(Rt), fill, extra);
+}
+
+// ---------- Layout ----------
+const GW = 128, GH = GW * 420 / 300, GTOP = 118, GBOT = GTOP + GH, SPRING = GTOP + GW / 2;
+const WIN = {
+	A: { cx: 97, theme: "marrow", seed: 3, aspect: "madness", name: "Old Marrow", tint: "#e9c27a" },
+	B: { cx: 293, theme: "vesper", seed: 7, aspect: "echo", name: "Vesper", tint: "#f0a95a" },
+};
+for (const w of Object.values(WIN)) { w.x0 = w.cx - GW / 2; w.x1 = w.cx + GW / 2; }
+const archPath = (cx, r, spring, bottom) => `M${f1(cx - r)} ${f1(bottom)} V${f1(spring)} A${f1(r)} ${f1(r)} 0 0 1 ${f1(cx + r)} ${f1(spring)} V${f1(bottom)} Z`;
+const archPts = (cx, r, spring, bottom, n = 18) => {
+	const pts = [[cx - r, bottom]];
+	for (let i = 0; i <= n; i++) { const a = Math.PI + (i / n) * Math.PI; pts.push([cx + Math.cos(a) * r, spring + Math.sin(a) * r]); }
+	pts.push([cx + r, bottom]); return pts;
+};
+
+// Window art, heavier lead for the ink look; rendered once in window space (300 x 420).
+function windowArt(w) {
+	return G.windowSVG({ theme: w.theme, seed: w.seed, mode: "color", width: 300 })
+		.replace(/stroke-width="3.5"/g, 'stroke-width="7"').replace(/stroke-width="10"/g, 'stroke-width="18"')
+		.replace(/<svg [^>]*>/, '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="840" viewBox="0 0 300 420" overflow="hidden">');
+}
+
+// ---------- Static drawing ----------
+const defs = [], ART = {};
+const ink = [];   // architecture (wobbled)
+let s = "";
+
+defs.push(`
+<filter id="wob" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="2" seed="9"/><feDisplacementMap id="wobmap" in="SourceGraphic" scale="${LOOK.wobble}" xChannelSelector="R" yChannelSelector="G"/></filter>
+<pattern id="hatch" width="44" height="44" patternUnits="userSpaceOnUse" patternTransform="rotate(-38)">${(() => { let h = ""; for (let y = 2; y < 44; y += 5.5) { let x = R() * -10; while (x < 44) { const l = 10 + R() * 22; h += brush([[x, y], [x + l / 2, y + (R() - .5)], [x + l, y]], 1.5 + R() * .6); x += l + 3 + R() * 6; } } return h; })()}</pattern>
+<pattern id="xhatch" width="44" height="44" patternUnits="userSpaceOnUse" patternTransform="rotate(42)">${(() => { let h = ""; for (let y = 3; y < 44; y += 6) { let x = R() * -10; while (x < 44) { const l = 8 + R() * 18; h += brush([[x, y], [x + l / 2, y + (R() - .5)], [x + l, y]], 1.3); x += l + 5 + R() * 8; } } return h; })()}</pattern>
+<filter id="crimA" color-interpolation-filters="sRGB"><feColorMatrix id="crimAm" type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"/></filter>
+<filter id="crimB" color-interpolation-filters="sRGB"><feColorMatrix id="crimBm" type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"/></filter>
+<filter id="glassA" color-interpolation-filters="sRGB"><feColorMatrix id="glassAs" type="saturate" values="1"/><feComponentTransfer><feFuncR id="gAr" type="linear" slope="1.35"/><feFuncG id="gAg" type="linear" slope="1.35"/><feFuncB id="gAb" type="linear" slope="1.35"/></feComponentTransfer></filter>
+<filter id="glassB" color-interpolation-filters="sRGB"><feColorMatrix id="glassBs" type="saturate" values="1"/><feComponentTransfer><feFuncR id="gBr" type="linear" slope="1.35"/><feFuncG id="gBg" type="linear" slope="1.35"/><feFuncB id="gBb" type="linear" slope="1.35"/></feComponentTransfer></filter>`);
+
+for (const [k, w] of Object.entries(WIN)) {
+	ART[k] = windowArt(w);
+	defs.push(`<image id="art${k}" width="300" height="420" preserveAspectRatio="none"/>${k === "B" ? '<image id="artBg" width="300" height="420" preserveAspectRatio="none"/>' : ""}`);
+	defs.push(`<clipPath id="glass${k}"><path d="${archPath(w.cx, GW / 2, SPRING, GBOT)}"/></clipPath>`);
+	// Halo shapes in window space: the same arch, swollen, for hard posterised light bands around each pool.
+	defs.push(`<g id="halo${k}"><path d="M0 420 V150 A150 150 0 0 1 300 150 V420 Z" transform="translate(150 210) scale(1.16) translate(-150 -210)" fill="${w.tint}" opacity=".45"/><path d="M0 420 V150 A150 150 0 0 1 300 150 V420 Z" transform="translate(150 210) scale(1.34) translate(-150 -210)" fill="${w.tint}" opacity=".2"/></g>`);
+}
+// Strip clips for the floor projection (window space).
+// Strips span beyond the glass (v -100..520) so the swollen halo bands are projected whole, not cut square.
+const STRIPS = 30, V0 = -100, V1 = 520, sv = (i) => V0 + (i / STRIPS) * (V1 - V0);
+for (let i = 0; i < STRIPS; i++) {
+	const v0 = sv(i) - 0.6, v1 = sv(i + 1) + 0.6;
+	defs.push(`<clipPath id="st${i}"><rect x="-80" y="${f1(v0)}" width="460" height="${f1(v1 - v0)}"/></clipPath>`);
+}
+
+// Wall: ashlar courses, flat umber, ink joints, chipped highlights, spot-black corners.
+{
+	let blocks = "", lines = "";
+	for (let row = 0, y = -10; y < 432; row++, y += 26) {
+		let x = row % 2 ? -34 : -8;
+		while (x < 392) {
+			const w = 44 + R() * 30, q = jq([[x, y], [x + w, y], [x + w, y + 26], [x, y + 26]], 1.3);
+			blocks += poly(q, ["#2b1e16", "#32231a", "#271a13", "#2f2118", "#36271c"][(R() * 5) | 0]);
+			if (R() < 0.55) lines += brush([[x + 4, y + 4], [x + w * 0.3, y + 3.6], [x + w * (0.45 + R() * 0.3), y + 4.2]], 1.6, BONE_D, 'opacity=".22"');
+			if (R() < 0.5) blocks += poly([[x + w, y + 26 - 6 - R() * 8], [x + w, y + 26], [x + w - 10 - R() * 14, y + 26]], INK);
+			lines += `<polygon points="${P(q)}" class="k k2"/>`;
+			x += w;
+		}
+	}
+	ink.push(blocks, lines);
+}
+// Windows' glow on the stone: hard, posterised arch bands (no gradients).
+let glowBands = "";
+for (const w of Object.values(WIN)) {
+	glowBands += `<path d="${archPath(w.cx, GW / 2 + 62, SPRING, GBOT + 40)}" fill="${w.tint}" opacity=".05"/>`;
+	glowBands += `<path d="${archPath(w.cx, GW / 2 + 40, SPRING, GBOT + 26)}" fill="${w.tint}" opacity=".06"/>`;
+}
+// Darkness above: stepped black bands with brushed edges, hatched where they meet the stone.
+function band(y, j, op) {
+	const pts = [[-10, -10], [400, -10]];
+	for (let x = 400; x >= -10; x -= 13) pts.push([x, y + (R() - 0.5) * j * 2 + Math.sin(x * 0.03) * 4]);
+	return poly(pts, INK, `opacity="${op}"`);
+}
+const vault = `${band(118, 7, 0.45)}${band(84, 6, 0.75)}${band(54, 5, 1)}
+	<path d="M-10 132 Q80 58 195 -8 L195 10 Q90 70 4 148Z" fill="#20160f"/><path d="M400 132 Q310 58 195 -8 L195 10 Q300 70 386 148Z" fill="#20160f"/>
+	<path d="M-10 132 Q80 58 195 -8 Q310 58 400 132 M4 148 Q90 70 195 10 Q300 70 386 148" class="k k3"/>`;
+const vaultHatch = poly([[-10, 40], [400, 40], [400, 150], [-10, 150]], "url(#hatch)", 'class="hz"');
+
+// Embrasures: deep reveals (shadowed side solid black), a lit band where the glass light catches the stone,
+// a sloping sill, hood mouldings with label stops, and medallions set around each arch.
+let emb = "", medalsSVG = "";
+const MEDALS = {};
+for (const [k, w] of Object.entries(WIN)) {
+	const r = GW / 2, cx = w.cx;
+	emb += `<path d="${archPath(cx, r + 30, SPRING, GBOT + 4)}" fill="#3a2a1d"/>`;
+	emb += `<path d="${archPath(cx, r + 30, SPRING, GBOT + 4)}" class="k k4"/>`;
+	emb += `<path d="${archPath(cx, r + 24, SPRING, GBOT + 4)}" fill="#20160f"/>`;
+	emb += `<path d="${archPath(cx, r + 14, SPRING, GBOT + 2)}" fill="#120c09"/>`;
+	// reveal: the half facing away from the room light is solid black; the near half catches the glass colour.
+	const shadowLeft = k === "A";
+	const rv = archPts(cx, r + 14, SPRING, GBOT + 2, 20), ig = archPts(cx, r, SPRING, GBOT, 20);
+	const half = (side) => { const a = rv.filter(([x]) => (side < 0 ? x <= cx : x >= cx)), b = ig.filter(([x]) => (side < 0 ? x <= cx : x >= cx)).reverse(); return a.concat(b); };
+	emb += poly(half(shadowLeft ? -1 : 1), INK);
+	emb += poly(half(shadowLeft ? 1 : -1), "#3d2a1c");
+	emb += `<path d="${archPath(cx, r + 5, SPRING, GBOT)}" fill="none" stroke="${w.tint}" stroke-width="7" opacity=".42" class="catch" data-w="${k}"/>`;
+	emb += poly(half(shadowLeft ? -1 : 1).map(([x, y]) => [x, y]), "url(#xhatch)", 'class="hz" opacity=".8"');
+	// sill
+	const sill = jq([[w.x0 - 6, GBOT], [w.x1 + 6, GBOT], [w.x1 + 22, GBOT + 22], [w.x0 - 22, GBOT + 22]], 0.8);
+	emb += poly(sill, "#5a4430") + poly([[w.x0 - 6, GBOT], [w.x1 + 6, GBOT], [w.x1 + 22, GBOT + 22], [w.x0 - 22, GBOT + 22]], w.tint, `opacity=".22" class="sillLit" data-w="${k}"`);
+	emb += `<polygon points="${P(sill)}" class="k k3"/>` + poly(jq([[w.x0 - 22, GBOT + 22], [w.x1 + 22, GBOT + 22], [w.x1 + 18, GBOT + 31], [w.x0 - 18, GBOT + 31]], 1), INK);
+	// hood moulding with label stops
+	emb += `<path d="M${cx - r - 30} ${SPRING} A${r + 30} ${r + 30} 0 0 1 ${cx + r + 30} ${SPRING}" fill="none" stroke="${INK}" stroke-width="12"/><path d="M${cx - r - 30} ${SPRING} A${r + 30} ${r + 30} 0 0 1 ${cx + r + 30} ${SPRING}" fill="none" stroke="#6b5139" stroke-width="5"/><path d="M${cx - r - 30} ${SPRING - 2} A${r + 31} ${r + 31} 0 0 1 ${cx + r + 30} ${SPRING - 2}" fill="none" stroke="${BONE_D}" stroke-width="1.4" opacity=".45"/>`;
+	for (const sx of [cx - r - 30, cx + r + 30]) emb += poly(jq([[sx - 8, SPRING], [sx + 8, SPRING], [sx + 6, SPRING + 16], [sx - 6, SPRING + 16]], 0.6), "#4a3626") + `<polygon points="${P([[sx - 8, SPRING], [sx + 8, SPRING], [sx + 6, SPRING + 16], [sx - 6, SPRING + 16]])}" class="k k3"/>`;
+	// medallions: 25 along the reveal's outer edge
+	const pts = [], cy = SPRING, RR = r + 22, side = GBOT - cy, arc = Math.PI * RR, total = 2 * side + arc;
+	for (let i = 0; i < 25; i++) { let d = (i / 24) * total; if (d <= side) { pts.push([cx - RR, GBOT - d]); continue; } d -= side; if (d <= arc) { const a = Math.PI + d / RR; pts.push([cx + Math.cos(a) * RR, cy + Math.sin(a) * RR]); continue; } d -= arc; pts.push([cx + RR, cy + d]); }
+	MEDALS[k] = pts;
+	medalsSVG += pts.map(([x, y], i) => `<g class="medal" id="m${k}${i}" transform="translate(${f1(x)} ${f1(y)})"><circle r="5.4" fill="#0d0907"/><circle r="4.3" fill="#1a1210" class="mc"/><path d="M-4 1.4 A4.3 4.3 0 0 0 4 1.4Z" fill="#000" opacity="0" class="ms"/><circle r="4.3" class="k" stroke-width="1.3"/><path d="M-4.2 2.8 A5.4 5.4 0 0 0 4.2 2.8" fill="none" stroke="${BONE_D}" stroke-width=".9" opacity=".35"/><circle cx="-1.5" cy="-1.6" r="1.05" fill="${BONE}" opacity="0" class="mh"/><circle r="4.3" fill="#fff3cf" opacity="0" class="mf"/></g>`).join("");
+}
+// colonnette between the windows, stringcourse under the sills
+emb += poly([[189, 96], [201, 96], [201, GBOT + 30], [189, GBOT + 30]], "#4a3626") + poly([[195, 96], [201, 96], [201, GBOT + 30], [195, GBOT + 30]], INK);
+emb += poly(jq([[183, 90], [207, 90], [204, 102], [186, 102]], 0.6), "#5a4430") + `<polygon points="183,90 207,90 204,102 186,102" class="k k3"/><polygon points="189,96 201,96 201,${GBOT + 30} 189,${GBOT + 30}" class="k k3"/>`;
+const SC = GBOT + 31;
+emb += poly(jq([[-10, SC], [400, SC], [400, SC + 12], [-10, SC + 12]], 0.8), "#5a4430") + brush([[-4, SC + 2.5], [195, SC + 2], [394, SC + 2.6]], 2.2, BONE_D, 'opacity=".5"') + poly([[-10, SC + 12], [400, SC + 12], [400, SC + 20], [-10, SC + 20]], INK) + `<polygon points="-10,${SC} 400,${SC} 400,${SC + 12} -10,${SC + 12}" class="k k3"/>`;
+emb += poly([[-10, SC + 20], [400, SC + 20], [400, SC + 46], [-10, SC + 46]], "url(#hatch)", 'class="hz" opacity=".6"');
+ink.push(emb);
+
+// Floor: flagstones in perspective, ink joints, spot-black contact shadow and hatched corners.
+const VX = 195, FT = 430, FH = 414, ZF = 4;
+const fy = (Z) => FT + FH * ((1 / Z - 1 / ZF) / (1 - 1 / ZF));
+const fx = (X, Z) => VX + (X - VX) / Z;
+let floorFill = "", floorInk = "";
+{
+	const rows = [4, 3.25, 2.7, 2.25, 1.9, 1.6, 1.36, 1.17, 1.0, 0.86];
+	for (let i = 0; i < rows.length - 1; i++) {
+		const Zf = rows[i], Zn = rows[i + 1], W = 96, off = (i % 2) * W * 0.5 + R() * 10;
+		for (let X = -700 + off; X < 1100; X += W) {
+			const j = 0.6 + (4 - Zf) * 0.5;
+			const q = jq([[fx(X, Zf), fy(Zf)], [fx(X + W, Zf), fy(Zf)], [fx(X + W, Zn), fy(Zn)], [fx(X, Zn), fy(Zn)]], j);
+			floorFill += poly(q, ["#1b120d", "#20160f", "#18100b", "#23180f", "#1d140e"][(R() * 5) | 0]);
+			floorInk += `<polygon points="${P(q)}" class="k k2"/>`;
+			if (R() < 0.6) floorInk += brush([[q[0][0] + 5, q[0][1] + 2.2], [lerp(q[0][0], q[1][0], 0.5), lerp(q[0][1], q[1][1], 0.5) + 2], [q[1][0] - 8, q[1][1] + 2.2]], 1.4, BONE_D, 'opacity=".16"');
+			if (R() < 0.35) { const cx0 = lerp(q[0][0], q[2][0], 0.3 + R() * 0.4), cy0 = lerp(q[0][1], q[2][1], 0.3 + R() * 0.4); floorInk += brush([[cx0, cy0], [cx0 + 6 + R() * 8, cy0 + 2 + R() * 3], [cx0 + 10 + R() * 12, cy0 + R() * 5]], 1.6); }
+		}
+	}
+}
+const floorShadow = band2();
+function band2() {
+	let o = "";
+	const top = [[-10, FT], [400, FT]]; for (let x = 400; x >= -10; x -= 12) top.push([x, FT + 18 + (R() - 0.5) * 8]);
+	o += poly(top, INK);
+	o += poly([[-10, FT + 14], [400, FT + 14], [400, FT + 44], [-10, FT + 44]], "url(#hatch)", 'class="hz"');
+	// corners eaten by black, hatched at their edges
+	const cl = [[-10, 844], [-10, 560]]; for (let k = 0; k <= 10; k++) { const a = k / 10; cl.push([lerp(-10, 120, a) + (R() - .5) * 10, lerp(560, 860, a * a) + (R() - .5) * 8]); }
+	const cr = cl.map(([x, y]) => [390 - x, y]);
+	o += poly(cl.map(([x, y]) => [x + 22, y]), "url(#xhatch)", 'class="hz"') + poly(cr.map(([x, y]) => [x - 22, y]), "url(#xhatch)", 'class="hz"');
+	o += poly(cl, INK) + poly(cr, INK);
+	return o;
+}
+
+// Fittings, drawn as objects in the room with the same ink, wobble and light as the stone:
+// an iron ring on a wall plate (leave) and an hourglass standing on the floor (pass).
+const fittings = `
+	<g transform="translate(32 40)" filter="url(#wob)">
+		<polygon points="-10,-24 10,-24 9,-10 -9,-10" fill="#3a2a1d" class="k k2"/><path d="M-8 -22 H6" stroke="${BONE_D}" stroke-width="1" opacity=".35"/>
+		<circle cx="-6" cy="-17" r="1.2" fill="${BONE_D}" opacity=".45"/><circle cx="6" cy="-17" r="1.2" fill="${BONE_D}" opacity=".45"/>
+		<path d="M-3 -10 V-7 M3 -10 V-7" stroke="${INK}" stroke-width="2.4"/>
+		<circle cx="3" cy="4" r="12" fill="none" stroke="#000" stroke-width="5" opacity=".45"/>
+		<circle r="12" fill="none" stroke="${INK}" stroke-width="6.5"/><circle r="12" fill="none" stroke="#3b2e25" stroke-width="3"/>
+		<path d="M-10 -5 A12 12 0 0 1 3 -11.6" fill="none" stroke="${BONE_D}" stroke-width="1.3" opacity=".6"/>
+		<path d="M10 5 A12 12 0 0 1 -2 11.8" fill="none" stroke="${INK}" stroke-width="1.6" opacity=".7"/>
+	</g>
+	<g transform="translate(356 800)" id="hourG" filter="url(#wob)">
+		<ellipse cx="7" cy="21" rx="18" ry="4.5" fill="#000" opacity=".5"/>
+		<polygon points="-13,-21 13,-21 12,-16 -12,-16" fill="#4a3626" class="k k2"/><polygon points="-13,16 13,16 14,21 -14,21" fill="#4a3626" class="k k2"/>
+		<path d="M-11 -16 V16 M11 -16 V16" stroke="${INK}" stroke-width="2.6"/><path d="M-11 -16 V16" stroke="#6b5139" stroke-width="1"/>
+		<path d="M-8 -16 Q-8 -4 0 0 Q-8 4 -8 16 H8 Q8 4 0 0 Q8 -4 8 -16Z" fill="${BONE}" opacity=".1"/>
+		<path d="M-6.5 16 Q0 7 6.5 16Z" fill="${BONE_D}" opacity=".85"/><path d="M-4.5 -8 Q0 -3 4.5 -8Z" fill="${BONE_D}" opacity=".7"/><path d="M0 -2 V12" stroke="${BONE_D}" stroke-width=".8" opacity=".7"/>
+		<path d="M-8 -16 Q-8 -4 0 0 Q-8 4 -8 16 H8 Q8 4 0 0 Q8 -4 8 -16Z" class="k k2"/><path d="M-6 -12 Q-6 -5 -2 -2" fill="none" stroke="${BONE}" stroke-width=".9" opacity=".4"/>
+	</g>`;
+// The floor eye, carved into a flagstone: a groove with a shadowed upper lip and a lit lower lip, an enamel iris,
+// and a stone lid that lifts when one devours.
+const floorEye = `<g transform="translate(195 806)" filter="url(#wob)">
+	<ellipse rx="46" ry="15" fill="#000" opacity=".22"/>
+	<path d="M-32 0 Q0 -20 32 0 Q0 20 -32 0Z" fill="#0d0907" class="k k4"/>
+	<path d="M-28 1.5 Q0 16 28 1.5" fill="none" stroke="${BONE_D}" stroke-width="1.3" opacity=".4"/>
+	<g id="eyeIris"><ellipse rx="7.5" ry="9.5" fill="#7a171b" class="k k2"/><ellipse rx="2.2" ry="7.6" fill="${INK}"/><ellipse cx="-2.6" cy="-3.4" rx="1.2" ry="1.6" fill="${BONE}" opacity=".45"/></g>
+	<path id="eyeLid" d="M-30 0 Q0 -19 30 0 Q0 -19 -30 0Z" fill="#22170f" class="k k3"/>
+</g>`;
+
+// Glass: the window art, its mask painted into the face, a passing cloud, a sun flare, a crack, a dimming veil.
+function glassSVG(k) {
+	const w = WIN[k], sc = GW / 300, top = GTOP;
+	const mw = 38, mh = Math.round((mw * 84) / 100);
+	const m = MASK.mask(w.aspect, mw).replace("<svg ", `<svg x="${f1(w.cx - mw / 2)}" y="${f1(top + 244 * sc - mh / 2 - 3)}" `);
+	const sunY = top + 165 * sc;
+	let crack = "";
+	if (k === "B") {
+		const r2 = rng(5);
+		for (let i = 0; i < 9; i++) {
+			const a = (i / 9) * Math.PI * 2 + r2() * 0.5, len = 46 + r2() * 46, pts = [[w.cx, sunY]];
+			for (let s2 = 1; s2 <= 4; s2++) pts.push([w.cx + Math.cos(a + (r2() - 0.5) * 0.3) * len * (s2 / 4), sunY + Math.sin(a + (r2() - 0.5) * 0.3) * len * (s2 / 4)]);
+			crack += brush(pts, 3.4) + brush(pts.map(([x, y]) => [x + 1.4, y + 1]), 0.9, BONE, 'opacity=".7"');
+		}
+		crack = `<clipPath id="crackClip"><circle id="crackR" cx="${w.cx}" cy="${f1(sunY)}" r="0"/></clipPath><g clip-path="url(#crackClip)">${crack}</g>`;
+	}
+	const cloud = `<g id="cloud${k}" opacity="0"><ellipse cx="0" cy="0" rx="58" ry="22" fill="${INK}"/><ellipse cx="38" cy="-10" rx="34" ry="20" fill="${INK}"/><ellipse cx="-40" cy="6" rx="30" ry="15" fill="${INK}"/></g>`;
+	return `<g clip-path="url(#glass${k})">
+		<use id="flat${k}" href="#art${k}" transform="translate(${w.x0} ${top}) scale(${sc})"/>${k === "B" ? `<use id="greyB" href="#artBg" opacity="0" transform="translate(${w.x0} ${top}) scale(${sc})"/>` : ""}
+		<g class="screen" id="sun${k}" opacity=".55"><circle cx="${w.cx}" cy="${f1(sunY)}" r="30" fill="${w.tint}" opacity=".35"/><circle cx="${w.cx}" cy="${f1(sunY)}" r="18" fill="#fff4d6" opacity=".55"/></g>
+		<g id="flare${k}" class="screen" opacity="0"><circle cx="${w.cx}" cy="${f1(sunY)}" r="64" fill="${BLOOD_L}" opacity=".35"/><circle cx="${w.cx}" cy="${f1(sunY)}" r="40" fill="#ffcf7a" opacity=".55"/><circle cx="${w.cx}" cy="${f1(sunY)}" r="22" fill="#fff7e2" opacity=".8"/></g>
+		<g id="fm${k}" style="mix-blend-mode:multiply" opacity=".95">${m}</g>
+		<g id="meye${k}" class="screen" opacity=".7">${eyeDots(w, mw, mh, top, sc)}</g>
+		${cloud}
+		<rect id="veil${k}" x="${w.x0 - 2}" y="${top - 2}" width="${GW + 4}" height="${f1(GH + 4)}" fill="${INK}" opacity="0"/>
+		${crack}
+	</g>
+	<path d="${archPath(w.cx, GW / 2, SPRING, GBOT)}" class="k k6"/>`;
+}
+function eyeDots(w, mw, mh, top, sc) {
+	const E = { madness: [[34, 42], [68, 44]], echo: [[31, 38], [69, 38]] }[w.aspect];
+	const x0 = w.cx - mw / 2, y0 = top + 244 * sc - mh / 2 - 3;
+	return E.map(([x, y]) => { const cx = f1(x0 + x * mw / 100), cy = f1(y0 + y * mh / 84); return `<ellipse cx="${cx}" cy="${cy}" rx="2.2" ry="1.3" fill="#7a1c0e" opacity=".85"/><ellipse cx="${cx}" cy="${cy}" rx=".9" ry=".55" fill="#ffb27a"/>`; }).join("");
+}
+
+// Names, engraved and gilt on the stone under the sills.
+const names = Object.entries(WIN).map(([k, w]) => `
+	<text x="${w.cx}" y="${SC + 50}" text-anchor="middle" class="lettering" font-family="Grenze Gotisch" font-weight="900" font-size="25" fill="${k === "B" ? "#e3c27c" : BONE}" stroke-width="5">${w.name}</text>
+	<text x="${w.cx}" y="${SC + 68}" text-anchor="middle" class="lettering" font-family="Spectral" font-style="italic" font-weight="500" font-size="12.5" fill="${BONE_D}" stroke-width="3.5">${k === "B" ? "wears Echo · your fragment" : "wears Madness"}</text>`).join("");
+
+// The outcome, cut into the floor and slammed down.
+const slam = `<g id="slam" opacity="0" transform="translate(195 716)">
+	<text text-anchor="middle" class="lettering" font-family="Grenze Gotisch" font-weight="900" font-size="34" fill="${BLOOD_L}" stroke-width="8">Old Marrow devours</text>
+	<g id="slamSub" opacity="0"><text y="27" text-anchor="middle" class="lettering" font-family="Spectral" font-style="italic" font-weight="500" font-size="15" fill="${BONE}" stroke-width="5">Vesper's light is drawn across the floor.</text>
+	<text y="47" text-anchor="middle" class="lettering" font-family="Spectral" font-style="italic" font-weight="500" font-size="15" fill="${BONE}" stroke-width="5">Marrow takes five.</text></g></g>`;
+
+// Light dragged across the stone: crimson filaments from Vesper's pool into Marrow's (drawn on the light canvas).
+const FIL = [0, 1, 2, 3, 4].map((i) => ({ y: 548 + i * 13, c: (R() - 0.5) * 30, col: i % 2 ? "#ff6a4a" : BLOOD_L, w: 2 + (i % 3), v: 140 + i * 22 }));
+
+s = `<defs>${defs.join("")}</defs>
+	${glassSVG("A")}${glassSVG("B")}
+	${medalsSVG}
+	${names}
+	${floorEye}${fittings}
+	${slam}`;
+$("#scene").innerHTML = s;
+
+// Static ink (stone, vault, embrasures, flagstones, hatching) and the window art are rasterised once, so a frame
+// only moves light; re-baked when the tuner changes ink weight, wobble, hatching or glass brightness.
+async function rasterC(svg, w, h) {
+	const img = new Image();
+	img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+	await img.decode();
+	const c = document.createElement("canvas"); c.width = w; c.height = h;
+	c.getContext("2d").drawImage(img, 0, 0, w, h);
+	return c;
+}
+const toURL = (c) => new Promise((r) => c.toBlob((b) => r(URL.createObjectURL(b))));
+function filtered(c, f) { const o = document.createElement("canvas"); o.width = c.width; o.height = c.height; const x = o.getContext("2d"); x.filter = f; x.drawImage(c, 0, 0); return o; }
+function crimsonOf(c) {
+	const o = document.createElement("canvas"); o.width = c.width; o.height = c.height; const x = o.getContext("2d"); x.drawImage(c, 0, 0);
+	const im = x.getImageData(0, 0, o.width, o.height), d = im.data;
+	for (let i = 0; i < d.length; i += 4) { const r = d[i], g = d[i + 1], b = d[i + 2]; d[i] = Math.min(255, 0.55 * r + 0.7 * g + 0.2 * b + 10); d[i + 1] = 0.06 * r + 0.1 * g + 0.03 * b; d[i + 2] = 0.06 * r + 0.08 * g + 0.04 * b; }
+	x.putImageData(im, 0, 0); return o;
+}
+// Hard halo bands in window space (covering x -60..360, y -100..520), so pools carry stepped light around them.
+function haloOf(tint) {
+	const o = document.createElement("canvas"); o.width = 420; o.height = 620; const x = o.getContext("2d"), arch = new Path2D("M0 420 V150 A150 150 0 0 1 300 150 V420 Z");
+	for (const [sc, al] of [[1.34, 0.2], [1.16, 0.45]]) { x.setTransform(1, 0, 0, 1, 60, 100); x.translate(150, 210); x.scale(sc, sc); x.translate(-150, -210); x.globalAlpha = al; x.fillStyle = tint; x.fill(arch); }
+	return o;
+}
+const kcss = () => `<style>.k{fill:none;stroke:${INK};stroke-linejoin:round;stroke-linecap:round}.k2{stroke-width:${2 * LOOK.ink}px}.k3{stroke-width:${3 * LOOK.ink}px}.k4{stroke-width:${4.5 * LOOK.ink}px}.k6{stroke-width:${6 * LOOK.ink}px}.screen{mix-blend-mode:screen}</style>`;
+const doc = (inner) => `<svg xmlns="http://www.w3.org/2000/svg" width="780" height="1688" viewBox="0 0 390 844">${kcss()}<defs>${defs[0].replace(/scale="[\d.]+"/, `scale="${LOOK.wobble}"`)}</defs>${inner}</svg>`;
+const IMG = {}, urls = [];
+let lightDirty = true;
+async function bake() {
+	const [b, f] = await Promise.all([
+		rasterC(doc(`<g filter="url(#wob)">${ink[0]}${ink[1]}</g><g class="screen">${glowBands}</g>${vault}<g opacity="${LOOK.hatch}">${vaultHatch}</g><g filter="url(#wob)">${ink[2]}</g>${floorFill}`), 780, 1688).then(toURL),
+		rasterC(doc(`<g filter="url(#wob)">${floorInk}</g><g opacity="${LOOK.hatch}">${floorShadow}</g>`), 780, 1688).then(toURL),
+	]);
+	$("#back").src = b; $("#front").src = f;
+	urls.splice(0).forEach((u) => URL.revokeObjectURL(u)); urls.push(b, f);
+}
+async function bakeArt() {
+	for (const k of ["A", "B"]) {
+		const raw = await rasterC(ART[k], 600, 840), art = filtered(raw, `brightness(${LOOK.glow})`);
+		IMG[k] = { art, crim: crimsonOf(art), halo: haloOf(WIN[k].tint) };
+		$(`#art${k}`).setAttribute("href", await toURL(art));
+		if (k === "B") $("#artBg").setAttribute("href", await toURL(filtered(raw, `saturate(.22) brightness(${(LOOK.glow * 0.62).toFixed(2)})`)));
+	}
+	lightDirty = true;
+}
+// The Gathering starts only once the stone, the glass and the lettering are ready.
+// Glass: the owner's locked stained-glass shader (lit from outside: sun, moon, leak, grime, bloom), unless ?glass=flat.
+// Floor: the caustic floor light from the earlier Gathering (owner-locked placement), unless ?floor=flat.
+const GLASS_GL = Q.get("glass") !== "flat", FLOOR_GL = Q.get("floor") !== "flat";
+const GAPI = {};
+async function mountGlass() {
+	if (!GLASS_GL || !window.GL) return;
+	for (const k of ["A", "B"]) {
+		const api = await GL.mount({ winCanvas: $(`#win${k}`), theme: WIN[k].theme, seed: WIN[k].seed, preset: "locked" }).catch((e) => (console.error(e), null));
+		if (!api) { $(`#win${k}`).remove(); continue; }
+		GAPI[k] = api;
+		A_($(`#flat${k}`), "opacity", 0); A_($(`#sun${k}`), "opacity", 0);
+		const w = WIN[k], sc = GW / 300, mw = 38, mh = Math.round((mw * 84) / 100), x0 = w.cx - mw / 2, y0 = GTOP + 244 * sc - mh / 2 - 3;
+		const box = `left:${x0.toFixed(1)}px;top:${y0.toFixed(1)}px;width:${mw}px;height:${mh}px`;
+		const eyes = eyeDots(w, mw, mh, GTOP, sc).replace(/cx="([\d.]+)"/g, (_, v) => `cx="${(v - x0).toFixed(1)}"`).replace(/cy="([\d.]+)"/g, (_, v) => `cy="${(v - y0).toFixed(1)}"`);
+		$("#light").insertAdjacentHTML("beforebegin", `<div class="hmask" style="${box}">${MASK.mask(w.aspect, mw)}</div><svg class="heye" id="heye${k}" style="${box}" viewBox="0 0 ${mw} ${mh}">${eyes}</svg>`);
+		A_($(`#fm${k}`), "display", "none"); A_($(`#meye${k}`), "display", "none"); A_($(`#cloud${k}`), "display", "none"); A_($(`#flare${k}`), "display", "none");
+		if (k === "B") A_($("#greyB"), "display", "none");
+	}
+}
+const homeX = (sx) => { const wall = VX + (sx - VX) * ZF; return wall + (VX - wall) * 0.17; };
+const FS = { A: { x: homeX(97), i: 0.8, r: 1, c: 0 }, B: { x: homeX(293), i: 0.8, r: 1, c: 0 }, drain: { from: 1, amount: 0, phase: 0 }, look: { zc: 2.75, rz: 1.18, spread: 0.8, caus: 0.34 } };
+let floorOn = false;
+async function mountFloor() {
+	if (!FLOOR_GL || !window.FLOOR) { $("#floorC").remove(); return; }
+	floorOn = !!(await FLOOR.mount({ canvas: $("#floorC"), a: { theme: WIN.A.theme, seed: WIN.A.seed }, b: { theme: WIN.B.theme, seed: WIN.B.seed }, zf: ZF, vx: VX, state: FS }).catch((e) => (console.error(e), null)));
+	if (!floorOn) $("#floorC").remove();
+}
+let ready = false;
+Promise.all([bake(), bakeArt(), document.fonts.ready, mountGlass(), mountFloor()]).then(() => { ready = true; last = performance.now(); $("#stage").classList.add("on"); });
+
+// ---------- Floor light on one canvas (screen-blended over the stone) ----------
+const POOL0 = {
+	A: { yF: 476, yN: 646, cxF: 108, cxN: 98, wF: 122, wN: 176 },
+	B: { yF: 476, yN: 646, cxF: 282, cxN: 292, wF: 122, wN: 176 },
+};
+const DPR = Math.min(2, devicePixelRatio || 1), lc = $("#light"), lx = lc.getContext("2d");
+lc.width = 390 * DPR; lc.height = 844 * DPR;
+const poolC = { A: document.createElement("canvas"), B: document.createElement("canvas") };
+for (const c of Object.values(poolC)) { c.width = lc.width; c.height = lc.height; }
+// Window v=420 (sill) lands far, v=0 (arch top) lands nearest the viewer; each strip gets its own width (cheap perspective).
+function drawPool(k, p, crim) {
+	const c = poolC[k], x = c.getContext("2d"), ay = (p.yF - p.yN) / 420, kx = (p.cxF - p.cxN) / 420, I = IMG[k];
+	x.setTransform(1, 0, 0, 1, 0, 0); x.clearRect(0, 0, c.width, c.height);
+	for (let i = 0; i < STRIPS; i++) {
+		const v0 = sv(i), v1 = sv(i + 1), s2 = lerp(p.wN, p.wF, sv(i + 0.5) / 420) / 300;
+		x.setTransform(DPR * s2, 0, DPR * kx, DPR * ay, DPR * (p.cxN - 150 * s2), DPR * p.yN);
+		// draw only this strip's slice of each image (no clipping, no full-image draws)
+		x.globalAlpha = LOOK.halo; x.drawImage(I.halo, 0, v0 + 100, 420, v1 - v0, -60, v0, 420, v1 - v0 + 0.3);
+		const a0 = Math.max(0, v0), a1 = Math.min(420, v1);
+		if (a1 > a0) {
+			x.globalAlpha = 1; x.drawImage(I.art, 0, a0 * 2, 600, (a1 - a0) * 2, 0, a0, 300, a1 - a0 + 0.3);
+			if (crim > 0.002) { x.globalAlpha = crim; x.drawImage(I.crim, 0, a0 * 2, 600, (a1 - a0) * 2, 0, a0, 300, a1 - a0 + 0.3); }
+		}
+	}
+}
+let lastKey = "", lastGeo = "";
+function drawLight(A, B, alA, alB, crA, crB, shA, shB, fon, t) {
+	if (!IMG.A || !IMG.B) return;
+	// pools are redrawn only when their shape or crimson changes; brightness is applied when compositing
+	const geo = [A.cxF, A.wN, A.yN, B.cxF, B.wN, crA, crB, floorOn ? FS.B.x : 0].map((v) => v.toFixed(3)).join();
+	const key = geo + [alA, alB, shA, shB].map((v) => v.toFixed(3)).join();
+	if (key === lastKey && fon <= 0 && !lightDirty) return;
+	if (!floorOn && (geo !== lastGeo || lightDirty)) { drawPool("A", A, crA); drawPool("B", B, crB); lastGeo = geo; }
+	lastKey = key; lightDirty = false;
+	lx.setTransform(1, 0, 0, 1, 0, 0); lx.clearRect(0, 0, lc.width, lc.height);
+	lx.globalCompositeOperation = "lighter";
+	if (!floorOn) { lx.globalAlpha = clamp(alA); lx.drawImage(poolC.A, 0, 0); lx.globalAlpha = clamp(alB); lx.drawImage(poolC.B, 0, 0); }
+	// shafts: hard-edged wedges of air light from each window down to its pool
+	lx.setTransform(DPR, 0, 0, DPR, 0, 0);
+	for (const [k, p0, al] of [["A", A, shA], ["B", B, shB]]) {
+		const cs = floorOn ? VX + (FS[k].x - VX) / FS.look.zc : 0, p = floorOn ? { ...p0, cxF: cs, cxN: cs, yF: 446, yN: 610 } : p0;
+		const w = WIN[k], at = (v) => [lerp(p.cxN, p.cxF, v / 420), lerp(p.yN, p.yF, v / 420), lerp(p.wN, p.wF, v / 420) / 2];
+		const [c1, y1, h1] = at(150), [c2, y2, h2] = at(420);
+		lx.fillStyle = w.tint;
+		for (const [q, a2] of [[[[w.x0 + 6, SPRING], [w.x1 - 6, SPRING], [c1 + h1, y1], [c1 - h1, y1]], 1], [[[w.x0 + 4, GBOT], [w.x1 - 4, GBOT], [c2 + h2, y2], [c2 - h2, y2]], 0.7]]) {
+			lx.globalAlpha = al * a2; lx.beginPath(); q.forEach(([px, py], i) => (i ? lx.lineTo(px, py) : lx.moveTo(px, py))); lx.fill();
+		}
+	}
+	if (fon > 0 && !floorOn) {
+		lx.setLineDash([26, 18, 6, 18]); lx.lineCap = "round";
+		for (const f of FIL) {
+			lx.globalAlpha = fon; lx.strokeStyle = f.col; lx.lineWidth = f.w; lx.lineDashOffset = -t * f.v;
+			// with the caustic floor, the streaks run between its pools (nearer the wall) rather than the flat ones
+			const x0 = floorOn ? VX + (FS.B.x - VX) / FS.look.zc : 300, x1 = floorOn ? VX + (FS.A.x - VX) / FS.look.zc + 14 : 104, y = floorOn ? f.y - 60 : f.y;
+			lx.beginPath(); lx.moveTo(x0, y); lx.bezierCurveTo(lerp(x0, x1, 0.27), y - 22 + f.c, lerp(x0, x1, 0.67), y + 26 - f.c, x1, y - 4); lx.stroke();
+		}
+		lx.setLineDash([]);
+	}
+	lx.globalCompositeOperation = "source-over"; lx.globalAlpha = 1;
+}
+// Attribute writes only when a value changes, so a quiet frame costs almost nothing.
+const A_ = (el, n, v) => { const c = el._c || (el._c = {}); v = String(v); if (c[n] !== v) { c[n] = v; el.setAttribute(n, v); } };
+const S_ = (el, n, v) => { const c = el._s || (el._s = {}); v = String(v); if (c[n] !== v) { c[n] = v; el.style[n] = v; } };
+
+// ---------- Timeline (seconds). Pure function of t, so ?still / ?t= can freeze any moment. ----------
+const TL = { hush: 1.0, reveal: 2.4, drain0: 2.55, drain1: 4.5, tally0: 4.7, tally1: 6.3, end: 7.2 };
+const LIT0 = { A: 7, B: 9 };
+const medal = (k, i, on, pop) => {
+	const g = $(`#m${k}${i}`);
+	A_(g.querySelector(".mc"), "fill", on ? WIN[k].tint : "#1a1210");
+	A_(g.querySelector(".mh"), "opacity", on ? 0.8 : 0);
+	A_(g.querySelector(".ms"), "opacity", on ? 0.35 : 0);
+	A_(g.querySelector(".mf"), "opacity", on && pop < 1 ? ((1 - pop) * 0.9).toFixed(2) : 0);
+	const sc = on ? 1 + 0.32 * Math.max(0, 1 - pop) * Math.sin(Math.min(1, pop) * Math.PI) : 1;
+	A_(g, "transform", `translate(${MEDALS[k][i][0].toFixed(1)} ${MEDALS[k][i][1].toFixed(1)}) scale(${sc.toFixed(3)})`);
+};
+function render(t) {
+	const hush = smooth(TL.hush, TL.hush + 0.8, t) * (1 - smooth(TL.reveal - 0.1, TL.reveal + 0.05, t));
+	const rv = t - TL.reveal, hit = t >= TL.reveal;
+	const drag = reduce ? (hit ? 1 : 0) : smooth(TL.drain0, TL.drain1, t);
+	// clouds cross both windows during the hush
+	for (const k of ["A", "B"]) {
+		const c = $(`#cloud${k}`), x = WIN[k].cx + lerp(-110, 110, clamp((t - TL.hush) / 1.6)) * (k === "A" ? 1 : -1);
+		A_(c, "transform", `translate(${x.toFixed(1)} ${(SPRING + 4).toFixed(1)})`);
+		A_(c, "opacity", (0.55 * hush).toFixed(2));
+	}
+	// glass: Marrow flares crimson-gold; Vesper cracks, greys and dims
+	const flareA = hit ? (reduce ? 0.7 : Math.max(0.65, 1 - rv * 0.6)) : 0;
+	A_($("#flareA"), "opacity", flareA.toFixed(2));
+	A_($("#veilA"), "opacity", (GAPI.A ? 0 : hush * 0.55).toFixed(2));
+	A_($("#veilB"), "opacity", (GAPI.B ? drag * 0.15 : hush * 0.55 + drag * 0.5).toFixed(2));
+	A_($("#greyB"), "opacity", (drag * 0.85).toFixed(2));
+	if (!GAPI.B) A_($("#sunB"), "opacity", (0.55 * (1 - drag * 0.8) * (1 - hush * 0.6)).toFixed(2));
+	if (!GAPI.A) A_($("#sunA"), "opacity", (0.55 * (1 - hush * 0.6)).toFixed(2));
+	// one cloud crosses the sky behind both windows, left to right (Vesper's window is ~1.5 widths further on)
+	const kc = clamp((t - (TL.hush - 0.2)) / (TL.reveal - TL.hush + 0.2)), cx = lerp(-0.7, 3.2, kc);
+	if (GAPI.A) { GAPI.A.cloud(cx); GAPI.A.dim(hush * 0.25); GAPI.A.red(hit ? 0.55 : 0); }
+	if (GAPI.B) { GAPI.B.cloud(cx - 1.53); GAPI.B.dim(Math.min(0.9, hush * 0.25 + drag * 0.6)); GAPI.B.red(0); }
+	if (floorOn) {
+		const ci = 0.8 * LOOK.caustic * (1 - hush * 0.75);
+		FS.A.i = ci * (1 + drag * 0.35); FS.A.c = drag * 0.35; FS.A.r = 1 + drag * 0.15;
+		FS.B.i = ci * (1 - drag * 0.75); FS.B.c = Math.min(1, drag * 1.4); FS.B.r = 1 - drag * 0.4; FS.B.x = lerp(homeX(293), homeX(97), drag * 0.55);
+		FS.drain.amount = hit ? smooth(TL.reveal, TL.drain0 + 0.3, t) * (1 - smooth(TL.drain1 - 0.2, TL.drain1 + 0.6, t)) : 0; FS.drain.phase = t;
+	}
+	A_($("#crackR"), "r", hit ? (reduce ? 120 : 120 * outExp(clamp(rv / 0.22))).toFixed(1) : 0);
+	A_($("#meyeA"), "opacity", (0.7 + flareA * 0.3).toFixed(2));
+	const fk = (seed) => { const n = Math.floor(t * 8) + seed, h = (Math.sin(n * 127.1) * 43758.5453) % 1, r = Math.abs(h); return r < 0.05 ? 0.2 : 0.7 + 0.3 * r; };
+	if (GAPI.A) S_($("#heyeA"), "opacity", (0.75 * fk(0)).toFixed(2));
+	if (GAPI.B) S_($("#heyeB"), "opacity", (0.75 * fk(17) * (1 - drag * 0.8)).toFixed(2));
+	A_($("#meyeB"), "opacity", (0.7 * (1 - drag * 0.8)).toFixed(2));
+	// floor light
+	const A = { ...POOL0.A }, B = { ...POOL0.B };
+	A.wN += drag * 26; A.wF += drag * 10; A.yN += drag * 10;
+	B.cxF = lerp(B.cxF, 168, drag); B.cxN = lerp(B.cxN, 150, drag); B.wF = lerp(B.wF, 54, drag); B.wN = lerp(B.wN, 84, drag);
+	const dim = 1 - hush * 0.75;
+	const fon = hit ? smooth(TL.reveal, TL.drain0 + 0.2, t) * (1 - smooth(TL.drain1 - 0.3, TL.drain1 + 0.4, t)) : 0;
+	drawLight(A, B, LOOK.pool * dim * (1 + drag * 0.12), LOOK.pool * dim * (1 - drag * 0.55), drag * 0.45, Math.min(1, drag * 1.6), LOOK.shaft * dim, LOOK.shaft * dim * (1 - drag * 0.7), fon, t);
+	// the floor eye opens on the devour
+	const lid = hit ? (reduce ? 1 : outExp(clamp((rv - 0.05) / 0.3))) : 0;
+	A_($("#eyeLid"), "d", `M-30 0 Q0 -19 30 0 Q0 ${(-19 + 38 * (1 - lid)).toFixed(1)} -30 0Z`);
+	A_($("#eyeIris"), "opacity", lid.toFixed(2));
+	// tally: Marrow's medallions pop one by one
+	const gained = Math.floor(clamp((t - TL.tally0) / (TL.tally1 - TL.tally0)) * 5.0001);
+	for (const k of ["A", "B"]) for (let i = 0; i < 25; i++) {
+		const base = LIT0[k], on = i < base + (k === "A" ? gained : 0);
+		const popT = k === "A" && i >= base ? (t - (TL.tally0 + ((i - base) / 5) * (TL.tally1 - TL.tally0))) / 0.35 : 9;
+		medal(k, i, on, reduce ? 9 : popT);
+	}
+	// outcome slam
+	const sl = rv - 0.12;
+	if (hit && sl > 0) {
+		const k = reduce ? 1 : clamp(sl / 0.28), sc = reduce ? 1 : lerp(2.3, 1, outBack(k));
+		A_($("#slam"), "opacity", Math.min(1, k * 4).toFixed(2));
+		A_($("#slam"), "transform", `translate(195 716) scale(${sc.toFixed(3)})`);
+		A_($("#slamSub"), "opacity", (reduce ? 1 : smooth(0.45, 0.8, sl)).toFixed(2));
+	} else A_($("#slam"), "opacity", 0);
+	// flash, red flash, shake
+	const fl = hit && !reduce ? LOOK.flash * Math.exp(-rv * 22) : 0;
+	S_($("#flash"), "opacity", fl.toFixed(3));
+	S_($("#redflash"), "opacity", (hit && !reduce ? 0.3 * LOOK.flash * Math.exp(-Math.max(0, rv - 0.08) * 7) * (rv > 0.08 ? 1 : 0) : 0).toFixed(3));
+	const sh = hit && !reduce ? LOOK.shake * Math.exp(-rv * 9) : 0;
+	S_($("#cam"), "transform", sh > 0.05 ? `translate(${(Math.sin(rv * 93) * sh).toFixed(2)}px, ${(Math.cos(rv * 71) * sh * 0.7).toFixed(2)}px)` : "none");
+	if (hit && !announced) { $("#sr").textContent = "Old Marrow devours. Vesper's light is drawn across the floor. Marrow takes five."; announced = true; }
+}
+let announced = false;
+
+// ---------- Clock: tap hastens, hold rushes, the hourglass passes, tap at the end to watch again ----------
+let t = Q.has("t") ? +Q.get("t") : Q.has("still") ? 6.8 : 0, last = performance.now(), held = false, freeze = 0, crossed = t >= TL.reveal;
+const still = Q.has("still");
+let frames = 0, fps0 = performance.now(), fpsS = fps0, fpsDone = false;
+function tick(now) {
+	let dt = Math.min(0.2, (now - last) / 1000); last = now;
+	if (Q.has("fps")) { if (now - fps0 < 3000) { frames = 0; fpsS = now; } else { frames++; if (now - fps0 > 6000 && !fpsDone) { fpsDone = true; console.warn(`fps ${(frames / ((now - fpsS) / 1000)).toFixed(1)} (3-6 s)`); } } }
+	if (still || !ready) dt = 0;
+	if (now < freeze) dt = 0;
+	const before = t;
+	t = Math.min(TL.end + 2, t + dt * LOOK.speed * (held ? 3 : 1));
+	if (!crossed && before < TL.reveal && t >= TL.reveal) { crossed = true; t = TL.reveal; if (!reduce) freeze = now + LOOK.hitstop; GAPI.A?.swell(); }
+	render(t);
+	requestAnimationFrame(tick);
+}
+const stage = $("#stage");
+let holdTimer = null;
+stage.addEventListener("pointerdown", (e) => {
+	if (e.target.closest("#tuner,.fit")) return;
+	if (t >= TL.end) { t = 0; crossed = false; announced = false; return; }
+	holdTimer = setTimeout(() => { held = true; }, 220);
+	if (t < TL.reveal - 0.3) t = TL.reveal - 0.3; // a tap hastens to the reveal
+});
+for (const n of ["pointerup", "pointercancel", "pointerleave"]) stage.addEventListener(n, () => { clearTimeout(holdTimer); held = false; });
+$("#hour").addEventListener("click", () => { t = TL.end; crossed = true; });
+$("#ring").addEventListener("click", () => { /* leaving is out of scope for this study */ });
+
+// Fit the 390 x 844 phone frame into the window.
+function fit() { const k = Math.min(1, innerHeight / 844, innerWidth / 390); stage.style.transform = `scale(${k})`; }
+addEventListener("resize", fit); fit();
+
+// ---------- ?tune ----------
+if (Q.has("tune")) {
+	const K = [
+		["ink", "Ink weight", 0.4, 2.5, 0.05], ["wobble", "Hand wobble", 0, 8, 0.1], ["hatch", "Hatching", 0, 1, 0.01],
+		["glow", "Glass brightness", 0.8, 2, 0.01], ["pool", "Floor light", 0, 1.2, 0.01], ["halo", "Light bands", 0, 0.5, 0.01], ["shaft", "Shafts in the air", 0, 0.35, 0.005],
+		["shake", "Shake", 0, 16, 0.5], ["hitstop", "Hit-stop (ms)", 0, 300, 5], ["flash", "Flash", 0, 1, 0.01], ["speed", "Speed", 0.25, 2, 0.05], ["caustic", "Caustic floor light", 0, 2, 0.01],
+	];
+	const css = document.createElement("style");
+	css.textContent = `#tuner{position:fixed;top:12px;right:12px;width:250px;max-height:calc(100vh - 24px);overflow:auto;background:#f4f1ea;color:#1d1b19;border-radius:12px;padding:12px 14px;font:500 13px/1.35 system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:9;user-select:text}
+#tuner h3{font:700 14px/1.2 system-ui;margin-bottom:4px}#tuner label{display:grid;grid-template-columns:1fr 46px;gap:2px 8px;margin:7px 0}#tuner output{text-align:right;font-variant-numeric:tabular-nums}
+#tuner input{grid-column:1/-1;width:100%;accent-color:#8e1218}#tuner button{font:600 12px/1 system-ui;padding:7px 10px;border-radius:7px;border:1px solid #b9b2a6;background:#fff;cursor:pointer;margin:6px 6px 0 0}`;
+	document.head.appendChild(css);
+	const box = document.createElement("div"); box.id = "tuner";
+	box.innerHTML = "<h3>Ink study tuner</h3>" + K.map(([k, l, a, b, st]) => `<label><span>${l}</span><output id="o-${k}">${LOOK[k]}</output><input type="range" min="${a}" max="${b}" step="${st}" value="${LOOK[k]}" data-k="${k}"></label>`).join("") + '<button id="replay">Replay</button><button id="copy">Copy values</button>';
+	document.body.appendChild(box);
+	let rebake = null;
+	const apply = () => {
+		document.documentElement.style.setProperty("--ink", LOOK.ink);
+		clearTimeout(rebake); rebake = setTimeout(() => { bake(); bakeArt(); }, 150);
+		lightDirty = true;
+	};
+	box.addEventListener("input", (e) => { const i = e.target; if (!i.dataset.k) return; LOOK[i.dataset.k] = +i.value; $(`#o-${i.dataset.k}`).textContent = i.value; apply(); });
+	$("#replay").addEventListener("click", () => { t = 0; crossed = false; announced = false; });
+	$("#copy").addEventListener("click", (e) => { navigator.clipboard.writeText(JSON.stringify(LOOK)); e.target.textContent = "Copied: paste it to Claude"; });
+}
+requestAnimationFrame((n) => { last = n; tick(n); });
+})();
+</script>
+</body>
+</html>
