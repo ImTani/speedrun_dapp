@@ -24,6 +24,9 @@ import {
 	type MeState,
 	mockStandings,
 } from "./mockData.ts";
+import { serveMock } from "./mockRoutes.ts";
+// Registers every feature's api.call mock routes (economy, inventory, marks, spire, ...).
+import "./mock/index.ts";
 
 export interface MockState {
 	/** What /api/me answers. Default "confirmed". */
@@ -136,6 +139,7 @@ function createMockApi(state: MockState): {
 		gathering,
 		standings,
 		opStatus,
+		call: (path, init) => serveMock(path, init),
 	};
 
 	const json = (body: unknown, status = 200) =>

@@ -15,7 +15,6 @@ export function Lower({
 	top,
 	bottom,
 	active,
-	ended,
 	feed,
 	seals,
 	toll,
@@ -26,8 +25,6 @@ export function Lower({
 	bottom: number;
 	/** A Gathering is under way. */
 	active: boolean;
-	/** A Gathering has been held and is over. */
-	ended: boolean;
 	feed: FeedItem[];
 	/** One mark per Fragment while the masked seal their choices (sealing phase only). */
 	seals: SealMark[] | null;
@@ -47,9 +44,6 @@ export function Lower({
 					{!active && (
 						<div className={css.waiting}>
 							<p className={css.waitingTitle}>{T.waiting}</p>
-							<p className={css.waitingHint}>
-								{ended ? T.lastResult : T.waitingHint}
-							</p>
 						</div>
 					)}
 					{seals && seals.length > 0 && <Seals toll={toll} marks={seals} />}

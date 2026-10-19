@@ -518,7 +518,6 @@ export function GatheringScreen() {
 					top={lowerTop}
 					bottom={lowerBottom}
 					active={active}
-					ended={!!data?.gathering && !active}
 					feed={feed}
 					seals={seals}
 					toll={sealToll}

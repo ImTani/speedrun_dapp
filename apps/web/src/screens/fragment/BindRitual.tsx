@@ -198,9 +198,7 @@ export function BindRitual({
 									<Mask aspect={aspect} size={56} glow />
 									<div>
 										<h2 className={s.h2}>{L.bind.sigilsHeading}</h2>
-										<p className={s.hint}>
-											{a.name} · {a.mask}
-										</p>
+										<p className={s.hint}>{a.name}</p>
 									</div>
 								</div>
 								<SigilEditor
@@ -208,7 +206,6 @@ export function BindRitual({
 									knobs={knobs}
 									onChange={setKnobs}
 								/>
-								<p className={s.hint}>{L.bind.sigilsHint}</p>
 							</>
 						)}
 						{step === 2 && (
@@ -366,7 +363,6 @@ function PourOverlay({
 					<Slam
 						text={name}
 						kicker={L.bind.poured}
-						sub={L.bind.pouredLine}
 						tone="kindle"
 						delay={0.42}
 						onDone={() => setTimeout(onDone, 700)}

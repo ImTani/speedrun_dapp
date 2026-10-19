@@ -508,7 +508,8 @@
 	font-family: var(--font-book);
 	font-style: italic;
 	font-weight: 400;
-	font-size: 0.42em;
+	/* never below the small text size: an "sm" Count would otherwise put its unit at ~9px */
+	font-size: max(0.42em, var(--fs-small));
 	letter-spacing: 0;
 	color: var(--c-bone-d);
 }

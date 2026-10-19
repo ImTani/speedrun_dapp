@@ -61,7 +61,8 @@ export interface GatheringState {
 
 export type PlayerAction =
 	| { action: "confirm" }
-	| { action: "retune"; config: string };
+	| { action: "retune"; config: string }
+	| { action: "buy"; pack: string };
 
 export class ApiError extends Error {
 	constructor(
@@ -150,6 +151,8 @@ export interface Api {
 	opStatus: (
 		hash: string,
 	) => Promise<{ state: "pending" | "landed"; tx?: string; success?: boolean }>;
+	/** Authenticated JSON request to any /api route (feature modules use this). */
+	call: <T>(path: string, init?: RequestInit) => Promise<T>;
 }
 
 /**
@@ -244,6 +247,7 @@ function useRealApi(): Api {
 			signRaw,
 			runPlayerOp,
 			...publicApi,
+			call: authed,
 		};
 	}, [authed, signRaw]);
 }

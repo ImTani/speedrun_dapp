@@ -115,19 +115,6 @@ export function TitleScreen({
 					</motion.span>
 				</h1>
 
-				<motion.p
-					className={s.tagline}
-					initial={{ opacity: 0, y: 14, filter: "blur(3px)" }}
-					animate={
-						struck
-							? { opacity: 1, y: 0, filter: "blur(0px)" }
-							: { opacity: 0, y: 14, filter: "blur(3px)" }
-					}
-					transition={{ ...spring.settle, delay: 0.35 }}
-				>
-					{T.tagline}
-				</motion.p>
-
 				<motion.div
 					className={s.ctaWrap}
 					initial={{ opacity: 0, y: 18 }}

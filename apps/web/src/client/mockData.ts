@@ -89,7 +89,7 @@ export function mockStandings(self?: {
 	const rows: StandingRow[] = NAMES.map((name, i) => ({
 		agent: agentOf(i),
 		name,
-		aspect: (i * 3) % 7,
+		aspect: (i * 3 + 1) % 7,
 		light: 96 - i * 7 + ((i * 13) % 5),
 		duels: 6 + ((i * 5) % 9),
 	}));

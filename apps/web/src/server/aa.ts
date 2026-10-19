@@ -10,11 +10,13 @@ import {
 import {
 	type Address,
 	decodeFunctionData,
+	erc20Abi,
 	type Hex,
 	isAddressEqual,
 	parseAbi,
 	toHex,
 } from "viem";
+import { packByAmount, treasuryAddress, USDC_FUJI } from "@/game/vestry.ts";
 import { ARENA, accountFor, FACTORY, publicClient } from "./chain.ts";
 import { env, HttpError } from "./env.ts";
 
@@ -92,7 +94,10 @@ export async function prepareOp(
 	return { userOp: op, userOpHash };
 }
 
-/** Checks the op is the player's own confirmAgent/retune call on the Arena. */
+/**
+ * Checks the op is the player's own confirmAgent/retune call on the Arena, or a Vestry payment:
+ * USDC.transfer(treasury, a pack's price).
+ */
 export function checkOp(op: UserOperationAvax, account: Address): void {
 	if (
 		typeof op?.sender !== "string" ||
@@ -107,13 +112,26 @@ export function checkOp(op: UserOperationAvax, account: Address): void {
 			data: op.callData as Hex,
 		});
 		const [dest, value, func] = outer.args;
-		if (!isAddressEqual(dest, ARENA) || value !== 0n) throw new Error();
-		const inner = decodeFunctionData({ abi: arenaAbi, data: func });
-		if (
-			inner.functionName !== "confirmAgent" &&
-			inner.functionName !== "retune"
-		)
+		if (value !== 0n) throw new Error();
+		if (isAddressEqual(dest, ARENA)) {
+			const inner = decodeFunctionData({ abi: arenaAbi, data: func });
+			if (
+				inner.functionName !== "confirmAgent" &&
+				inner.functionName !== "retune"
+			)
+				throw new Error();
+		} else if (isAddressEqual(dest, USDC_FUJI)) {
+			const inner = decodeFunctionData({ abi: erc20Abi, data: func });
+			if (inner.functionName !== "transfer") throw new Error();
+			const [to, amount] = inner.args;
+			if (
+				!isAddressEqual(to, treasuryAddress(process.env.VESTRY_TREASURY)) ||
+				!packByAmount(amount)
+			)
+				throw new Error();
+		} else {
 			throw new Error();
+		}
 	} catch {
 		throw new HttpError(403, "forbidden_op");
 	}

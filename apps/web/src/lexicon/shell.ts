@@ -1,17 +1,16 @@
-// Strings for the shell: title screen, the five ways (tabs), sealed doors, colophon.
+// Strings for the shell: title screen, the five tabs, sealed doors, credits.
 // Player-facing only. No technical words.
 
 export const shell = {
 	title: {
 		name: "Apostasy",
 		sub: "Sede Vacante",
-		tagline: "The god devoured itself. Its light lies shattered in the glass.",
-		enter: "Enter the nave",
-		entering: "The doors groan…",
+		enter: "Enter",
+		entering: "Opening…",
 	},
 
 	/** Accessible name of the tab bar. */
-	ways: "The ways of the nave",
+	ways: "Main",
 	tabs: {
 		fragment: "Fragment",
 		spire: "Spire",
@@ -24,31 +23,30 @@ export const shell = {
 		tag: "Sealed",
 		spire: {
 			name: "The Spire",
-			line: "Its stair is bricked shut. Something waits at every Degree.",
+			line: "Not open yet.",
 		},
 		reliquary: {
 			name: "The Reliquary",
-			line: "Chained and sealed in wax. What lies within may not yet be scried.",
+			line: "Not open yet.",
 		},
 		vestry: {
 			name: "The Vestry",
-			line: "The vestments sleep beneath their dust sheets.",
+			line: "Not open yet.",
 		},
 	},
 
 	colophon: {
-		open: "Colophon",
-		heading: "Colophon",
-		lead: "Those whose hands shaped this cathedral.",
-		masks: "The masks",
-		carvings: "The carvings",
+		open: "Credits",
+		heading: "Credits",
+		masks: "Masks",
+		carvings: "Icons",
 		carvingsLine:
-			"Carvings after icons by Lorc and Delapouite, game-icons.net, CC BY 3.0 (creativecommons.org/licenses/by/3.0). Recoloured and shaded.",
-		letters: "The letters",
+			"Icons by Lorc and Delapouite, game-icons.net, CC BY 3.0 (creativecommons.org/licenses/by/3.0). Recoloured and shaded.",
+		letters: "Fonts",
 		lettersLine:
-			"Grenze Gotisch by Renata Polastri (Omnibus-Type), IM Fell English by Igino Marini, Cinzel by Natanael Gama. SIL Open Font License 1.1.",
-		roll: "The full roll of sources",
-		close: "Close the book",
+			"Grenze and Grenze Gotisch by Renata Polastri (Omnibus-Type), Alegreya by Juan Pablo del Peral (Huerta Tipográfica), IM Fell English by Igino Marini, Cinzel by Natanael Gama. SIL Open Font License 1.1.",
+		roll: "All sources",
+		close: "Close",
 	},
 } as const;
 

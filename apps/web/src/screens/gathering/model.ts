@@ -40,6 +40,7 @@ export interface Duel {
 	/** A mask stayed silent (forfeit). */
 	silent: boolean;
 	verdict: string;
+	/** The Light the duel moved ("+3 Light each"); empty when it moved none. */
 	sub: string;
 	/** Spoken with the verdict: who took what. */
 	gains: string;
@@ -116,6 +117,15 @@ export function heldLight(events: GatheringEvent[]) {
 	return m;
 }
 
+/** The line under the verdict: only the Light each side gained. */
+function lightLine(a: DuelSide, b: DuelSide): string {
+	if (a.gain === b.gain) return a.gain > 0 ? T.verdictSub.each(a.gain) : "";
+	return [a, b]
+		.filter((s) => s.gain > 0)
+		.map((s) => T.verdictSub.one(s.name, s.gain))
+		.join(" · ");
+}
+
 export function describeDuel(
 	e: GatheringEvent,
 	events: GatheringEvent[],
@@ -143,20 +153,13 @@ export function describeDuel(
 	const dev: SideKey | null =
 		kind === "devour" ? (a.move === 1 ? "A" : "B") : null;
 	const silent = d.forfeit === true || d.forfeit === "true";
-	let verdict: string, sub: string;
-	if (silent) {
-		verdict = T.verdict.silence;
-		sub = T.verdictSub.silence;
-	} else if (kind === "kindle") {
-		verdict = T.verdict.bothKindle;
-		sub = T.verdictSub.kindle;
-	} else if (kind === "ruin") {
-		verdict = T.verdict.bothDevour;
-		sub = T.verdictSub.ruin;
-	} else {
+	let verdict: string;
+	if (silent) verdict = T.verdict.silence;
+	else if (kind === "kindle") verdict = T.verdict.bothKindle;
+	else if (kind === "ruin") verdict = T.verdict.bothDevour;
+	else {
 		const [x, y] = dev === "A" ? [a, b] : [b, a];
 		verdict = T.verdict.devours(x.name, y.name);
-		sub = T.verdictSub.devour(y.name);
 	}
 	return {
 		key: evKey(e),
@@ -167,7 +170,7 @@ export function describeDuel(
 		dev,
 		silent,
 		verdict,
-		sub,
+		sub: lightLine(a, b),
 		gains: `${T.gained(a.name, a.gain)} ${T.gained(b.name, b.gain)}`,
 	};
 }
@@ -187,7 +190,7 @@ export function recastDuel(d: Duel, kind: "devour" | "kindle"): Duel {
 			a: { ...d.a, move: 0 },
 			b: { ...d.b, move: 0 },
 			verdict: T.verdict.bothKindle,
-			sub: T.verdictSub.kindle,
+			sub: lightLine(d.a, d.b),
 		};
 	return {
 		...d,
@@ -197,7 +200,7 @@ export function recastDuel(d: Duel, kind: "devour" | "kindle"): Duel {
 		a: { ...d.a, move: 1 },
 		b: { ...d.b, move: 0 },
 		verdict: T.verdict.devours(d.a.name, d.b.name),
-		sub: T.verdictSub.devour(d.b.name),
+		sub: lightLine(d.a, d.b),
 	};
 }
 

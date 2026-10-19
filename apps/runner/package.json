@@ -18,7 +18,8 @@
 		"@neondatabase/serverless": "1.2.0",
 		"@smoothsend/sdk": "2.3.8",
 		"react": "19.2.0",
-		"viem": "2.57.4"
+		"viem": "2.57.4",
+		"web-push": "3.6.7"
 	},
 	"devDependencies": {
 		"@types/node": "24.19.2",

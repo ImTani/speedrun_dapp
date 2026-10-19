@@ -1,6 +1,7 @@
 /**
- * Long-lived Arena service: registers player Fragments, indexes Arena events into Neon, and runs
- * Gatherings back to back with house and player Fragments.
+ * Long-lived Arena service: registers player Fragments, indexes Arena events into Neon, runs
+ * Gatherings back to back with house and player Fragments, mints queued Marks, and sends a web push
+ * when a Gathering opens.
  *
  *   pnpm --filter @arena/runner service -- [--net fuji] [--house 25] [--k 5] [--matches 1] [--conc 4] [--gap-min 0] [--max-size 60]
  *
@@ -15,6 +16,8 @@ import { runBout } from "./bout.ts";
 import "./db.ts";
 import { fragmentsTick, syncHouse } from "./fragments.ts";
 import { indexTick } from "./indexer.ts";
+import { marksTick } from "./marks.ts";
+import { notifyTick } from "./notify.ts";
 import { createRuntime } from "./runtime.ts";
 import { sleep } from "./tasks.ts";
 
@@ -61,6 +64,8 @@ await fragmentsTick(rt).catch((e) =>
 const timers = [
 	every("indexer", 5_000, () => indexTick(rt)),
 	every("fragments", 10_000, () => fragmentsTick(rt)),
+	every("marks", 60_000, () => marksTick(rt)),
+	every("notify", 10_000, () => notifyTick()),
 ];
 
 const shutdown = async () => {

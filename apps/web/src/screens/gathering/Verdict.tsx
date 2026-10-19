@@ -43,7 +43,7 @@ export function Verdict({
 					>
 						<Slam
 							text={duel.verdict}
-							sub={duel.sub}
+							sub={duel.sub ? [duel.sub] : []}
 							kicker={T.verdictKicker(duel.toll)}
 							names={
 								duel.dev === "B"

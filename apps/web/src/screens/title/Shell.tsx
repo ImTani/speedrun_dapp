@@ -9,7 +9,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { FragmentScreen } from "@/screens/fragment/FragmentScreen";
 import { GatheringScreen } from "@/screens/gathering/GatheringScreen";
-import { Sealed } from "@/screens/sealed/Sealed";
+import { ReliquaryScreen } from "@/screens/reliquary/ReliquaryScreen";
+import { SpireScreen } from "@/screens/spire/SpireScreen";
+import { VestryScreen } from "@/screens/vestry/VestryScreen";
 import { easeIn, easeOut } from "@/ui/motion/presets";
 import { TAB_ORDER, type Tab, TabBar } from "@/ui/TabBar";
 import s from "./shell.module.css";
@@ -34,10 +36,14 @@ function Way({ tab }: { tab: Tab }) {
 	switch (tab) {
 		case "fragment":
 			return <FragmentScreen />;
+		case "spire":
+			return <SpireScreen />;
 		case "gathering":
 			return <GatheringScreen />;
-		default:
-			return <Sealed which={tab} />;
+		case "reliquary":
+			return <ReliquaryScreen />;
+		case "vestry":
+			return <VestryScreen />;
 	}
 }
 

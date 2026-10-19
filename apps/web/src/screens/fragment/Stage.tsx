@@ -4,14 +4,19 @@
  * The Stage: the bound Fragment as a lit window. Its light pools on the stone
  * below; drag across the glass to move the light. Name plate, Light, the
  * Sigils it was cut with, and the chisel to re-carve them (chained while a
- * Gathering is under way).
+ * Gathering is under way). The HUD (./Hud.tsx) adds standing, the Vigil, Marks and
+ * notifications.
  */
 import { encodeConfig, type Knobs, type StrategyId } from "@arena/strategies";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { FragmentRow, StandingRow } from "@/client/api";
+import { cosmeticOf } from "@/game/reliquary";
 import { L } from "@/lexicon";
+import { hud as hudText } from "@/lexicon/hud";
+import { titleText } from "@/lexicon/reliquary";
+import { DressedMask } from "@/screens/reliquary/ItemSwatch";
 import { GlassWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
 import {
@@ -27,6 +32,8 @@ import {
 } from "@/ui/motion";
 import { Count, Plate, Rubric, Slam } from "@/ui/type";
 import s from "./fragment.module.css";
+import { MarksShelf, PushToggle, StandingCard, useHud, VigilCard } from "./Hud";
+import h from "./hud.module.css";
 import { SigilEditor, sigilValue } from "./SigilEditor";
 import { type Api, aspectOf, sigilsFor } from "./shared";
 
@@ -55,6 +62,9 @@ export function Stage({
 	const [glassIn, setGlassIn] = useState(false);
 	const floor = useRef<HTMLCanvasElement>(null);
 	const shaker = useShake<HTMLDivElement>();
+	const hud = useHud(api);
+	const equipped = hud.inv?.equipped ?? null;
+	const title = titleText(cosmeticOf(equipped).title);
 
 	useEffect(() => {
 		const agent = fragment.agent?.toLowerCase();
@@ -118,14 +128,18 @@ export function Stage({
 				<Plate
 					name={fragment.name}
 					epithet={a.name}
-					emblem={<Mask aspect={aspect} size={44} glow />}
+					emblem={
+						equipped ? (
+							<DressedMask aspect={aspect} equipped={equipped} size={44} glow />
+						) : (
+							<Mask aspect={aspect} size={44} glow />
+						)
+					}
 					size="lg"
 					className={s.stagePlate ?? ""}
 				/>
+				{title ? <p className={h.title}>{title}</p> : null}
 				<div className={s.temperBlock}>
-					<Rubric size="xs" rule="both">
-						{a.mask}
-					</Rubric>
 					<p className={s.temperament}>{a.blurb}</p>
 				</div>
 
@@ -155,6 +169,19 @@ export function Stage({
 						</Rubric>
 					</div>
 				</div>
+
+				{hud.profile ? (
+					<>
+						<StandingCard profile={hud.profile} />
+						<VigilCard
+							api={api}
+							profile={hud.profile}
+							onClaimed={hud.setProfile}
+						/>
+					</>
+				) : hud.profileDown ? (
+					<p className={h.note}>{hudText.standingDown}</p>
+				) : null}
 
 				<section className={s.sigilSummary}>
 					<Rubric as="h3" rule="both">
@@ -210,7 +237,8 @@ export function Stage({
 						</motion.p>
 					) : null}
 				</AnimatePresence>
-				<p className={s.lightHint}>{L.hero.lightHint}</p>
+				{hud.marks ? <MarksShelf res={hud.marks} /> : null}
+				<PushToggle api={api} />
 			</motion.div>
 
 			{typeof document !== "undefined"

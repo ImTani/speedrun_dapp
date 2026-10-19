@@ -80,14 +80,14 @@ export function Hud({
 				</motion.p>
 			</AnimatePresence>
 			{deadline > 0 && phase !== "closed" && phase !== "between" && (
-				<Countdown deadline={deadline} label={T.until[phase]} />
+				<Countdown deadline={deadline} />
 			)}
 			{vision && <p className={css.vision}>{T.vision}</p>}
 		</div>
 	);
 }
 
-function Countdown({ deadline, label }: { deadline: number; label: string }) {
+function Countdown({ deadline }: { deadline: number }) {
 	const [now, setNow] = useState(() => Date.now() / 1000);
 	useEffect(() => {
 		const id = setInterval(() => setNow(Date.now() / 1000), 1000);
@@ -98,7 +98,6 @@ function Countdown({ deadline, label }: { deadline: number; label: string }) {
 	return (
 		<p className={css.clock}>
 			<span className={css.clockNum}>{fmtClock(left)}</span>
-			<span>{label}</span>
 		</p>
 	);
 }

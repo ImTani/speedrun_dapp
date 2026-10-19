@@ -91,9 +91,7 @@ export function Waiting({
 			? L.status.failedHint
 			: st === "requested"
 				? L.status.requestedHint
-				: phase === "sealing" || phase === "stamping"
-					? L.status.sealingHint
-					: L.status.registeredHint;
+				: null;
 
 	return (
 		<div className={s.waiting} ref={shaker.ref}>
@@ -128,7 +126,7 @@ export function Waiting({
 						>
 							{title}
 						</Rubric>
-						<p className={s.hint}>{hint}</p>
+						{hint ? <p className={s.hint}>{hint}</p> : null}
 					</motion.div>
 				</AnimatePresence>
 			</div>

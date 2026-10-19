@@ -1,0 +1,609 @@
+/* =====================================================================
+   The Spire: the current Degree's five floors as a stack of stone slabs,
+   the climbs meter, and the five-turn duel when a floor is climbed.
+   Phone-first (390 x 844), holds from 360 x 740 to 430 x 932.
+   Small text uses --c-bone or brighter on soot (>= 7:1); --c-bone-d only
+   at large sizes or on locked (inactive) floors.
+   ===================================================================== */
+
+.screen {
+	position: relative;
+	width: 100%;
+	min-height: 100%;
+	display: flex;
+	flex-direction: column;
+	padding: calc(10px + var(--safe-t)) var(--pad-r) 14px var(--pad-l);
+	background:
+		radial-gradient(80% 38% at 50% 0%, #2c1d1470 0%, transparent 72%),
+		radial-gradient(140% 60% at 50% 110%, #00000099 0%, transparent 60%);
+	/* readable outcome lettering, like the Gathering */
+	--slam-font: var(--font-roman);
+	--slam-weight: 800;
+	--slam-stroke: 0.17em;
+	font-synthesis-weight: none;
+}
+.column {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	max-width: var(--column);
+	margin-inline: auto;
+	gap: 12px;
+}
+.view {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+/* ---------------------------------------------------------------- header */
+.head {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 12px;
+}
+.titleBlock {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+.title {
+	font-family: var(--font-display);
+	font-weight: 900;
+	font-size: var(--fs-h1);
+	line-height: var(--lh-tight);
+	color: var(--c-bone-hi);
+	text-shadow:
+		0 2px 0 var(--c-soot),
+		0 0 18px #c9a24f33;
+}
+.meta {
+	font-family: var(--font-num);
+	font-weight: 600;
+	font-size: var(--fs-micro);
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--c-gilt-l);
+	font-variant-numeric: lining-nums tabular-nums;
+}
+
+.climbs {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 4px;
+	flex-shrink: 0;
+}
+.climbsLabel {
+	font-family: var(--font-num);
+	font-weight: 600;
+	font-size: var(--fs-micro);
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--c-bone);
+}
+.climbPips {
+	display: flex;
+	gap: 5px;
+}
+.climbPip {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	box-shadow: inset 0 0 0 1.5px var(--c-umber-l);
+	background: #0b0807;
+}
+.climbPip[data-full="true"] {
+	background: radial-gradient(
+		circle at 40% 35%,
+		var(--c-gilt-hi),
+		var(--c-gilt) 55%,
+		var(--c-gilt-d)
+	);
+	box-shadow:
+		0 0 8px #e3c27c66,
+		inset 0 0 0 1px #00000055;
+}
+.climbsNext {
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	color: var(--c-bone);
+	font-variant-numeric: lining-nums tabular-nums;
+}
+
+.banner {
+	padding: 10px 12px;
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	color: var(--c-bone-hi);
+	background: linear-gradient(180deg, #3a0709e6, #1a0506e6);
+	box-shadow: inset 0 0 0 1px var(--c-blood);
+	text-align: center;
+}
+
+/* ---------------------------------------------------------------- the tower */
+.tower {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	list-style: none;
+}
+/* the stair: one dark spine joining the floors, behind the slabs */
+.tower::before {
+	content: "";
+	position: absolute;
+	top: 10px;
+	bottom: 10px;
+	left: 30px;
+	width: 4px;
+	background: linear-gradient(
+		180deg,
+		var(--c-gilt-d),
+		var(--c-umber) 30%,
+		var(--c-umber-d)
+	);
+	box-shadow: 0 0 0 1px var(--c-soot);
+	z-index: 0;
+}
+.floor {
+	position: relative;
+	z-index: 1;
+	display: grid;
+	grid-template-columns: 36px 48px minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	min-height: 66px;
+	padding: 8px 12px 8px 8px;
+	text-align: start;
+	background: linear-gradient(180deg, #221813, #130d0a);
+	box-shadow:
+		inset 0 1px 0 #ffffff10,
+		inset 0 0 0 1px var(--c-umber),
+		0 6px 14px #000a;
+	clip-path: polygon(
+		0 var(--cut),
+		var(--cut) 0,
+		calc(100% - var(--cut)) 0,
+		100% var(--cut),
+		100% calc(100% - var(--cut)),
+		calc(100% - var(--cut)) 100%,
+		var(--cut) 100%,
+		0 calc(100% - var(--cut))
+	);
+	transition: box-shadow var(--dur-2) var(--ease-out);
+	-webkit-tap-highlight-color: transparent;
+}
+.floor:disabled {
+	opacity: 1;
+	cursor: default;
+}
+.floor[data-boss="true"] {
+	min-height: 78px;
+	grid-template-columns: 36px 58px minmax(0, 1fr) auto;
+	background:
+		radial-gradient(120% 140% at 0% 50%, #3a070966 0%, transparent 60%),
+		linear-gradient(180deg, #261714, #140c0a);
+	box-shadow:
+		inset 0 1px 0 #ffffff12,
+		inset 0 0 0 1px var(--c-blood),
+		0 8px 18px #000c;
+}
+.floor[data-selected="true"] {
+	box-shadow:
+		inset 0 1px 0 #ffffff14,
+		inset 0 0 0 2px var(--c-gilt),
+		0 0 0 1px #00000088,
+		0 8px 22px #000c;
+}
+.floorNum {
+	display: grid;
+	place-items: center;
+	width: 30px;
+	height: 30px;
+	justify-self: center;
+	border-radius: 50%;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: 13px;
+	color: var(--c-bone-hi);
+	background: radial-gradient(circle at 50% 35%, #3a2c22, #160f0b);
+	box-shadow:
+		0 0 0 2px var(--c-soot),
+		inset 0 0 0 1px var(--c-umber-l);
+}
+.floor[data-status="cleared"] .floorNum {
+	color: var(--c-soot);
+	background: radial-gradient(
+		circle at 45% 35%,
+		var(--c-gilt-hi),
+		var(--c-gilt) 60%,
+		var(--c-gilt-d)
+	);
+	box-shadow:
+		0 0 0 2px var(--c-soot),
+		0 0 10px #e3c27c55;
+}
+.floor[data-boss="true"] .floorNum {
+	box-shadow:
+		0 0 0 2px var(--c-soot),
+		inset 0 0 0 1px var(--c-blood-l);
+}
+
+.mask {
+	display: grid;
+	place-items: center;
+}
+.floorText {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+.floor[data-status="locked"] .mask,
+.floor[data-status="locked"] .floorText {
+	opacity: 0.55;
+}
+.floor[data-status="cleared"] .mask {
+	filter: saturate(0.6);
+}
+
+.floorName {
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-lead);
+	line-height: 1.1;
+	color: var(--c-bone-hi);
+	text-shadow: 0 1px 0 var(--c-soot);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.floor[data-boss="true"] .floorName {
+	font-size: var(--fs-h3);
+}
+.floorSub {
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	line-height: 1.25;
+	color: var(--c-bone);
+}
+.bossTag {
+	color: #ff977d;
+	font-weight: 700;
+}
+.floorTag {
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: var(--fs-micro);
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--c-bone);
+}
+.floorTag[data-status="cleared"] {
+	color: var(--c-gilt-l);
+}
+
+/* ---------------------------------------------------------------- the action */
+.action {
+	margin-top: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding-top: 6px;
+}
+.reward {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: baseline;
+	gap: 4px 8px;
+	font-family: var(--font-text);
+	font-size: var(--fs-body);
+	color: var(--c-bone-hi);
+	text-align: center;
+	font-variant-numeric: lining-nums tabular-nums;
+}
+.rewardTag {
+	font-family: var(--font-num);
+	font-weight: 600;
+	font-size: var(--fs-micro);
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--c-gilt-l);
+}
+.climbBtn {
+	font-family: var(--font-roman);
+	font-weight: 800;
+	font-size: var(--fs-h3);
+	letter-spacing: 0.02em;
+}
+.note {
+	font-family: var(--font-text);
+	font-size: var(--fs-body);
+	color: var(--c-bone);
+	text-align: center;
+	text-wrap: balance;
+}
+.summit {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+	text-align: center;
+}
+.summitName {
+	font-family: var(--font-roman);
+	font-weight: 800;
+	font-size: var(--fs-h3);
+	color: var(--c-gilt-hi);
+}
+
+/* ---------------------------------------------------------------- the duel */
+.duel {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 14px 12px;
+	background: linear-gradient(180deg, #1c1410e6, #0e0a08f0);
+	box-shadow:
+		inset 0 0 0 1px var(--c-umber),
+		0 10px 24px #000c;
+	clip-path: polygon(
+		0 var(--cut),
+		var(--cut) 0,
+		calc(100% - var(--cut)) 0,
+		100% var(--cut),
+		100% calc(100% - var(--cut)),
+		calc(100% - var(--cut)) 100%,
+		var(--cut) 100%,
+		0 calc(100% - var(--cut))
+	);
+}
+.side {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 12px;
+}
+.sideText {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+.sideName {
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-h3);
+	line-height: 1.1;
+	color: var(--c-bone-hi);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.sideSub {
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	color: var(--c-bone);
+}
+.sideLight {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 0;
+}
+.sideLightLabel {
+	font-family: var(--font-num);
+	font-weight: 600;
+	font-size: var(--fs-micro);
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--c-bone);
+}
+
+.turns {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: 4px;
+	list-style: none;
+}
+.turnNums {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	list-style: none;
+	border-block: 1px solid var(--c-umber);
+	padding: 3px 0;
+}
+.turnNum {
+	text-align: center;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: var(--fs-micro);
+	letter-spacing: 0.08em;
+	color: var(--c-bone);
+}
+.turnNum[data-now="true"] {
+	color: var(--c-gilt-hi);
+}
+.cell {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 3px;
+	min-height: 54px;
+	justify-content: center;
+}
+.turns[data-side="theirs"] .cell {
+	flex-direction: column-reverse;
+}
+.socket {
+	position: relative;
+	display: grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	border-radius: 50%;
+	background: radial-gradient(circle at 50% 40%, #1d140e, #0b0807 72%);
+	box-shadow: inset 0 0 0 1.5px var(--c-umber);
+}
+.pip {
+	width: 26px;
+	height: 26px;
+	border-radius: 50%;
+}
+/* Kindle: a whole gilt flame-disc. Devour: a blood disc with a bite out of it. */
+.pip[data-move="kindle"] {
+	background: radial-gradient(
+		circle at 45% 38%,
+		#fff4d0,
+		var(--c-gilt-l) 40%,
+		var(--c-gilt) 70%,
+		var(--c-gilt-d)
+	);
+	box-shadow:
+		0 0 12px #f5dfa088,
+		inset 0 0 0 1px #00000055;
+}
+.pip[data-move="devour"] {
+	background: radial-gradient(
+		circle at 45% 38%,
+		#ff8a73,
+		var(--c-blood-l) 45%,
+		var(--c-blood) 75%,
+		var(--c-blood-dd)
+	);
+	box-shadow:
+		0 0 12px #c7262c88,
+		inset 0 0 0 1px #00000066;
+	-webkit-mask: radial-gradient(circle at 92% 18%, transparent 7px, #000 7.5px);
+	mask: radial-gradient(circle at 92% 18%, transparent 7px, #000 7.5px);
+}
+.pts {
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: var(--fs-small);
+	line-height: 1;
+	color: var(--c-bone-hi);
+	font-variant-numeric: lining-nums tabular-nums;
+	min-height: 1em;
+}
+.pts[data-zero="true"] {
+	color: var(--c-bone);
+}
+
+.need {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+}
+.needBar {
+	position: relative;
+	height: 8px;
+	background: #0b0807;
+	box-shadow:
+		inset 0 0 0 1px var(--c-umber),
+		0 0 0 1px #00000088;
+	overflow: hidden;
+}
+.needFill {
+	position: absolute;
+	inset: 0 auto 0 0;
+	background: linear-gradient(90deg, var(--c-gilt-d), var(--c-gilt-l));
+	box-shadow: 0 0 10px #e3c27c66;
+	transform-origin: left center;
+}
+.needFill[data-met="true"] {
+	background: linear-gradient(90deg, var(--c-gilt), var(--c-gilt-hi));
+}
+.needText {
+	display: flex;
+	justify-content: space-between;
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	color: var(--c-bone);
+	font-variant-numeric: lining-nums tabular-nums;
+}
+.needText strong {
+	color: var(--c-bone-hi);
+	font-weight: 700;
+}
+.legend {
+	display: flex;
+	justify-content: center;
+	gap: 16px;
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	color: var(--c-bone);
+}
+.legend span {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+.legend .pip {
+	width: 12px;
+	height: 12px;
+}
+.legend .pip[data-move="devour"] {
+	-webkit-mask: radial-gradient(circle at 92% 18%, transparent 3px, #000 3.5px);
+	mask: radial-gradient(circle at 92% 18%, transparent 3px, #000 3.5px);
+}
+
+/* the outcome, laid over the duel once the five turns are played */
+.result {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	background: radial-gradient(
+		closest-side,
+		#050403f2 0%,
+		#050403d9 60%,
+		#05040399 100%
+	);
+	z-index: 2;
+}
+.resultKicker {
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: var(--fs-micro);
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--c-gilt-l);
+}
+
+.duelActions {
+	margin-top: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+.skip {
+	min-height: var(--tap);
+	align-self: center;
+	padding: 0 18px;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: var(--fs-micro);
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	color: var(--c-bone);
+}
+
+.loading {
+	flex: 1;
+	display: grid;
+	place-items: center;
+	font-family: var(--font-text);
+	font-style: italic;
+	font-size: var(--fs-body);
+	color: var(--c-bone);
+}

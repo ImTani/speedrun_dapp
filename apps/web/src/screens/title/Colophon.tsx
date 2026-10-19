@@ -71,7 +71,6 @@ export function Colophon({
 							<h2 id={headId} className={s.leafHead}>
 								{C.heading}
 							</h2>
-							<p className={s.leafLead}>{C.lead}</p>
 							{sections.map((sec) => (
 								<section key={sec.head} className={s.leafSection}>
 									<h3 className={s.leafRubric}>{sec.head}</h3>

@@ -1,0 +1,480 @@
+"use client";
+
+/**
+ * The bound Fragment's HUD, set into the Stage: standing (Degree, level, Resonance, Ash), the Vigil
+ * with its Collect button, the Marks shelf and the notifications toggle. Plain labels and numbers.
+ */
+import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import type { Api } from "@/client/api";
+import {
+	claimVigil,
+	fetchProfile,
+	levelProgress,
+	type Profile,
+} from "@/client/economy";
+import { type InventoryState, inventory } from "@/client/inventory";
+import {
+	bestTier,
+	fetchMarks,
+	type MarksResponse,
+	type MarkTierView,
+	type MarkView,
+	markSeen,
+	sealUrl,
+	tierName,
+	unseenMarks,
+} from "@/client/marks";
+import { usePush } from "@/client/push";
+import { economy } from "@/lexicon/economy";
+import { roman } from "@/lexicon/gathering";
+import { hud } from "@/lexicon/hud";
+import { marks as M } from "@/lexicon/marks";
+import { haptic, pressable, spring } from "@/ui/motion";
+import { Count, Rubric } from "@/ui/type";
+import h from "./hud.module.css";
+
+// ---------------------------------------------------------------- data
+
+export interface HudData {
+	profile: Profile | null;
+	profileDown: boolean;
+	inv: InventoryState | null;
+	marks: MarksResponse | null;
+	setProfile: (p: Profile) => void;
+}
+
+/** Profile (polled), wardrobe and Marks for the bound Fragment. */
+export function useHud(api: Api): HudData {
+	const [profile, setProfile] = useState<Profile | null>(null);
+	const [profileDown, setProfileDown] = useState(false);
+	const [inv, setInv] = useState<InventoryState | null>(null);
+	const [marks, setMarks] = useState<MarksResponse | null>(null);
+
+	useEffect(() => {
+		let live = true;
+		const loadProfile = () =>
+			fetchProfile(api)
+				.then((p) => {
+					if (!live) return;
+					setProfile(p);
+					setProfileDown(false);
+				})
+				.catch(() => live && setProfileDown(true));
+		const loadMarks = () =>
+			fetchMarks(api)
+				.then((m) => live && setMarks(m))
+				.catch(() => {});
+		loadProfile();
+		loadMarks();
+		inventory(api)
+			.get()
+			.then((i) => live && setInv(i))
+			.catch(() => {});
+		const tp = setInterval(loadProfile, 30_000);
+		const tm = setInterval(loadMarks, 90_000);
+		return () => {
+			live = false;
+			clearInterval(tp);
+			clearInterval(tm);
+		};
+	}, [api]);
+
+	return { profile, profileDown, inv, marks, setProfile };
+}
+
+// ---------------------------------------------------------------- standing
+
+function Bar({ value, label }: { value: number; label: string }) {
+	const pct = Math.round(Math.max(0, Math.min(1, value)) * 100);
+	return (
+		<div
+			className={h.bar}
+			role="progressbar"
+			aria-label={label}
+			aria-valuemin={0}
+			aria-valuemax={100}
+			aria-valuenow={pct}
+		>
+			<motion.span
+				className={h.barFill}
+				initial={false}
+				animate={{ scaleX: pct / 100 }}
+				transition={spring.soft}
+			/>
+		</div>
+	);
+}
+
+export function StandingCard({ profile: p }: { profile: Profile }) {
+	const capped = p.level >= p.levelCap || p.resonanceToNext <= 0;
+	const prevLevel = useRef(p.level);
+	const [rose, setRose] = useState<number | null>(null);
+
+	useEffect(() => {
+		if (p.level > prevLevel.current) setRose(p.level);
+		prevLevel.current = p.level;
+	}, [p.level]);
+	useEffect(() => {
+		if (rose == null) return;
+		const t = setTimeout(() => setRose(null), 2600);
+		return () => clearTimeout(t);
+	}, [rose]);
+
+	return (
+		<section className={h.card} aria-label={hud.standing}>
+			<div className={h.head}>
+				<span className={h.degree}>{economy.degreeOf(p.degree)}</span>
+				<span className={h.ash}>
+					<AshGlyph />
+					<Count value={p.ash} tone="bone" size="md" />
+					<span className={h.unit}>{economy.ash}</span>
+				</span>
+			</div>
+			<div className={h.levelRow}>
+				<span className={h.level}>
+					{economy.levelOf(p.level, p.levelCap)}
+					<AnimatePresence>
+						{rose != null ? (
+							<motion.span
+								key={rose}
+								className={h.levelUp}
+								initial={{ opacity: 0, scale: 0.6, y: 6 }}
+								animate={{ opacity: 1, scale: 1, y: 0 }}
+								exit={{ opacity: 0, y: -8 }}
+								transition={spring.slam}
+							>
+								{hud.levelUp(rose)}
+							</motion.span>
+						) : null}
+					</AnimatePresence>
+				</span>
+				{capped ? null : (
+					<span className={h.next}>{economy.toNext(p.resonanceToNext)}</span>
+				)}
+			</div>
+			<Bar value={levelProgress(p)} label={economy.resonance} />
+			{capped ? <p className={h.note}>{economy.capped}</p> : null}
+		</section>
+	);
+}
+
+function AshGlyph() {
+	return (
+		<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+			<path
+				d="M10 2c1.6 3 5 5.2 5 9.2A5 5 0 0 1 5 11.2C5 8.6 6.6 7.4 7.4 5.6c.6 1.6 1.4 2.2 2.2 2.6C9.8 6 9.4 4 10 2Z"
+				fill="#a8916a"
+				stroke="#0b0807"
+				strokeWidth="1.4"
+			/>
+		</svg>
+	);
+}
+
+// ---------------------------------------------------------------- vigil
+
+const SPARKS = Array.from({ length: 9 }, (_, i) => {
+	const a = -Math.PI / 2 + ((i - 4) / 4) * 1.1;
+	return { x: Math.cos(a) * (46 + (i % 3) * 14), y: Math.sin(a) * 58 };
+});
+
+export function VigilCard({
+	api,
+	profile: p,
+	onClaimed,
+}: {
+	api: Api;
+	profile: Profile;
+	onClaimed: (p: Profile) => void;
+}) {
+	const v = p.vigil;
+	const [busy, setBusy] = useState(false);
+	const [failed, setFailed] = useState(false);
+	const [burst, setBurst] = useState<{
+		id: number;
+		ash: number;
+		res: number;
+	} | null>(null);
+	const empty = v.ash <= 0 && v.resonance <= 0;
+
+	useEffect(() => {
+		if (!burst) return;
+		const t = setTimeout(() => setBurst(null), 1900);
+		return () => clearTimeout(t);
+	}, [burst]);
+
+	const collect = async () => {
+		if (busy || empty) return;
+		haptic(10);
+		setBusy(true);
+		setFailed(false);
+		try {
+			const r = await claimVigil(api);
+			onClaimed(r.profile);
+			if (r.gained.ash > 0 || r.gained.resonance > 0) {
+				haptic([8, 40, 14]);
+				setBurst({
+					id: Date.now(),
+					ash: r.gained.ash,
+					res: r.gained.resonance,
+				});
+			}
+		} catch {
+			setFailed(true);
+		} finally {
+			setBusy(false);
+		}
+	};
+
+	return (
+		<section className={h.card} data-full={v.full || undefined}>
+			<div className={h.head}>
+				<Rubric as="h3" size="sm">
+					{economy.vigil.name}
+				</Rubric>
+				<span className={h.hours}>
+					{v.full ? (
+						<span className={h.fullTag}>{economy.vigil.full}</span>
+					) : null}
+					{economy.vigil.hours(v.hours, v.capHours)}
+				</span>
+			</div>
+			<Bar
+				value={v.capHours > 0 ? v.hours / v.capHours : 0}
+				label={economy.vigil.name}
+			/>
+			<p className={h.waiting}>
+				{empty ? economy.vigil.empty : hud.waiting(v.ash, v.resonance)}
+			</p>
+			{v.full ? <p className={h.note}>{hud.fullHint}</p> : null}
+			<div className={h.claimWrap}>
+				<motion.button
+					type="button"
+					className={h.claim}
+					disabled={busy || empty}
+					onClick={collect}
+					{...pressable}
+				>
+					{busy ? economy.vigil.claiming : economy.vigil.claim}
+				</motion.button>
+				<AnimatePresence>
+					{burst ? (
+						<motion.div
+							key={burst.id}
+							className={h.burst}
+							aria-live="polite"
+							initial={{ opacity: 1 }}
+							exit={{ opacity: 0, transition: { duration: 0.3 } }}
+						>
+							{SPARKS.map((s, i) => (
+								<motion.span
+									// biome-ignore lint/suspicious/noArrayIndexKey: fixed spark layout
+									key={i}
+									className={h.spark}
+									initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
+									animate={{ x: s.x, y: s.y, scale: 0.2, opacity: 0 }}
+									transition={{
+										duration: 0.75,
+										delay: i * 0.015,
+										ease: [0.16, 1, 0.3, 1],
+									}}
+								/>
+							))}
+							<motion.span
+								className={h.gained}
+								initial={{ opacity: 0, y: 6, scale: 0.9 }}
+								animate={{ opacity: [0, 1, 1, 0], y: -34, scale: 1 }}
+								transition={{ duration: 1.7, times: [0, 0.15, 0.7, 1] }}
+							>
+								{economy.vigil.gained(burst.ash, burst.res)}
+							</motion.span>
+						</motion.div>
+					) : null}
+				</AnimatePresence>
+			</div>
+			{failed ? (
+				<p className={h.error} role="alert">
+					{economy.errors.claimFailed}
+				</p>
+			) : null}
+		</section>
+	);
+}
+
+// ---------------------------------------------------------------- marks shelf
+
+const glyphOf = (t: MarkTierView) => (t.tier > 0 ? roman(t.tier) : "†");
+
+export function MarksShelf({ res }: { res: MarksResponse }) {
+	const held = res.marks
+		.map((m) => ({ mark: m, tier: bestTier(m) }))
+		.filter((x): x is { mark: MarkView; tier: MarkTierView } => !!x.tier);
+	const [open, setOpen] = useState<number | null>(null);
+	const [fresh] = useState(
+		() => new Set(unseenMarks(res).map((u) => u.mark.kind)),
+	);
+
+	// The glow plays once; after that the Marks count as seen.
+	useEffect(() => {
+		markSeen(unseenMarks(res));
+	}, [res]);
+
+	const picked = held.find((x) => x.mark.kind === open) ?? null;
+
+	return (
+		<section className={h.shelf}>
+			<div className={h.head}>
+				<Rubric as="h3" size="sm">
+					{M.heading}
+				</Rubric>
+				<span className={h.count}>
+					{hud.marksCount(held.length, res.marks.length)}
+				</span>
+			</div>
+			{held.length === 0 ? (
+				<p className={h.note}>{hud.marksNone}</p>
+			) : (
+				<ul className={h.medals}>
+					{held.map(({ mark, tier }) => {
+						const sealed = tier.state === "sealed";
+						const name = tierName(mark, tier);
+						return (
+							<li key={mark.kind}>
+								<motion.button
+									type="button"
+									className={h.medal}
+									data-sealed={sealed || undefined}
+									data-on={open === mark.kind || undefined}
+									data-new={fresh.has(mark.kind) || undefined}
+									aria-label={`${name}, ${sealed ? M.state.sealed : M.sealingSoon}`}
+									aria-expanded={open === mark.kind}
+									onClick={() =>
+										setOpen((o) => (o === mark.kind ? null : mark.kind))
+									}
+									whileTap={{ scale: 0.9 }}
+									transition={spring.press}
+								>
+									<span className={h.medalFace} aria-hidden="true">
+										{glyphOf(tier)}
+									</span>
+								</motion.button>
+								<span className={h.medalName} aria-hidden="true">
+									{name}
+								</span>
+							</li>
+						);
+					})}
+				</ul>
+			)}
+			<AnimatePresence initial={false} mode="wait">
+				{picked ? (
+					<motion.p
+						key={picked.mark.kind}
+						className={h.caption}
+						initial={{ opacity: 0, y: -4 }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0 }}
+						transition={{ duration: 0.18 }}
+					>
+						<strong>{tierName(picked.mark, picked.tier)}</strong>
+						<span>
+							{picked.tier.state === "sealed" ? M.state.sealed : M.sealingSoon}
+						</span>
+						{picked.tier.state === "sealed" && picked.tier.tx ? (
+							<a
+								href={sealUrl(picked.tier.tx)}
+								target="_blank"
+								rel="noreferrer"
+								className={h.sealLink}
+							>
+								{hud.sealedLink}
+							</a>
+						) : null}
+					</motion.p>
+				) : null}
+			</AnimatePresence>
+		</section>
+	);
+}
+
+// ---------------------------------------------------------------- notifications
+
+function useIosBrowser(): boolean {
+	const [ios, setIos] = useState(false);
+	useEffect(() => {
+		const nav = navigator as Navigator & { standalone?: boolean };
+		const standalone =
+			window.matchMedia?.("(display-mode: standalone)").matches ||
+			nav.standalone === true;
+		setIos(/iPhone|iPad|iPod/.test(nav.userAgent) && !standalone);
+	}, []);
+	return ios;
+}
+
+export function PushToggle({ api }: { api: Api }) {
+	const push = usePush(api);
+	const ios = useIosBrowser();
+	const n = M.notify;
+
+	if (push.state == null) return null;
+	if (push.state === "unsupported")
+		return ios ? <p className={h.pushNote}>{n.unsupported}</p> : null;
+	if (push.state === "denied") return <p className={h.pushNote}>{n.denied}</p>;
+
+	const on = push.state === "on";
+	return (
+		<div className={h.push}>
+			<Bell on={on} />
+			<span className={h.pushText}>
+				{push.busy ? n.working : on ? n.on : n.offer}
+				{push.failed ? (
+					<span className={h.pushFail} role="alert">
+						{n.failed}
+					</span>
+				) : null}
+			</span>
+			<motion.button
+				type="button"
+				role="switch"
+				aria-checked={on}
+				aria-label={n.offer}
+				className={h.switch}
+				data-on={on || undefined}
+				disabled={push.busy}
+				onClick={() => {
+					haptic(8);
+					if (on) push.disable();
+					else push.enable();
+				}}
+				{...pressable}
+			>
+				<motion.span
+					className={h.knob}
+					animate={{ x: on ? 22 : 0 }}
+					transition={spring.snappy}
+				/>
+			</motion.button>
+		</div>
+	);
+}
+
+function Bell({ on }: { on: boolean }) {
+	return (
+		<svg
+			viewBox="0 0 24 24"
+			width="22"
+			height="22"
+			aria-hidden="true"
+			className={h.bell}
+		>
+			<path
+				d="M12 3a5 5 0 0 0-5 5v3.2c0 1.3-.5 2.6-1.4 3.6L4.5 16h15l-1.1-1.2a5.3 5.3 0 0 1-1.4-3.6V8a5 5 0 0 0-5-5Zm-2 15a2 2 0 0 0 4 0"
+				fill={on ? "#e3c27c" : "none"}
+				stroke={on ? "#0b0807" : "#a8916a"}
+				strokeWidth="1.6"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
+}
