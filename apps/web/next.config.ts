@@ -11,6 +11,22 @@ const config: NextConfig = {
 	serverExternalPackages: ["@smoothsend/sdk"],
 	transpilePackages: ["@arena/chain", "@arena/strategies"],
 	turbopack: { root },
+	poweredByHeader: false,
+	async headers() {
+		return [
+			{
+				// The service worker is always fetched fresh, so a new one lands on the next visit.
+				source: "/sw.js",
+				headers: [
+					{
+						key: "Cache-Control",
+						value: "no-cache, no-store, must-revalidate",
+					},
+					{ key: "Service-Worker-Allowed", value: "/" },
+				],
+			},
+		];
+	},
 };
 
 export default config;

@@ -5,13 +5,15 @@
  * below; drag across the glass to move the light. Name plate, Light, the
  * Sigils it was cut with, and the chisel to re-carve them (chained while a
  * Gathering is under way). The HUD (./Hud.tsx) adds standing, the Vigil, Marks and
- * notifications.
+ * notifications. The Vigil, Retune and the Marks shelf stay hidden until they open
+ * (shared game state); the first time each shows, it rises in with a glow.
  */
 import { encodeConfig, type Knobs, type StrategyId } from "@arena/strategies";
-import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { FragmentRow, StandingRow } from "@/client/api";
+import { type UnlockId, useGameState } from "@/client/state";
 import { cosmeticOf } from "@/game/reliquary";
 import { L } from "@/lexicon";
 import { hud as hudText } from "@/lexicon/hud";
@@ -28,6 +30,7 @@ import {
 	rise,
 	scrim,
 	sheet,
+	spring,
 	useShake,
 } from "@/ui/motion";
 import { Count, Plate, Rubric, Slam } from "@/ui/type";
@@ -63,6 +66,9 @@ export function Stage({
 	const floor = useRef<HTMLCanvasElement>(null);
 	const shaker = useShake<HTMLDivElement>();
 	const hud = useHud(api);
+	const { state } = useGameState();
+	const open = (id: UnlockId) => state?.unlocks[id] ?? false;
+	const isNew = (id: UnlockId) => state?.fresh.includes(id) ?? false;
 	const equipped = hud.inv?.equipped ?? null;
 	const title = titleText(cosmeticOf(equipped).title);
 
@@ -76,7 +82,10 @@ export function Stage({
 				)
 				.catch(() => {});
 		load();
-		const t = setInterval(load, 15000);
+		// Light and duels: every 15 s, only while the page is in view.
+		const t = setInterval(() => {
+			if (!document.hidden) load();
+		}, 15000);
 		return () => clearInterval(t);
 	}, [api, fragment.agent]);
 
@@ -173,11 +182,15 @@ export function Stage({
 				{hud.profile ? (
 					<>
 						<StandingCard profile={hud.profile} />
-						<VigilCard
-							api={api}
-							profile={hud.profile}
-							onClaimed={hud.setProfile}
-						/>
+						{open("vigil") ? (
+							<Reveal fresh={isNew("vigil")} coach="vigil">
+								<VigilCard
+									api={api}
+									profile={hud.profile}
+									onClaimed={hud.setProfile}
+								/>
+							</Reveal>
+						) : null}
 					</>
 				) : hud.profileDown ? (
 					<p className={h.note}>{hudText.standingDown}</p>
@@ -201,7 +214,7 @@ export function Stage({
 					)}
 				</section>
 
-				{keys.length > 0 ? (
+				{keys.length > 0 && open("retune") ? (
 					boutActive ? (
 						<div className={s.locked}>
 							<Chain />
@@ -211,17 +224,20 @@ export function Stage({
 							</div>
 						</div>
 					) : (
-						<motion.button
-							type="button"
-							className={`btn btn-ghost ${s.chisel}`}
-							onClick={() => {
-								haptic(10);
-								setEditing(true);
-							}}
-							{...pressable}
-						>
-							{L.hero.retune}
-						</motion.button>
+						<Reveal fresh={isNew("retune")}>
+							<motion.button
+								type="button"
+								className={`btn btn-ghost ${s.chisel}`}
+								data-coach="retune"
+								onClick={() => {
+									haptic(10);
+									setEditing(true);
+								}}
+								{...pressable}
+							>
+								{L.hero.retune}
+							</motion.button>
+						</Reveal>
 					)
 				) : null}
 				<AnimatePresence>
@@ -237,7 +253,11 @@ export function Stage({
 						</motion.p>
 					) : null}
 				</AnimatePresence>
-				{hud.marks ? <MarksShelf res={hud.marks} /> : null}
+				{hud.marks && open("marks") ? (
+					<Reveal fresh={isNew("marks")} coach="marks">
+						<MarksShelf res={hud.marks} />
+					</Reveal>
+				) : null}
 				<PushToggle api={api} />
 			</motion.div>
 
@@ -266,6 +286,46 @@ export function Stage({
 					)
 				: null}
 		</div>
+	);
+}
+
+/**
+ * Something that just opened: it rises in late with a brief candle ring the first time it
+ * shows. Already-known things render plainly.
+ */
+function Reveal({
+	fresh,
+	coach,
+	children,
+}: {
+	fresh: boolean;
+	coach?: string;
+	children: ReactNode;
+}) {
+	const reduce = useReducedMotion() ?? false;
+	// Only the first render decides: the ring plays once even after it is acknowledged.
+	const [first] = useState(fresh);
+	if (!first)
+		return (
+			<div className={s.reveal} data-coach={coach}>
+				{children}
+			</div>
+		);
+	return (
+		<motion.div
+			className={s.reveal}
+			data-coach={coach}
+			data-fresh="1"
+			initial={reduce ? { opacity: 0 } : { opacity: 0, y: 18, scale: 0.97 }}
+			animate={{ opacity: 1, y: 0, scale: 1 }}
+			transition={{
+				...spring.settle,
+				delay: 0.35,
+				opacity: { duration: 0.3, delay: 0.35 },
+			}}
+		>
+			{children}
+		</motion.div>
 	);
 }
 

@@ -27,6 +27,7 @@ import {
 	useState,
 } from "react";
 import { readGathering, readStandings, useApi } from "@/client/api";
+import { usePoll } from "@/client/poll.ts";
 import { gathering as T } from "@/lexicon/gathering.ts";
 import type {
 	Stage,
@@ -63,6 +64,18 @@ import type {
 	StandingsResponse,
 } from "./types.ts";
 import { Flight, Verdict } from "./Verdict.tsx";
+
+/** Polling: quick while a Gathering is held, slow between them, backing off while the server is silent. */
+const POLL = {
+	live: 3_000,
+	idle: 30_000,
+	standingsLive: 10_000,
+	standingsIdle: 30_000,
+	/** A vision (no server) replays its past duels on this beat; no network involved. */
+	vision: 3_000,
+} as const;
+const silent = (misses: number, base: number) =>
+	Math.min(POLL.idle, base * 2 ** Math.min(misses, 4));
 
 /** Height kept clear at the foot for the Ledger plaque and the hourglass. */
 const DOCK_H = 74;
@@ -194,9 +207,23 @@ export function GatheringScreen() {
 			});
 	}, []);
 
-	const pollGathering = useCallback(async () => {
+	// A vision: keep the nave alive by replaying the past duels in turn.
+	const replayVision = useCallback(() => {
+		const scored = (dataRef.current?.events ?? []).filter(
+			(e) => e.name === "PairScored",
+		);
+		if (busy.current || queue.current.length || !scored.length) return;
+		queue.current.push(
+			scored[fixtureCursor.current++ % scored.length] as GatheringEvent,
+		);
+		pump();
+	}, [pump]);
+
+	const misses = useRef({ gathering: 0, standings: 0 });
+	const pollGathering = useCallback(async (): Promise<number> => {
 		const r = (await readGathering()) as GatheringResponse | null;
 		const d = r ?? fixtureGathering();
+		misses.current.gathering = r ? 0 : misses.current.gathering + 1;
 		setVision(!r);
 		dataRef.current = d;
 		setData(d);
@@ -210,32 +237,32 @@ export function GatheringScreen() {
 			if (lastDuel) queue.current.push(lastDuel);
 		} else if (r) {
 			queue.current.push(...fresh);
-		} else if (!busy.current && queue.current.length === 0 && scored.length) {
-			// a vision: keep the nave alive by replaying the past duels in turn
-			queue.current.push(
-				scored[fixtureCursor.current++ % scored.length] as GatheringEvent,
-			);
 		}
 		if (queue.current.length > 8)
 			queue.current.splice(0, queue.current.length - 8);
 		pump();
+		if (!r) return silent(misses.current.gathering, POLL.live);
+		return d.active ? POLL.live : POLL.idle;
 	}, [pump]);
+	usePoll(pollGathering);
 
+	const pollStandings = useCallback(async (): Promise<number> => {
+		const r = (await readStandings()) as StandingsResponse | null;
+		misses.current.standings = r ? 0 : misses.current.standings + 1;
+		setStandings(r ?? fixtureStandings());
+		if (!r) return silent(misses.current.standings, POLL.standingsLive);
+		return dataRef.current?.active ? POLL.standingsLive : POLL.standingsIdle;
+	}, []);
+	usePoll(pollStandings);
+
+	// The vision plays on without the server; it rests while the page is hidden.
 	useEffect(() => {
-		void pollGathering();
-		const a = setInterval(() => void pollGathering(), 3000);
-		const loadStandings = async () =>
-			setStandings(
-				((await readStandings()) as StandingsResponse | null) ??
-					fixtureStandings(),
-			);
-		void loadStandings();
-		const b = setInterval(() => void loadStandings(), 15000);
-		return () => {
-			clearInterval(a);
-			clearInterval(b);
-		};
-	}, [pollGathering]);
+		if (!vision) return;
+		const t = setInterval(() => {
+			if (!document.hidden) replayVision();
+		}, POLL.vision);
+		return () => clearInterval(t);
+	}, [vision, replayVision]);
 
 	// ---------- the stage and its beats ----------
 	const onBeat = useEffectEvent((b: StageBeat, info: StageBeatInfo) => {

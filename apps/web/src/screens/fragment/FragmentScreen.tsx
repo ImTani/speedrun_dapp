@@ -5,8 +5,9 @@
  * the waiting states. Bound: the Stage.
  */
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError, type Me, useApi } from "@/client/api";
+import { useState } from "react";
+import { ApiError, useApi } from "@/client/api";
+import { useGameState } from "@/client/state";
 import { L } from "@/lexicon";
 import { GlassWindow } from "@/ui/GlassWindow";
 import { Rubric } from "@/ui/type";
@@ -19,41 +20,30 @@ type Phase = "entering" | "bind" | "waiting" | "stage";
 
 export function FragmentScreen() {
 	const api = useApi();
-	const [me, setMe] = useState<Me | null>(null);
-	const [err, setErr] = useState<string | null>(null);
+	// One shared read of /api/state (polled by the shell) instead of a poll of our own.
+	const { state, error, refresh } = useGameState();
+	const me = state?.me ?? null;
+	const err = error
+		? error instanceof ApiError && error.status === 503
+			? L.errors.unavailable
+			: L.errors.noVoice
+		: null;
 	const [fresh, setFresh] = useState(false);
 	// While the wax is being poured, stay on the ritual even once the server knows.
 	const [holding, setHolding] = useState(false);
-	const lastStatus = useRef<string | null | undefined>(undefined);
+	const st = me ? (me.fragment?.status ?? null) : undefined;
+	const [seen, setSeen] = useState<string | null | undefined>(undefined);
+	// Saw it go from unsealed to bound in this sitting: strike "Bound" once. Adjusted
+	// during render so the Stage mounts already knowing.
+	if (st !== undefined && st !== seen) {
+		if (seen !== undefined && seen !== "confirmed" && st === "confirmed")
+			setFresh(true);
+		setSeen(st);
+	}
 
-	const refresh = useCallback(async () => {
-		try {
-			const next = await api.me();
-			const st = next.fragment?.status ?? null;
-			// Saw it go from unsealed to bound in this sitting: strike "Bound" once.
-			if (
-				lastStatus.current !== undefined &&
-				lastStatus.current !== "confirmed" &&
-				st === "confirmed"
-			)
-				setFresh(true);
-			lastStatus.current = st;
-			setMe(next);
-			setErr(null);
-		} catch (e) {
-			setErr(
-				e instanceof ApiError && e.status === 503
-					? L.errors.unavailable
-					: L.errors.noVoice,
-			);
-		}
-	}, [api]);
-
-	useEffect(() => {
-		refresh();
-		const t = setInterval(refresh, 5000);
-		return () => clearInterval(t);
-	}, [refresh]);
+	const done = () => {
+		void refresh();
+	};
 
 	const f = me?.fragment ?? null;
 	const phase: Phase = !me
@@ -84,12 +74,12 @@ export function FragmentScreen() {
 							onHold={setHolding}
 							onBound={() => {
 								setHolding(false);
-								refresh();
+								done();
 							}}
 						/>
 					)}
 					{phase === "waiting" && f && (
-						<Waiting api={api} fragment={f} onDone={refresh} />
+						<Waiting api={api} fragment={f} onDone={done} />
 					)}
 					{phase === "stage" && f && me && (
 						<Stage
@@ -97,7 +87,7 @@ export function FragmentScreen() {
 							fragment={f}
 							boutActive={me.boutActive}
 							fresh={fresh}
-							onDone={refresh}
+							onDone={done}
 						/>
 					)}
 				</motion.div>

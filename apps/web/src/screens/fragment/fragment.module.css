@@ -952,3 +952,39 @@
 .sigilSummary > .hint {
 	text-align: center;
 }
+
+/* ---------------------------------------------------------------- just opened */
+/* A wrapper that adds no box of its own; the first time a mechanic shows, a candle ring
+   flares around it once. */
+.reveal {
+	position: relative;
+	display: grid;
+}
+.reveal[data-fresh]::after {
+	content: "";
+	position: absolute;
+	inset: -6px;
+	border-radius: 16px;
+	box-shadow:
+		0 0 0 2px var(--c-gilt-l),
+		0 0 24px 4px #f2c25a66;
+	opacity: 0;
+	pointer-events: none;
+	animation: reveal-flare 2.2s var(--ease-out) 0.5s 1 both;
+}
+@keyframes reveal-flare {
+	0% {
+		opacity: 0;
+	}
+	18% {
+		opacity: 1;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.reveal[data-fresh]::after {
+		animation-duration: 0.8s;
+	}
+}

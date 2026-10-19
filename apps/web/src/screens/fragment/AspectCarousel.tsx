@@ -10,6 +10,7 @@
 import { AnimatePresence, motion, type PanInfo } from "motion/react";
 import { useId, useState } from "react";
 import { L } from "@/lexicon";
+import { coachAct } from "@/ui/coach/signal";
 import { RoseWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
 import { haptic, pressableSoft, spring } from "@/ui/motion";
@@ -50,6 +51,7 @@ export function AspectCarousel({
 	const go = (d: number) => {
 		haptic(8);
 		onPick(wrap(aspect + d), d);
+		coachAct("mask");
 	};
 	const end = (_: unknown, { offset, velocity }: PanInfo) => {
 		const power = offset.x * Math.abs(velocity.x);
@@ -74,7 +76,7 @@ export function AspectCarousel({
 				>
 					<Chevron flip />
 				</motion.button>
-				<div className={s.roseBox}>
+				<div className={s.roseBox} data-coach="mask">
 					<RoseWindow
 						aspect={aspect}
 						turn={wheel.turn}
@@ -156,6 +158,7 @@ export function AspectCarousel({
 							if (i !== aspect) {
 								haptic(8);
 								onPick(i, i > aspect ? 1 : -1);
+								coachAct("mask");
 							}
 						}}
 						{...pressableSoft}

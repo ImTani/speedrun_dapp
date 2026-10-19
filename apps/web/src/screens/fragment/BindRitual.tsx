@@ -16,6 +16,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { L } from "@/lexicon";
+import { coachAct } from "@/ui/coach/signal";
 import { Mask } from "@/ui/Mask";
 import {
 	haptic,
@@ -204,7 +205,11 @@ export function BindRitual({
 								<SigilEditor
 									aspect={aspect}
 									knobs={knobs}
-									onChange={setKnobs}
+									onChange={(k) => {
+										setKnobs(k);
+										coachAct("sigil");
+									}}
+									coach
 								/>
 							</>
 						)}
@@ -226,13 +231,16 @@ export function BindRitual({
 										size="lg"
 									/>
 								</motion.div>
-								<label className={s.nameField}>
+								<label className={s.nameField} data-coach="name">
 									<span className="sr-only">{L.bind.nameLabel}</span>
 									<input
 										value={name}
 										maxLength={24}
 										placeholder={L.bind.namePlaceholder}
-										onChange={(e) => setName(e.target.value)}
+										onChange={(e) => {
+											setName(e.target.value);
+											if (e.target.value.trim()) coachAct("name");
+										}}
 										disabled={!!pour}
 										autoComplete="off"
 										autoCapitalize="words"
@@ -246,6 +254,7 @@ export function BindRitual({
 									disabled={!!pour}
 									onClick={() => {
 										setName(divineName(name));
+										coachAct("name");
 										setDivined((n) => n + 1);
 										haptic(12);
 									}}
@@ -282,7 +291,11 @@ export function BindRitual({
 					<motion.button
 						type="button"
 						className="btn btn-blood"
-						onClick={() => goto((step + 1) as Step)}
+						onClick={() => {
+							// Moving on counts as having chosen (the coach marks follow).
+							coachAct(step === 0 ? "mask" : "sigil");
+							goto((step + 1) as Step);
+						}}
 						{...pressable}
 					>
 						{step === 0 ? L.bind.wear : L.bind.carve}
@@ -292,6 +305,7 @@ export function BindRitual({
 						type="button"
 						className="btn btn-blood"
 						onClick={bind}
+						data-coach="bind"
 						disabled={!nameOk || !!pour}
 						{...pressable}
 					>

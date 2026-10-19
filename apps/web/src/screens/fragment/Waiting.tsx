@@ -94,7 +94,7 @@ export function Waiting({
 				: null;
 
 	return (
-		<div className={s.waiting} ref={shaker.ref}>
+		<div className={s.waiting} ref={shaker.ref} data-coach="waiting">
 			<div className={s.windowWrap} data-size="waiting">
 				<GlassWindow aspect={aspect} mood={mood} />
 				{mood === "stirring" ? <Embers /> : null}
@@ -136,6 +136,7 @@ export function Waiting({
 					<motion.button
 						type="button"
 						className={s.sealButton}
+						data-coach="seal"
 						data-live={st === "registered" && phase === "idle" ? "1" : "0"}
 						disabled={st !== "registered" || phase !== "idle"}
 						onClick={seal}

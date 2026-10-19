@@ -16,9 +16,38 @@ interface EventRow {
 	data: object;
 }
 
+/** What the Gathering screen reads; Revealed and RoundFinalized never reach the page. */
+const FEED_EVENTS = [
+	"BoutOpened",
+	"RoundStarted",
+	"Committed",
+	"PairScored",
+	"BoutClosed",
+];
+/** Shared by every viewer: the CDN holds it 3 s (serving it stale up to 10 s while it refreshes). */
+const CACHE = "public, s-maxage=3, stale-while-revalidate=10";
+/** One read per instance per this long, however many viewers poll at once. */
+const MEMO_MS = 2_000;
+let memo: { at: number; body: Promise<unknown> } | null = null;
+
 export const GET = handle(async () => {
+	const now = Date.now();
+	if (!memo || now - memo.at > MEMO_MS) {
+		const body = read();
+		const m = { at: now, body };
+		memo = m;
+		body.catch(() => {
+			if (memo === m) memo = null;
+		});
+	}
+	const res = json(await memo.body);
+	res.headers.set("cache-control", CACHE);
+	return res;
+});
+
+async function read() {
 	const id = await boutCount();
-	if (id === 0n) return json({ active: false, gathering: null, events: [] });
+	if (id === 0n) return { active: false, gathering: null, events: [] };
 	const info = await boutInfo(id);
 	const round = info.roundsPlayed;
 	const r = info.active ? await roundInfo(id, BigInt(round)) : null;
@@ -54,6 +83,7 @@ export const GET = handle(async () => {
 					round, agent, data
 				from arena_events
 				where chain_id = ${CHAIN_ID} and gathering = ${id.toString()}
+					and name = any(${FEED_EVENTS})
 				order by block desc, log_index desc
 				limit 300
 			) e order by block asc, log_index asc`) as EventRow[];
@@ -64,7 +94,7 @@ export const GET = handle(async () => {
 		);
 	}
 
-	return json({
+	return {
 		active: info.active,
 		gathering: {
 			id: id.toString(),
@@ -89,5 +119,5 @@ export const GET = handle(async () => {
 			agent: e.agent,
 			data: e.data,
 		})),
-	});
-});
+	};
+}

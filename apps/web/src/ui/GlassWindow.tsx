@@ -170,6 +170,8 @@ export function GlassWindow({
 	useEffect(() => {
 		let dead = false;
 		let api: GlassApi | null = null;
+		// The floor this window lights, as handed to the shader (the ref may be gone at cleanup).
+		let floorEl: HTMLCanvasElement | null = null;
 		const box = boxRef.current;
 		const artEl = artRef.current;
 		const canvas = canvasRef.current;
@@ -197,9 +199,10 @@ export function GlassWindow({
 			setArt(true);
 			readyRef.current?.();
 			if (!shader || mountedW < 40) return;
+			floorEl = caustics?.current ?? null;
 			api = await GL.mount({
 				winCanvas: canvas,
-				...(caustics?.current ? { causticCanvas: caustics.current } : {}),
+				...(floorEl ? { causticCanvas: floorEl } : {}),
 				theme: win.theme,
 				seed: win.seed,
 				preset: "locked",
@@ -225,8 +228,8 @@ export function GlassWindow({
 			ro.disconnect();
 			api?.destroy();
 			apiRef.current = null;
-			const c = caustics?.current;
-			c?.getContext("webgl2")?.clear(0x4000);
+			// The lens paints 2D frames: wipe this window's light off the floor it lit.
+			floorEl?.getContext("2d")?.clearRect(0, 0, floorEl.width, floorEl.height);
 		};
 	}, [win.theme, win.seed, shader, gen, uid]);
 
@@ -571,11 +574,15 @@ export function RoseWindow({
 		setLit(false);
 		(async () => {
 			if (mountedW < 40) return;
-			const { GL } = await import("@/scene/glassgl.js");
+			const [{ GL }, lens] = await Promise.all([
+				import("@/scene/glassgl.js"),
+				import("@/scene/lens.js"),
+			]);
 			if (dead) return;
 			rose = await mountRose(
 				canvas,
 				GL as unknown as GLKit,
+				lens,
 				aspectRef.current,
 				() => rotRef.current.get(),
 				reduce,
@@ -883,9 +890,7 @@ type GLKit = {
 };
 type RoseGL = { show(aspect: number): void; destroy(): void };
 
-const ROSE_VERT = `#version 300 es
-in vec2 aP; out vec2 vUv;
-void main(){ vUv = aP * .5 + .5; vUv.y = 1. - vUv.y; gl_Position = vec4(aP, 0., 1.); }`;
+type Lens = typeof import("@/scene/lens.js");
 const ROSE_UNIFORM = {
 	hot: "uHot",
 	amb: "uAmb",
@@ -899,11 +904,17 @@ const ROSE_UNIFORM = {
 	relief: "uRelief",
 	expo: "uExpo",
 } as const;
+const ROSE_LAYERS = ["uCol", "uLead", "uLeadBlur", "uGlow"] as const;
 
-/** Light the rose with the arched windows' shader, in one WebGL2 context. */
+/**
+ * Light the rose with the arched windows' shader, drawn through the shared lens (one WebGL
+ * context for the whole app; this canvas takes 2D frames). The lens clock gives about 30 frames
+ * a second: the light drifts slowly; the phone stays cool.
+ */
 async function mountRose(
 	canvas: HTMLCanvasElement,
 	GL: GLKit,
+	lens: Lens,
 	first: number,
 	angle: () => number,
 	reduce: boolean,
@@ -911,13 +922,9 @@ async function mountRose(
 	const dpr = Math.min(window.devicePixelRatio || 1, 2);
 	const W = Math.round(canvas.clientWidth * dpr);
 	if (W < 40) return null;
+	if (!lens.lensReady(GL.WINDOW_FRAG) || !canvas.getContext("2d")) return null;
 	canvas.width = W;
 	canvas.height = W;
-	const gl = canvas.getContext("webgl2", {
-		premultipliedAlpha: true,
-		antialias: false,
-	});
-	if (!gl) return null;
 	const params: Record<string, number> = { ...(GL.PRESETS.locked ?? {}) };
 	const layers = (asp: number) =>
 		Promise.all([
@@ -926,120 +933,69 @@ async function mountRose(
 			GL.raster(roseSVG(asp, "lead", W, "rb"), W, W, 2.2 * dpr),
 			GL.raster(roseSVG(asp, "glow", W >> 2, "rg"), W >> 2, W >> 2, 1.8 * dpr),
 		]);
-	const firstLayers = await layers(first);
-
-	const sh = (type: number, src: string) => {
-		const s = gl.createShader(type);
-		if (!s) throw new Error("shader");
-		gl.shaderSource(s, src);
-		gl.compileShader(s);
-		if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
-			throw new Error(gl.getShaderInfoLog(s) ?? "shader");
-		return s;
-	};
-	const prog = gl.createProgram();
-	gl.attachShader(prog, sh(gl.VERTEX_SHADER, ROSE_VERT));
-	gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, GL.WINDOW_FRAG));
-	gl.linkProgram(prog);
-	if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
-		throw new Error(gl.getProgramInfoLog(prog) ?? "link");
-	// biome-ignore lint/correctness/useHookAtTopLevel: WebGL call, not a React hook
-	gl.useProgram(prog);
-	gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-	gl.bufferData(
-		gl.ARRAY_BUFFER,
-		new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
-		gl.STATIC_DRAW,
-	);
-	const aP = gl.getAttribLocation(prog, "aP");
-	gl.enableVertexAttribArray(aP);
-	gl.vertexAttribPointer(aP, 2, gl.FLOAT, false, 0, 0);
-	const U = (n: string) => gl.getUniformLocation(prog, n);
-	const tex = ["uCol", "uLead", "uLeadBlur", "uGlow"].map((n, i) => {
-		const t = gl.createTexture();
-		gl.activeTexture(gl.TEXTURE0 + i);
-		gl.bindTexture(gl.TEXTURE_2D, t);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		gl.uniform1i(U(n), i);
-		return t;
-	});
-	const upload = (src: HTMLCanvasElement[]) => {
-		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-		src.forEach((c, i) => {
-			gl.activeTexture(gl.TEXTURE0 + i);
-			gl.bindTexture(gl.TEXTURE_2D, tex[i] ?? null);
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
-		});
-	};
-	upload(firstLayers);
-	const loc = {
-		res: U("uRes"),
-		l: U("uL"),
-		t: U("uT"),
-		swell: U("uSwell"),
-		dim: U("uDim"),
-		red: U("uRed"),
-		crack: U("uCrack"),
-		cloud: U("uCloud"),
-	};
-	const knobs = Object.entries(ROSE_UNIFORM).map(
-		([k, u]) => [k, U(u)] as const,
-	);
+	// The layers on the glass now, kept so a rebuilt context can take them again.
+	let src = await layers(first);
+	let fresh = false; // src changed since the last upload
+	let tex: WebGLTexture[] = [];
 
 	let current = first;
 	let token = 0;
 	let dim = reduce ? 0 : 0.6;
 	let dimTarget = 0;
 	let swellT = -9;
-	let running = !document.hidden;
+	let prev = 0;
 	let dead = false;
-	let raf = 0;
-	let last = 0;
 	const t0 = performance.now();
 
-	const draw = (now: number) => {
-		const t = (now - t0) / 1000;
-		// The light sits just above the hub (behind the mask) and wanders a little.
-		// It belongs to the sky, not the glass: it stays put while the wheel turns.
-		const wx = reduce ? 0 : Math.sin(t * 0.23) * 0.07;
-		const wy = (reduce ? 0 : Math.sin(t * 0.17) * 0.05) - 0.05;
-		const th = (-angle() * Math.PI) / 180;
-		const lx = wx * Math.cos(th) - wy * Math.sin(th);
-		const ly = wx * Math.sin(th) + wy * Math.cos(th);
-		dim += (dimTarget - dim) * (reduce ? 1 : 0.14);
-		const sw =
-			Math.max(0, 1 - (t - swellT) / 1.1) * Math.min(1, (t - swellT) * 6);
-		gl.viewport(0, 0, W, W);
-		gl.uniform2f(loc.res, W, W);
-		gl.uniform2f(loc.l, 0.5 + lx, 0.5 + ly);
-		gl.uniform1f(loc.t, t);
-		gl.uniform1f(loc.swell, sw * 0.6);
-		gl.uniform1f(loc.dim, dim);
-		gl.uniform1f(loc.red, 0);
-		gl.uniform1f(loc.crack, 0);
-		gl.uniform3f(loc.cloud, -9, 0, 0.08);
-		for (const [k, u] of knobs) gl.uniform1f(u, params[k] ?? 0);
-		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-	};
-	// About 30 frames a second: the light drifts slowly; the phone stays cool.
-	const frame = (now: number) => {
-		if (!running || dead) return;
-		raf = requestAnimationFrame(frame);
-		if (now - last < 32) return;
-		last = now;
-		draw(now);
-	};
-	if (reduce) requestAnimationFrame(draw);
-	else if (running) raf = requestAnimationFrame(frame);
-	const onVis = () => {
-		cancelAnimationFrame(raf);
-		running = !document.hidden && !dead;
-		if (running && !reduce) raf = requestAnimationFrame(frame);
-	};
-	document.addEventListener("visibilitychange", onVis);
+	const view = lens.addView({
+		targets: [canvas],
+		live: !reduce,
+		setup(_gl, texture) {
+			tex = src.map(texture);
+			fresh = false;
+		},
+		draw(gl, now, pass) {
+			if (fresh) {
+				src.forEach((c, i) => {
+					tex[i] = lens.upload(gl, tex[i] ?? null, c);
+				});
+				fresh = false;
+			}
+			const t = (now - t0) / 1000;
+			const dt = prev ? Math.min(0.25, (now - prev) / 1000) : 1 / 30;
+			prev = now;
+			// The light sits just above the hub (behind the mask) and wanders a little.
+			// It belongs to the sky, not the glass: it stays put while the wheel turns.
+			const wx = reduce ? 0 : Math.sin(t * 0.23) * 0.07;
+			const wy = (reduce ? 0 : Math.sin(t * 0.17) * 0.05) - 0.05;
+			const th = (-angle() * Math.PI) / 180;
+			const lx = wx * Math.cos(th) - wy * Math.sin(th);
+			const ly = wx * Math.sin(th) + wy * Math.cos(th);
+			dim = reduce ? dimTarget : lens.ease(dim, dimTarget, 0.14, dt);
+			const sw =
+				Math.max(0, 1 - (t - swellT) / 1.1) * Math.min(1, (t - swellT) * 6);
+			pass(canvas, () => {
+				const p = lens.program(gl, GL.WINDOW_FRAG);
+				const U = (n: string) => lens.uniform(gl, p, n);
+				gl.useProgram(p);
+				lens.bind(gl, tex);
+				ROSE_LAYERS.forEach((n, i) => {
+					gl.uniform1i(U(n), i);
+				});
+				gl.uniform2f(U("uRes"), W, W);
+				gl.uniform2f(U("uL"), 0.5 + lx, 0.5 + ly);
+				gl.uniform1f(U("uT"), t);
+				gl.uniform1f(U("uSwell"), sw * 0.6);
+				gl.uniform1f(U("uDim"), dim);
+				gl.uniform1f(U("uRed"), 0);
+				gl.uniform1f(U("uCrack"), 0);
+				gl.uniform3f(U("uCloud"), -9, 0, 0.08);
+				for (const [k, u] of Object.entries(ROSE_UNIFORM))
+					gl.uniform1f(U(u), params[k] ?? 0);
+				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+			});
+		},
+	});
 
 	return {
 		show(next) {
@@ -1049,24 +1005,22 @@ async function mountRose(
 			dimTarget = 0.92;
 			const started = performance.now();
 			layers(next)
-				.then((src) => {
+				.then((c) => {
 					const wait = Math.max(0, 150 - (performance.now() - started));
 					setTimeout(() => {
 						if (dead || my !== token) return;
-						upload(src);
+						src = c;
+						fresh = true;
 						dimTarget = 0;
 						swellT = (performance.now() - t0) / 1000;
-						if (reduce) requestAnimationFrame(draw);
+						view.invalidate();
 					}, wait);
 				})
 				.catch(() => {});
 		},
 		destroy() {
 			dead = true;
-			running = false;
-			cancelAnimationFrame(raf);
-			document.removeEventListener("visibilitychange", onVis);
-			gl.getExtension("WEBGL_lose_context")?.loseContext();
+			view.remove();
 		},
 	};
 }

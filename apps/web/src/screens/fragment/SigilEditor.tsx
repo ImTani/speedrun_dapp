@@ -39,11 +39,14 @@ export function SigilEditor({
 	knobs,
 	onChange,
 	disabled = false,
+	coach = false,
 }: {
 	aspect: number;
 	knobs: Knobs;
 	onChange: (k: Knobs) => void;
 	disabled?: boolean;
+	/** Mark the first Sigil as a coach target (onboarding). */
+	coach?: boolean;
 }) {
 	const keys = sigilsFor(aspect);
 	if (keys.length === 0)
@@ -60,10 +63,11 @@ export function SigilEditor({
 			animate="shown"
 			variants={{ shown: { transition: { staggerChildren: 0.07 } } }}
 		>
-			{keys.map((key) => (
+			{keys.map((key, i) => (
 				<motion.li
 					key={key}
 					className={s.sigil}
+					data-coach={coach && i === 0 ? "sigil" : undefined}
 					variants={{
 						hidden: { opacity: 0, y: 14 },
 						shown: {

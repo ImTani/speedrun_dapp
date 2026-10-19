@@ -1,19 +1,27 @@
 "use client";
 
-import { type CSSProperties, type ReactNode, useState } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useState } from "react";
+import { useApi } from "@/client/api";
 import { MockApiProvider, type MockState } from "@/client/mock";
 import {
+	isStatePreview,
+	linkMockMe,
 	resetMockEconomy,
 	resetMockInventory,
 	resetMockMarks,
+	resetMockState,
 	SPIRE_STATES,
+	STATE_PREVIEWS,
+	type StatePreviewName,
 } from "@/client/mock/index";
 import {
 	GATHERING_STATES,
 	isGatheringState,
 	isMeState,
 	ME_STATES,
+	type MeState,
 } from "@/client/mockData";
+import { GameStateProvider } from "@/client/state";
 import { levelThreshold } from "@/game/economy";
 import { L } from "@/lexicon";
 import { FragmentScreen } from "@/screens/fragment/FragmentScreen";
@@ -22,7 +30,6 @@ import { ReliquaryScreen } from "@/screens/reliquary/ReliquaryScreen";
 import { SpireScreen } from "@/screens/spire/SpireScreen";
 import { GameShell } from "@/screens/title/Shell";
 import { TitleScreen } from "@/screens/title/TitleScreen";
-import { TUTORIAL_KEY, Tutorial } from "@/screens/tutorial/Tutorial";
 import { VestryScreen } from "@/screens/vestry/VestryScreen";
 import { GlassWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
@@ -55,9 +62,18 @@ const VESTRY_STATES = {
 	owned: "Every pack already owned.",
 	rich: "20 USDC: everything affordable.",
 } as const;
-const TUTORIAL_STATES = {
-	first: "The first-run guide over the Fragment tab (four steps, skippable).",
-} as const;
+/** Onboarding and unlock worlds (screen=onboarding): the shared game state's named presets. */
+const ONBOARDING_STATES = STATE_PREVIEWS;
+/** The Claimant's Fragment in each onboarding world. */
+const ONBOARDING_ME: Record<StatePreviewName, MeState> = {
+	fresh: "none",
+	stirring: "requested",
+	sealable: "registered",
+	early: "confirmed",
+	mid: "confirmed",
+	late: "confirmed",
+};
+
 const TITLE_STATES = {
 	ready:
 		"Title screen with the enter button live (tap the colophon link for credits).",
@@ -88,7 +104,13 @@ const ALL_PACK_ITEMS = [
 ];
 
 /** Put every feature mock into the world this link asks for (before any screen fetches). */
-function seedWorld(screen: Opt, state: Opt) {
+function seedWorld(screen: Opt, state: Opt, aspect: number) {
+	if (screen === "onboarding") {
+		resetMockState(onboardingWorld(state), { aspect });
+		return;
+	}
+	// Everything open and onboarding done, so the feature screens show as before.
+	resetMockState("late", { aspect });
 	resetMockEconomy();
 	resetMockInventory();
 	resetMockMarks();
@@ -146,20 +168,48 @@ function seedWorld(screen: Opt, state: Opt) {
 function Seeded({
 	screen,
 	state,
+	aspect,
 	children,
 }: {
 	screen: Opt;
 	state: Opt;
+	aspect: number;
 	children: ReactNode;
 }) {
-	useState(() => seedWorld(screen, state));
+	useState(() => seedWorld(screen, state, aspect));
 	return <>{children}</>;
+}
+
+const onboardingWorld = (state: Opt): StatePreviewName =>
+	state && isStatePreview(state) ? state : "fresh";
+
+/**
+ * The shared game state over the mock API. Its Fragment comes from the harness's live /api/me
+ * fixture (so binding and sealing move it along), except in the `stirring` world, whose own
+ * Fragment wakes 4 s after the page opens.
+ */
+function MockGameState({
+	link,
+	children,
+}: {
+	link: boolean;
+	children: ReactNode;
+}) {
+	const api = useApi();
+	// Linked during the first render, before the provider's first read, and again on every
+	// (re)mount so Strict Mode's rehearsal unmount does not leave it unlinked.
+	useState(() => linkMockMe(link ? () => api.me() : null));
+	useEffect(() => {
+		linkMockMe(link ? () => api.me() : null);
+		return () => linkMockMe(null);
+	}, [api, link]);
+	return <GameStateProvider>{children}</GameStateProvider>;
 }
 
 const TABS: Record<string, Tab> = {
 	fragment: "fragment",
 	hud: "fragment",
-	tutorial: "fragment",
+	onboarding: "fragment",
 	gathering: "gathering",
 	spire: "spire",
 	reliquary: "reliquary",
@@ -179,13 +229,16 @@ export function PreviewClient(p: {
 	if (!p.screen) return <Index />;
 
 	const aspect = clampAspect(p.aspect);
+	const world = onboardingWorld(p.state);
 	const mock: MockState = {
 		me:
-			p.screen === "fragment" && p.state && isMeState(p.state)
-				? p.state
-				: p.me && isMeState(p.me)
-					? p.me
-					: "confirmed",
+			p.screen === "onboarding"
+				? ONBOARDING_ME[world]
+				: p.screen === "fragment" && p.state && isMeState(p.state)
+					? p.state
+					: p.me && isMeState(p.me)
+						? p.me
+						: "confirmed",
 		gathering:
 			p.screen === "gathering" && p.state && isGatheringState(p.state)
 				? p.state
@@ -210,18 +263,21 @@ export function PreviewClient(p: {
 
 	return (
 		<MotionRoot key={key}>
-			<Seeded screen={p.screen} state={p.state}>
+			<Seeded screen={p.screen} state={p.state} aspect={aspect}>
 				<MockApiProvider state={mock}>
-					{p.frame === "bare" ? (
-						<main className="shell">
-							<div className="shell-body">
-								<Body tab={tab} />
-							</div>
-						</main>
-					) : (
-						<GameShell initialTab={tab} />
-					)}
-					{p.screen === "tutorial" ? <TutorialPreview /> : null}
+					<MockGameState
+						link={!(p.screen === "onboarding" && world === "stirring")}
+					>
+						{p.frame === "bare" ? (
+							<main className="shell">
+								<div className="shell-body">
+									<Body tab={tab} />
+								</div>
+							</main>
+						) : (
+							<GameShell initialTab={tab} />
+						)}
+					</MockGameState>
 				</MockApiProvider>
 			</Seeded>
 		</MotionRoot>
@@ -248,31 +304,27 @@ function Body({ tab }: { tab: Tab }) {
 	}
 }
 
-/** The first-run guide, forced on (the real app shows it once: FirstRun / TUTORIAL_KEY). */
-function TutorialPreview() {
-	const [open, setOpen] = useState(true);
-	return open ? (
-		<Tutorial
-			onDone={() => {
-				try {
-					localStorage.setItem(TUTORIAL_KEY, "1");
-				} catch {}
-				setOpen(false);
-			}}
-		/>
-	) : null;
-}
-
 /** The real title screen; entering drops into the real shell with no Fragment bound. */
 function TitlePreview({ ready }: { ready: boolean }) {
 	const [entered, setEntered] = useState(false);
 	if (entered)
 		return (
 			<MockApiProvider state={{ me: "none" }}>
-				<GameShell initialTab="fragment" />
+				<MockGameState link>
+					<GameShell initialTab="fragment" />
+				</MockGameState>
 			</MockApiProvider>
 		);
-	return <TitleScreen ready={ready} onEnter={() => setEntered(true)} />;
+	return (
+		<TitleScreen
+			ready={ready}
+			onEnter={() => {
+				// A first-time Claimant: onboarding from the mask.
+				resetMockState("fresh");
+				setEntered(true);
+			}}
+		/>
+	);
 }
 
 function MaskSheet() {
@@ -311,7 +363,11 @@ const SCREENS: {
 	{ screen: "title", title: "Title", states: TITLE_STATES },
 	{ screen: "fragment", title: "Fragment tab", states: ME_STATES },
 	{ screen: "hud", title: "Fragment tab HUD", states: HUD_STATES },
-	{ screen: "tutorial", title: "First-run guide", states: TUTORIAL_STATES },
+	{
+		screen: "onboarding",
+		title: "Onboarding and unlocks",
+		states: ONBOARDING_STATES,
+	},
 	{ screen: "gathering", title: "Gathering tab", states: GATHERING_STATES },
 	{ screen: "spire", title: "Spire tab", states: SPIRE_STATES },
 	{ screen: "reliquary", title: "Reliquary tab", states: RELIQUARY_STATES },

@@ -124,12 +124,102 @@ export async function setDegree(
 	await db()`update profiles set degree = ${degree} where privy_id = ${privyId}`;
 }
 
+/** Postgres "relation does not exist": migration 006 (economy_settled) has not landed yet. */
+const isMissingTable = (e: unknown) =>
+	(e as { code?: unknown } | null)?.code === "42P01";
+/** Until this time (epoch ms) settle by full scan; set when economy_settled is missing. */
+let fullScanUntil = 0;
+
 /**
  * Credit every scored duel the player's Fragment fought on this chain that is not yet in the
  * ledger. Lazy and idempotent: safe to call on every read. Returns how many duels were credited.
+ *
+ * Reads only PairScored newer than the player's watermark (economy_settled), then moves the
+ * watermark up to the indexer's cursor, below which the runner has written every event. Without
+ * the table it scans all of the Fragment's duels, as before; the ledger keeps both exact.
  */
 export async function settleGatherings(privyId: string): Promise<number> {
-	await row(privyId);
+	await ensureRow(privyId);
+	if (Date.now() >= fullScanUntil) {
+		try {
+			return await settleSince(privyId);
+		} catch (e) {
+			if (!isMissingTable(e)) throw e;
+			fullScanUntil = Date.now() + 10 * 60_000;
+			console.warn("[economy] economy_settled missing: settling by full scan");
+		}
+	}
+	return settleAll(privyId);
+}
+
+/** The profile row exists (the credit below updates it). One statement, no read back. */
+async function ensureRow(privyId: string): Promise<void> {
+	await db()`insert into profiles (privy_id) values (${privyId})
+		on conflict (privy_id) do nothing`;
+}
+
+async function settleSince(privyId: string): Promise<number> {
+	const ref = `duel:${CHAIN_ID}:`;
+	const rows = (await db()`with f as (
+			select lower(fr.agent) as agent
+			from players p
+			join fragments fr on fr.chain_id = ${CHAIN_ID}
+				and lower(fr.owner_account) = lower(p.account)
+			where p.privy_id = ${privyId} and fr.agent is not null
+			limit 1
+		),
+		w as (
+			select
+				coalesce((select block from economy_settled
+					where privy_id = ${privyId} and chain_id = ${CHAIN_ID}), -1)::bigint as done,
+				coalesce((select last_block from indexer_state
+					where chain_id = ${CHAIN_ID}), -1)::bigint as top
+		),
+		duels as (
+			select ${ref}::text || e.block::text || ':' || e.log_index::text as ref,
+				case when lower(e.data ->> 'agentA') = f.agent
+					then (e.data ->> 'pointsA')::int
+					else (e.data ->> 'pointsB')::int end as light
+			from arena_events e cross join f
+			where e.chain_id = ${CHAIN_ID} and e.name = 'PairScored'
+				and e.block > (select done from w)
+				and (lower(e.data ->> 'agentA') = f.agent or lower(e.data ->> 'agentB') = f.agent)
+		),
+		ins as (
+			insert into economy_ledger (privy_id, kind, ash, resonance, ref)
+			select ${privyId}::text, 'gathering', greatest(d.light, 0) + ${DUEL_ASH_BONUS}::int,
+				${DUEL_RESONANCE}::int, d.ref
+			from duels d
+			where not exists (
+				select 1 from economy_ledger l where l.privy_id = ${privyId} and l.ref = d.ref
+			)
+			on conflict (privy_id, ref) do nothing
+			returning ash, resonance
+		),
+		tot as (
+			select count(*)::int as n, coalesce(sum(ash), 0)::int as ash,
+				coalesce(sum(resonance), 0)::int as resonance
+			from ins
+		),
+		upd as (
+			update profiles p set ash = p.ash + tot.ash, resonance = p.resonance + tot.resonance
+			from tot where p.privy_id = ${privyId} and tot.n > 0
+			returning 1
+		),
+		mark as (
+			insert into economy_settled (privy_id, chain_id, block)
+			select ${privyId}::text, ${CHAIN_ID}::int, w.top from w
+			where w.top > w.done and exists (select 1 from f)
+			on conflict (privy_id, chain_id) do update
+				set block = greatest(economy_settled.block, excluded.block), updated_at = now()
+			returning 1
+		)
+		select n from tot`) as { n: number }[];
+	return Number(rows[0]?.n ?? 0);
+}
+
+/** Every duel the Fragment fought (the path before migration 006). */
+async function settleAll(privyId: string): Promise<number> {
 	const ref = `duel:${CHAIN_ID}:`;
 	const rows = (await db()`with f as (
 			select lower(fr.agent) as agent

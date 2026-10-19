@@ -1,10 +1,8 @@
 // WebGL2 stained glass: a window shader (hammered glass, refraction, backlight, seeds, beveled lead)
 // and a caustics shader (window light pooling on the stone). All texture detail is procedural.
-(() => {
-	const VERT = `#version 300 es
-in vec2 aP; out vec2 vUv;
-void main(){ vUv = aP * .5 + .5; vUv.y = 1. - vUv.y; gl_Position = vec4(aP, 0., 1.); }`;
+import { addView, bind, ease, lensReady, program, uniform } from "./lens.js";
 
+(() => {
 	const NOISE = `
 float h21(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 vec2 h22(vec2 p){ float n = h21(p); return vec2(n, h21(p + n)); }
@@ -162,48 +160,6 @@ void main(){
   o = vec4(acc * uGain, 1.);
 }`;
 
-	function compile(gl, vs, fs) {
-		const sh = (type, src) => {
-			const s = gl.createShader(type);
-			gl.shaderSource(s, src);
-			gl.compileShader(s);
-			if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
-				throw new Error(gl.getShaderInfoLog(s));
-			return s;
-		};
-		const p = gl.createProgram();
-		gl.attachShader(p, sh(gl.VERTEX_SHADER, vs));
-		gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs));
-		gl.linkProgram(p);
-		if (!gl.getProgramParameter(p, gl.LINK_STATUS))
-			throw new Error(gl.getProgramInfoLog(p));
-		return p;
-	}
-	function quad(gl, prog) {
-		const b = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, b);
-		gl.bufferData(
-			gl.ARRAY_BUFFER,
-			new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
-			gl.STATIC_DRAW,
-		);
-		const loc = gl.getAttribLocation(prog, "aP");
-		gl.enableVertexAttribArray(loc);
-		gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-	}
-	function texture(gl, unit, source) {
-		const t = gl.createTexture();
-		gl.activeTexture(gl.TEXTURE0 + unit);
-		gl.bindTexture(gl.TEXTURE_2D, t);
-		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		return t;
-	}
-
 	/** Rasterise an SVG string to a canvas (optionally blurred) — the shader's input layers. */
 	function raster(svg, w, h, blur = 0) {
 		return new Promise((res, rej) => {
@@ -293,8 +249,9 @@ void main(){
 	};
 
 	/**
-	 * Mount the lit window into `winCanvas` and its light onto `causticCanvas`.
-	 * Returns { swell(), setLight(u,v) } or null when WebGL2 is unavailable (caller keeps the SVG).
+	 * Mount the lit window into `winCanvas` and its light onto `causticCanvas`, both drawn through
+	 * the shared lens (lens.js): the canvases take 2D frames, never a WebGL context of their own.
+	 * Returns the window's controls, or null when WebGL2 is unavailable (caller keeps the SVG).
 	 */
 	async function mount({
 		winCanvas,
@@ -309,21 +266,14 @@ void main(){
 		const params = { ...PRESETS[preset] };
 		const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 		const dpr = Math.min(window.devicePixelRatio || 1, 2);
+		if (!lensReady(WINDOW_FRAG, ...(causticCanvas ? [CAUSTIC_FRAG] : [])))
+			return null;
+		if (!winCanvas.getContext("2d")) return null;
+		if (causticCanvas && !causticCanvas.getContext("2d")) return null;
 		const cw = winCanvas.clientWidth,
 			ch = winCanvas.clientHeight;
 		winCanvas.width = Math.round(cw * dpr);
 		winCanvas.height = Math.round(ch * dpr);
-		const gl = winCanvas.getContext("webgl2", {
-			premultipliedAlpha: true,
-			antialias: false,
-		});
-		const gl2 = causticCanvas
-			? causticCanvas.getContext("webgl2", {
-					premultipliedAlpha: true,
-					antialias: false,
-				})
-			: null;
-		if (!gl || (causticCanvas && !gl2)) return null;
 
 		const W = winCanvas.width,
 			H = winCanvas.height;
@@ -351,23 +301,7 @@ void main(){
 			H >> 2,
 			1.8 * dpr,
 		);
-
-		const pw = compile(gl, VERT, WINDOW_FRAG);
-		gl.useProgram(pw);
-		quad(gl, pw);
-		texture(gl, 0, col);
-		texture(gl, 1, lead);
-		texture(gl, 2, leadBlur);
-		texture(gl, 3, glow);
-		gl.uniform1i(gl.getUniformLocation(pw, "uCol"), 0);
-		gl.uniform1i(gl.getUniformLocation(pw, "uLead"), 1);
-		gl.uniform1i(gl.getUniformLocation(pw, "uLeadBlur"), 2);
-		gl.uniform1i(gl.getUniformLocation(pw, "uGlow"), 3);
-		const U = (n) => gl.getUniformLocation(pw, n);
-
-		let pc = null,
-			C = () => null;
-		if (gl2) {
+		if (causticCanvas) {
 			const cscale = 0.5; // caustics are soft: half resolution is plenty
 			causticCanvas.width = Math.round(
 				causticCanvas.clientWidth * dpr * cscale,
@@ -375,12 +309,6 @@ void main(){
 			causticCanvas.height = Math.round(
 				causticCanvas.clientHeight * dpr * cscale,
 			);
-			pc = compile(gl2, VERT, CAUSTIC_FRAG);
-			gl2.useProgram(pc);
-			quad(gl2, pc);
-			texture(gl2, 0, colBlur);
-			gl2.uniform1i(gl2.getUniformLocation(pc, "uBlur"), 0);
-			C = (n) => gl2.getUniformLocation(pc, n);
 		}
 
 		const cloud = [-9, 0, 0.08];
@@ -395,7 +323,7 @@ void main(){
 			target = [0.5, 0.36],
 			swellT = -9,
 			dragging = false,
-			running = true;
+			prev = 0;
 		const t0 = performance.now();
 		const winRect = () => {
 			const a = winCanvas.getBoundingClientRect(),
@@ -408,104 +336,141 @@ void main(){
 				a.height * s,
 			];
 		};
-		function frame(now) {
-			if (!running) return;
+		let winTex = [],
+			blurTex = null;
+		function frame(gl, now, pass) {
 			const t = (now - t0) / 1000;
+			// The study eased per 60 fps frame; scale each ease to the step actually taken.
+			const dt = prev ? Math.min(0.25, (now - prev) / 1000) : 1 / 30;
+			prev = now;
+			const e = (cur, to, k) => (reduce ? to : ease(cur, to, k, dt));
 			if (!dragging && !reduce)
 				target = [
 					0.5 + Math.sin(t * 0.23) * 0.1,
 					0.36 + Math.sin(t * 0.17) * 0.05,
 				];
-			light = [
-				light[0] + (target[0] - light[0]) * 0.08,
-				light[1] + (target[1] - light[1]) * 0.08,
-			];
+			light = [e(light[0], target[0], 0.08), e(light[1], target[1], 0.08)];
 			const sw =
 				Math.max(0, 1 - (t - swellT) / 1.1) * Math.min(1, (t - swellT) * 6);
-			gl.viewport(0, 0, W, H);
-			gl.uniform2f(U("uRes"), W, H);
-			gl.uniform2f(U("uL"), light[0], light[1]);
-			gl.uniform1f(U("uT"), t);
-			gl.uniform1f(U("uSwell"), sw);
-			dim += (dimTarget - dim) * 0.07;
-			gl.uniform1f(U("uDim"), dim);
-			red += (redTarget - red) * 0.09;
-			gl.uniform1f(U("uRed"), red);
-			crk += (crkTarget - crk) * 0.12;
-			gl.uniform1f(U("uCrack"), crk);
-			gl.uniform3f(U("uCloud"), cloud[0], cloud[1], cloud[2]);
-			for (const [k, u] of Object.entries(UNIFORM))
-				gl.uniform1f(U(u), params[k]);
-			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-			if (gl2) {
-				gl2.viewport(0, 0, causticCanvas.width, causticCanvas.height);
-				gl2.uniform2f(C("uRes"), causticCanvas.width, causticCanvas.height);
-				gl2.uniform2f(C("uL"), light[0], light[1]);
-				gl2.uniform4f(C("uWin"), ...winRect());
-				gl2.uniform1f(C("uT"), reduce ? 0 : t);
-				gain +=
-					((1 + sw * 1.4) * (1 - dim * 0.85) * (1 + red * 0.3) - gain) * 0.1;
-				gl2.uniform1f(C("uGain"), gain * causticBoost);
-				gl2.uniform1f(C("uReach"), causticReach);
-				gl2.uniform1f(C("uFloor"), causticFloor ? 1 : 0);
-				gl2.drawArrays(gl2.TRIANGLE_STRIP, 0, 4);
-			}
-			if (!reduce) requestAnimationFrame(frame);
+			dim = e(dim, dimTarget, 0.07);
+			red = e(red, redTarget, 0.09);
+			crk = e(crk, crkTarget, 0.12);
+			pass(winCanvas, () => {
+				const p = program(gl, WINDOW_FRAG);
+				const U = (n) => uniform(gl, p, n);
+				gl.useProgram(p);
+				bind(gl, winTex);
+				gl.uniform1i(U("uCol"), 0);
+				gl.uniform1i(U("uLead"), 1);
+				gl.uniform1i(U("uLeadBlur"), 2);
+				gl.uniform1i(U("uGlow"), 3);
+				gl.uniform2f(U("uRes"), W, H);
+				gl.uniform2f(U("uL"), light[0], light[1]);
+				gl.uniform1f(U("uT"), t);
+				gl.uniform1f(U("uSwell"), sw);
+				gl.uniform1f(U("uDim"), dim);
+				gl.uniform1f(U("uRed"), red);
+				gl.uniform1f(U("uCrack"), crk);
+				gl.uniform3f(U("uCloud"), cloud[0], cloud[1], cloud[2]);
+				for (const [k, u] of Object.entries(UNIFORM))
+					gl.uniform1f(U(u), params[k]);
+				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+			});
+			if (!causticCanvas) return;
+			gain = e(gain, (1 + sw * 1.4) * (1 - dim * 0.85) * (1 + red * 0.3), 0.1);
+			pass(causticCanvas, () => {
+				const p = program(gl, CAUSTIC_FRAG);
+				const C = (n) => uniform(gl, p, n);
+				gl.useProgram(p);
+				bind(gl, [blurTex]);
+				gl.uniform1i(C("uBlur"), 0);
+				gl.uniform2f(C("uRes"), causticCanvas.width, causticCanvas.height);
+				gl.uniform2f(C("uL"), light[0], light[1]);
+				gl.uniform4f(C("uWin"), ...winRect());
+				gl.uniform1f(C("uT"), reduce ? 0 : t);
+				gl.uniform1f(C("uGain"), gain * causticBoost);
+				gl.uniform1f(C("uReach"), causticReach);
+				gl.uniform1f(C("uFloor"), causticFloor ? 1 : 0);
+				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+			});
 		}
-		requestAnimationFrame(frame);
-		let dead = false; // app port: destroy() stops the loop for good
-		const onVis = () => {
-			running = !document.hidden && !dead;
-			if (running) requestAnimationFrame(frame);
+		const view = addView({
+			targets: causticCanvas ? [winCanvas, causticCanvas] : [winCanvas],
+			live: !reduce,
+			setup(_gl, texture) {
+				winTex = [col, lead, leadBlur, glow].map(texture);
+				blurTex = causticCanvas ? texture(colBlur) : null;
+			},
+			draw: frame,
+		});
+		// Reduced motion draws a still frame; a change of look draws it again.
+		const poke = () => {
+			if (reduce) view.invalidate();
 		};
-		document.addEventListener("visibilitychange", onVis);
 
 		// Drag across the window to move the light behind it.
-		winCanvas.addEventListener("pointerdown", (e) => {
-			dragging = true;
-			winCanvas.setPointerCapture(e.pointerId);
-			move(e);
-		});
-		winCanvas.addEventListener("pointermove", (e) => dragging && move(e));
-		["pointerup", "pointercancel"].forEach((n) =>
-			winCanvas.addEventListener(n, () => {
-				dragging = false;
-			}),
+		const ac = new AbortController();
+		const on = { signal: ac.signal };
+		winCanvas.addEventListener(
+			"pointerdown",
+			(e) => {
+				dragging = true;
+				winCanvas.setPointerCapture(e.pointerId);
+				move(e);
+			},
+			on,
 		);
+		winCanvas.addEventListener("pointermove", (e) => dragging && move(e), on);
+		for (const n of ["pointerup", "pointercancel"])
+			winCanvas.addEventListener(
+				n,
+				() => {
+					dragging = false;
+				},
+				on,
+			);
 		function move(e) {
 			const r = winCanvas.getBoundingClientRect();
 			target = [
 				Math.min(0.95, Math.max(0.05, (e.clientX - r.left) / r.width)),
 				Math.min(0.9, Math.max(0.1, (e.clientY - r.top) / r.height)),
 			];
+			poke();
 		}
 		return {
 			params,
 			dim(v) {
+				if (v === dimTarget) return;
 				dimTarget = v;
+				poke();
 			},
 			red(v) {
+				if (v === redTarget) return;
 				redTarget = v;
+				poke();
 			},
 			crack(v) {
+				if (v === crkTarget) return;
 				crkTarget = v;
+				poke();
 			},
 			cloud(x, amount = 1) {
+				if (cloud[0] === x && cloud[1] === amount) return;
 				cloud[0] = x;
 				cloud[1] = amount;
+				poke();
 			},
 			set(k, v) {
 				params[k] = v;
-				if (reduce) requestAnimationFrame(frame);
+				view.invalidate();
 			},
 			swell() {
 				swellT = (performance.now() - t0) / 1000;
-				if (reduce) requestAnimationFrame(frame);
+				poke();
 			},
 			destroy() {
-				dead = true;
-				running = false;
-				document.removeEventListener("visibilitychange", onVis);
+				ac.abort();
+				view.remove();
 			},
 		};
 	}

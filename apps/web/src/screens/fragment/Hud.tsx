@@ -3,16 +3,13 @@
 /**
  * The bound Fragment's HUD, set into the Stage: standing (Degree, level, Resonance, Ash), the Vigil
  * with its Collect button, the Marks shelf and the notifications toggle. Plain labels and numbers.
+ * Standing comes from the shared game state (one poll for the whole shell); Marks and the
+ * wardrobe are read once and again only when the shared state says they changed.
  */
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Api } from "@/client/api";
-import {
-	claimVigil,
-	fetchProfile,
-	levelProgress,
-	type Profile,
-} from "@/client/economy";
+import { claimVigil, levelProgress, type Profile } from "@/client/economy";
 import { type InventoryState, inventory } from "@/client/inventory";
 import {
 	bestTier,
@@ -26,6 +23,7 @@ import {
 	unseenMarks,
 } from "@/client/marks";
 import { usePush } from "@/client/push";
+import { useGameState } from "@/client/state";
 import { economy } from "@/lexicon/economy";
 import { roman } from "@/lexicon/gathering";
 import { hud } from "@/lexicon/hud";
@@ -44,43 +42,63 @@ export interface HudData {
 	setProfile: (p: Profile) => void;
 }
 
-/** Profile (polled), wardrobe and Marks for the bound Fragment. */
+/** Standing (shared state), wardrobe and Marks for the bound Fragment. */
 export function useHud(api: Api): HudData {
-	const [profile, setProfile] = useState<Profile | null>(null);
-	const [profileDown, setProfileDown] = useState(false);
+	const { state, refresh } = useGameState();
+	// A collect answers with the new standing at once; it stands in until a read that
+	// started after the collect has landed (an older poll may still be on its way).
+	const [claimed, setClaimed] = useState<Profile | null>(null);
 	const [inv, setInv] = useState<InventoryState | null>(null);
 	const [marks, setMarks] = useState<MarksResponse | null>(null);
+	const earned = state?.marks.earned;
+	const finish = state?.equipped.finish;
+	const title = state?.equipped.title;
 
+	// Marks: once, then whenever the shared count moves (no poll of its own).
 	useEffect(() => {
+		void earned;
 		let live = true;
-		const loadProfile = () =>
-			fetchProfile(api)
-				.then((p) => {
-					if (!live) return;
-					setProfile(p);
-					setProfileDown(false);
-				})
-				.catch(() => live && setProfileDown(true));
-		const loadMarks = () =>
-			fetchMarks(api)
-				.then((m) => live && setMarks(m))
-				.catch(() => {});
-		loadProfile();
-		loadMarks();
+		fetchMarks(api)
+			.then((m) => live && setMarks(m))
+			.catch(() => {});
+		return () => {
+			live = false;
+		};
+	}, [api, earned]);
+
+	// Wardrobe: once, then whenever what is worn changes.
+	useEffect(() => {
+		void finish;
+		void title;
+		let live = true;
 		inventory(api)
 			.get()
 			.then((i) => live && setInv(i))
 			.catch(() => {});
-		const tp = setInterval(loadProfile, 30_000);
-		const tm = setInterval(loadMarks, 90_000);
 		return () => {
 			live = false;
-			clearInterval(tp);
-			clearInterval(tm);
 		};
-	}, [api]);
+	}, [api, finish, title]);
 
-	return { profile, profileDown, inv, marks, setProfile };
+	const setProfile = useCallback(
+		(p: Profile) => {
+			setClaimed(p);
+			void (async () => {
+				await refresh();
+				await refresh();
+				setClaimed(null);
+			})();
+		},
+		[refresh],
+	);
+
+	return {
+		profile: claimed ?? state?.profile ?? null,
+		profileDown: !!state && !state.profile,
+		inv,
+		marks,
+		setProfile,
+	};
 }
 
 // ---------------------------------------------------------------- standing
@@ -254,6 +272,7 @@ export function VigilCard({
 					className={h.claim}
 					disabled={busy || empty}
 					onClick={collect}
+					data-coach="collect"
 					{...pressable}
 				>
 					{busy ? economy.vigil.claiming : economy.vigil.claim}

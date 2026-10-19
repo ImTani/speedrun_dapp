@@ -1418,16 +1418,9 @@ export async function mountStage(root, opts = {}) {
 			settle();
 			GAPI.A?.destroy();
 			GAPI.B?.destroy();
+			// The shader canvases hold 2D frames from the shared lens (lens.js); it keeps the only
+			// WebGL context and lets it go once no view is left.
 			floor?.stop();
-			for (const c of el.querySelectorAll("canvas")) {
-				try {
-					c.getContext("webgl2")
-						?.getExtension("WEBGL_lose_context")
-						?.loseContext();
-				} catch {
-					/* 2d canvas */
-				}
-			}
 			for (const u of urls) URL.revokeObjectURL(u);
 			el.remove();
 		},

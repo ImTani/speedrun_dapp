@@ -7,6 +7,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
 import { ApiError, useApi } from "@/client/api";
+import { useVisibleNow } from "@/client/poll";
 import {
 	type ClimbResponse,
 	climbFloor,
@@ -45,22 +46,14 @@ function errorText(e: unknown): string {
 	return T.errors.generic;
 }
 
-function useNow(ms: number): number {
-	const [now, setNow] = useState(() => Date.now());
-	useEffect(() => {
-		const t = setInterval(() => setNow(Date.now()), ms);
-		return () => clearInterval(t);
-	}, [ms]);
-	return now;
-}
-
 export function SpireScreen() {
 	const api = useApi();
 	const [state, setState] = useState<SpireState | null>(null);
 	const [err, setErr] = useState<string | null>(null);
 	const [picked, setPicked] = useState<number | null>(null);
 	const [view, setView] = useState<View>({ kind: "tower" });
-	const now = useNow(20_000);
+	// Ticks only while the page is seen; catches up (and refetches if a climb came back) on return.
+	const now = useVisibleNow(20_000);
 
 	const load = useCallback(async () => {
 		try {

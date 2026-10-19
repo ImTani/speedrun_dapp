@@ -1,0 +1,39 @@
+/* The toast dock floats just above the tab bar, centred, never taking touches. */
+
+.dock {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: calc(var(--tabbar-h) + 14px);
+	/* Above the coach veil (z-toast + 5), so a toast during a coach mark is not dimmed. */
+	z-index: calc(var(--z-toast) + 10);
+	display: flex;
+	justify-content: center;
+	padding: 0 var(--pad-r) 0 var(--pad-l);
+	pointer-events: none;
+}
+
+.toast {
+	max-width: min(340px, 100%);
+	padding: 10px 16px 11px;
+	border: 2px solid var(--c-soot);
+	border-radius: 999px;
+	background: linear-gradient(180deg, #2a1d14f2, #140d09f2);
+	box-shadow:
+		0 0 0 1px var(--c-umber-l),
+		0 10px 22px #000d;
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-body);
+	line-height: 1.2;
+	text-align: center;
+	color: var(--c-bone-hi);
+	text-shadow: 0 1px 0 var(--c-soot);
+}
+.toast[data-tone="lit"] {
+	box-shadow:
+		0 0 0 1px var(--c-gilt),
+		0 0 22px #f2c25a55,
+		0 10px 22px #000d;
+	color: var(--c-gilt-hi);
+}

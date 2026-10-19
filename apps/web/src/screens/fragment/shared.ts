@@ -17,8 +17,13 @@ export const errText = (e: unknown) =>
 
 /** The Aspect and Sigils a bound Fragment was cut with. */
 export function aspectOf(f: FragmentRow): { aspect: number; knobs: Knobs } {
+	return configOf(f.config);
+}
+
+/** The Aspect and Sigils in a packed config. */
+export function configOf(packed: string): { aspect: number; knobs: Knobs } {
 	try {
-		const c = decodeConfig(BigInt(f.config));
+		const c = decodeConfig(BigInt(packed));
 		return { aspect: c.strategy, knobs: c.knobs };
 	} catch {
 		return { aspect: 6, knobs: DEFAULT_KNOBS };

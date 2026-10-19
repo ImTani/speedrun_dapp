@@ -17,7 +17,7 @@ Headless only (Playwright), e.g. `page.setViewportSize({ width: 390, height: 844
 
 | Param       | Meaning                                                                                                   | Default     |
 | ----------- | --------------------------------------------------------------------------------------------------------- | ----------- |
-| `screen`    | `title`, `fragment`, `hud`, `tutorial`, `gathering`, `spire`, `reliquary`, `vestry`, `masks`             | index       |
+| `screen`    | `title`, `fragment`, `hud`, `onboarding`, `gathering`, `spire`, `reliquary`, `vestry`, `masks`           | index       |
 | `state`     | state for that screen (tables below)                                                                      | see below   |
 | `aspect`    | Aspect of the Claimant's own Fragment: 0 Mercy, 1 Hunger, 2 Echo, 3 Rancour, 4 Appetite, 5 Inquisitor, 6 Madness | `2`  |
 | `frame`     | `bare` drops the tab bar (screen alone in `main.shell`); otherwise the full signed-in shell with a live tab bar | shell |
@@ -75,15 +75,26 @@ a one-line hint instead), and the equipped title and mask finish/tint on the nam
 
 Add `&aspect=N` for another Aspect.
 
-## First-run guide — `screen=tutorial`
+## Onboarding and unlocks — `screen=onboarding`
 
-| URL                                       | Shows |
-| ----------------------------------------- | ----- |
-| `/preview?screen=tutorial&state=first`    | The four-step guide over the Fragment tab: bind, Gatherings run on their own, collect the Vigil, climb the Spire. Swipe or Next; Skip / Begin / Escape close it. |
+The real shell over the shared game state (`/api/state`, mocked in `src/client/mock/state.ts`).
+Mechanics open one by one: closed tabs are dimmed with a lock (tap one for what opens it), a tab
+that just opened glows with a short toast, and the first visit points at its first action with a
+coach mark (a dimmed screen with one lit opening and one line; it advances when you do the thing,
+Skip ends it). The Fragment's own status comes from the harness `/api/me` fixture, so binding and
+sealing move the world along (except `stirring`, whose Fragment wakes on its own after 4 s).
 
-In the app it shows once after the first sign-in (`localStorage["apostasy.tutorial.seen"]`, see
-`FirstRun` in `src/screens/tutorial/Tutorial.tsx`, mounted by `app/page.tsx`). Clear that key to
-see it again.
+| URL                                            | Shows |
+| ---------------------------------------------- | ----- |
+| `/preview?screen=onboarding&state=fresh`       | No Fragment, only the Fragment tab open. Coach marks walk the ritual: swipe a mask, set a Sigil, name it, Bind. Then the practice duel (three tolls, tap Unveil), the seal, and the Gathering tab. |
+| `/preview?screen=onboarding&state=stirring`    | Fragment stirring: the practice duel opens over the waiting window. 4 s later it can be sealed. |
+| `/preview?screen=onboarding&state=sealable`    | Awaits the seal: "Gathering opened" toast, the Gathering tab glows, coach on the wax. |
+| `/preview?screen=onboarding&state=early`       | Sealed, no duels: coach on the Gathering tab; after it, the Vigil rises in and is pointed at (Collect). |
+| `/preview?screen=onboarding&state=mid`         | Six duels, level 4: Retune rises in on the Fragment tab, the Spire tab glows; opening it points at Climb. |
+| `/preview?screen=onboarding&state=late`        | Everything open, onboarding done, nothing new (what a returning player sees). |
+
+Every other screen runs on the `late` world, so all tabs stay open there as before.
+Add `&aspect=N` for another Aspect (the practice duel plays that Aspect's real moves).
 
 ## Gathering tab — `screen=gathering`
 

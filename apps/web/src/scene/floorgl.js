@@ -1,11 +1,9 @@
 // Floor light for the Gathering: each window's glass projected onto the marble as caustic light,
 // computed on the floor plane (so the pattern foreshortens with depth). Pools can swell, meet at the
 // crossing, turn crimson, and one pool's light can be drawn across the stone into the other's.
-(() => {
-	const VERT = `#version 300 es
-in vec2 aP; out vec2 vUv;
-void main(){ vUv = aP * .5 + .5; vUv.y = 1. - vUv.y; gl_Position = vec4(aP, 0., 1.); }`;
+import { addView, bind, lensReady, program, uniform } from "./lens.js";
 
+(() => {
 	const FRAG = `#version 300 es
 precision highp float;
 in vec2 vUv; out vec4 o;
@@ -68,23 +66,6 @@ void main(){
   o = vec4(1. - exp(-acc * 1.45), 1.);
 }`;
 
-	function compile(gl, vs, fs) {
-		const sh = (type, src) => {
-			const s = gl.createShader(type);
-			gl.shaderSource(s, src);
-			gl.compileShader(s);
-			if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
-				throw new Error(gl.getShaderInfoLog(s));
-			return s;
-		};
-		const p = gl.createProgram();
-		gl.attachShader(p, sh(gl.VERTEX_SHADER, vs));
-		gl.attachShader(p, sh(gl.FRAGMENT_SHADER, fs));
-		gl.linkProgram(p);
-		if (!gl.getProgramParameter(p, gl.LINK_STATUS))
-			throw new Error(gl.getProgramInfoLog(p));
-		return p;
-	}
 	function raster(svg, w, h, blur) {
 		return new Promise((res, rej) => {
 			const img = new Image();
@@ -101,35 +82,20 @@ void main(){
 			img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 		});
 	}
-	function tex(gl, unit, src) {
-		const t = gl.createTexture();
-		gl.activeTexture(gl.TEXTURE0 + unit);
-		gl.bindTexture(gl.TEXTURE_2D, t);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
-		for (const [k, v] of [
-			[gl.TEXTURE_MIN_FILTER, gl.LINEAR],
-			[gl.TEXTURE_MAG_FILTER, gl.LINEAR],
-			[gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE],
-			[gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE],
-		])
-			gl.texParameteri(gl.TEXTURE_2D, k, v);
-	}
 
 	/**
 	 * mount({ canvas, a: {theme, seed}, b: {theme, seed}, zf, vx, state })
 	 * state is read every frame: { A: {x, i, r, c}, B: {...}, drain: {from, amount, phase} } (world units).
+	 * Drawn through the shared lens (lens.js) at its 30 fps. Under reduced motion time stands still
+	 * and a frame is drawn only when the pools move.
 	 */
 	async function mount({ canvas, a, b, zf = 4, vx = 195, state }) {
 		const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+		if (!lensReady(FRAG) || !canvas.getContext("2d")) return null;
 		const scale = Math.min(window.devicePixelRatio || 1, 2) * 0.75;
 		canvas.width = Math.round(canvas.clientWidth * scale);
 		canvas.height = Math.round(canvas.clientHeight * scale);
-		const gl = canvas.getContext("webgl2", {
-			premultipliedAlpha: false,
-			antialias: false,
-		});
-		if (!gl) return null;
-		const [ta, tb] = await Promise.all(
+		const [ra, rb] = await Promise.all(
 			[a, b].map((w) =>
 				raster(
 					window.G.windowSVG({ ...w, mode: "color", width: 150 }),
@@ -139,53 +105,73 @@ void main(){
 				),
 			),
 		);
-		const p = compile(gl, VERT, FRAG);
-		gl.useProgram(p);
-		const buf = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-		gl.bufferData(
-			gl.ARRAY_BUFFER,
-			new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
-			gl.STATIC_DRAW,
-		);
-		const loc = gl.getAttribLocation(p, "aP");
-		gl.enableVertexAttribArray(loc);
-		gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-		tex(gl, 0, ta);
-		tex(gl, 1, tb);
-		const U = (n) => gl.getUniformLocation(p, n);
-		gl.uniform1i(U("uA"), 0);
-		gl.uniform1i(U("uB"), 1);
 		const t0 = performance.now();
-		let dead = false; // app port: stop() ends the loop; hidden tabs skip drawing
-		function frame(now) {
-			if (dead) return;
-			if (document.hidden) {
-				requestAnimationFrame(frame);
-				return;
-			}
-			const t = reduce ? 4 : (now - t0) / 1000;
-			gl.viewport(0, 0, canvas.width, canvas.height);
-			gl.uniform2f(U("uRes"), canvas.clientWidth, canvas.clientHeight);
-			gl.uniform1f(U("uT"), t);
-			gl.uniform1f(U("uZf"), zf);
-			gl.uniform1f(U("uVX"), vx);
-			const { A, B, drain } = state;
-			gl.uniform4f(U("uPA"), A.x, A.i, A.r, A.c);
-			gl.uniform4f(U("uPB"), B.x, B.i, B.r, B.c);
-			gl.uniform4f(U("uDrain"), drain.from, drain.amount, drain.phase, 0);
-			const L = state.look;
-			gl.uniform1f(U("uZC"), L.zc);
-			gl.uniform1f(U("uRZ"), L.rz);
-			gl.uniform1f(U("uSpread"), L.spread);
-			gl.uniform1f(U("uCaus"), L.caus);
-			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-			requestAnimationFrame(frame);
-		}
-		requestAnimationFrame(frame);
+		let tex = [];
+		let drawn = "";
+		const view = addView({
+			targets: [canvas],
+			live: true,
+			setup(_gl, texture) {
+				tex = [texture(ra), texture(rb)];
+				drawn = "";
+			},
+			draw(gl, now, pass) {
+				const { A, B, drain } = state;
+				const L = state.look;
+				if (reduce) {
+					const sig = [
+						A.x,
+						A.i,
+						A.r,
+						A.c,
+						B.x,
+						B.i,
+						B.r,
+						B.c,
+						drain.from,
+						drain.amount,
+						L.zc,
+						L.rz,
+						L.spread,
+						L.caus,
+						canvas.width,
+						canvas.height,
+					].join();
+					if (sig === drawn) return;
+					drawn = sig;
+				}
+				const t = reduce ? 4 : (now - t0) / 1000;
+				pass(canvas, () => {
+					const p = program(gl, FRAG);
+					const U = (n) => uniform(gl, p, n);
+					gl.useProgram(p);
+					bind(gl, tex);
+					gl.uniform1i(U("uA"), 0);
+					gl.uniform1i(U("uB"), 1);
+					gl.uniform2f(U("uRes"), canvas.clientWidth, canvas.clientHeight);
+					gl.uniform1f(U("uT"), t);
+					gl.uniform1f(U("uZf"), zf);
+					gl.uniform1f(U("uVX"), vx);
+					gl.uniform4f(U("uPA"), A.x, A.i, A.r, A.c);
+					gl.uniform4f(U("uPB"), B.x, B.i, B.r, B.c);
+					gl.uniform4f(
+						U("uDrain"),
+						drain.from,
+						drain.amount,
+						reduce ? 0 : drain.phase,
+						0,
+					);
+					gl.uniform1f(U("uZC"), L.zc);
+					gl.uniform1f(U("uRZ"), L.rz);
+					gl.uniform1f(U("uSpread"), L.spread);
+					gl.uniform1f(U("uCaus"), L.caus);
+					gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+				});
+			},
+		});
 		return {
 			stop() {
-				dead = true;
+				view.remove();
 			},
 		};
 	}

@@ -170,3 +170,46 @@
 .tab[data-center] .notch {
 	display: none;
 }
+
+/* ---------------------------------------------------------------- closed ways */
+/* Sunk into the stone: dark, flat, a small padlock on the carving. */
+.tab[data-locked] .icon {
+	opacity: 0.38;
+	filter: grayscale(0.6) brightness(0.7);
+}
+.tab[data-locked] .label {
+	color: var(--c-bone-dd);
+}
+.lock {
+	position: absolute;
+	right: 0;
+	bottom: -1px;
+	width: 15px;
+	height: 17px;
+	filter: drop-shadow(0 1px 0 #000);
+}
+.tab[data-center] .lock {
+	right: 6px;
+	bottom: 6px;
+}
+
+/* ---------------------------------------------------------------- just opened */
+/* A candle lit behind the carving until the way is visited. */
+.fresh {
+	position: absolute;
+	inset: -12px -16px;
+	border-radius: 50%;
+	background: radial-gradient(
+		closest-side,
+		#ffd27a88 0%,
+		#ff8a4a33 55%,
+		transparent 100%
+	);
+	pointer-events: none;
+}
+.tab[data-lit] .icon {
+	filter: drop-shadow(0 0 6px #e3c27ccc) drop-shadow(0 0 14px #ff9a4a77);
+}
+.tab[data-lit] .label {
+	color: var(--c-gilt-l);
+}

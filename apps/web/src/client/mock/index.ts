@@ -4,8 +4,17 @@ import "./economy.ts";
 import "./inventory.ts";
 import "./marks.ts";
 import "./spire.ts";
+import "./state.ts";
 
 export { resetMockEconomy } from "./economy.ts";
 export { resetMockInventory } from "./inventory.ts";
 export { resetMockMarks } from "./marks.ts";
 export { resetMockSpire, SPIRE_STATES } from "./spire.ts";
+export {
+	isStatePreview,
+	linkMockMe,
+	mockStateFacts,
+	resetMockState,
+	STATE_PREVIEWS,
+	type StatePreviewName,
+} from "./state.ts";

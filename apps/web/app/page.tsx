@@ -2,9 +2,9 @@
 
 import { usePrivy } from "@privy-io/react-auth";
 import { useState } from "react";
+import { GameStateProvider } from "@/client/state";
 import { GameShell } from "@/screens/title/Shell";
 import { TitleScreen } from "@/screens/title/TitleScreen";
-import { FirstRun } from "@/screens/tutorial/Tutorial";
 import { MotionRoot } from "@/ui/motion/MotionRoot";
 import { TAB_ORDER, type Tab } from "@/ui/TabBar";
 
@@ -24,10 +24,11 @@ export default function Home() {
 			{!ready || !authenticated ? (
 				<TitleScreen ready={ready} onEnter={() => login()} />
 			) : (
-				<>
+				// One shared read of the game state for the whole signed-in shell; the
+				// onboarding guide lives inside the shell.
+				<GameStateProvider>
 					<GameShell initialTab={initialTab} />
-					<FirstRun />
-				</>
+				</GameStateProvider>
 			)}
 		</MotionRoot>
 	);
