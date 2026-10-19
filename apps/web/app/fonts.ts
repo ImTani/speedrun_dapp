@@ -1,5 +1,5 @@
 /**
- * The three faces of the cathedral, self-hosted through next/font (all SIL OFL 1.1,
+ * The faces of the cathedral, self-hosted through next/font (all SIL OFL 1.1,
  * served from our own origin: no Google request at runtime, no unstyled first paint).
  *
  *  - Grenze Gotisch  (display): blackletter with Roman bones, so it stays legible when
@@ -8,11 +8,23 @@
  *    letterpress grit that matches the ink drawing. Body, epithets, subtext. 400 + italic.
  *  - Cinzel (numerals and rubrics): engraved Roman capitals with lining figures.
  *    Light counts, small-caps labels. Variable 400-900.
+ *  - Grenze (roman): the roman sibling of Grenze Gotisch, same bones and spurs without the
+ *    blackletter; condensed, x-height 0.47, so long names fit and read at 16px. The Gathering's
+ *    verdict, header and name plates. Variable 100-900.
+ *  - Alegreya (text): a calligraphic book face with open counters and a 0.46 x-height; reads
+ *    at 13-18px over the busy floor. The Gathering's subline, feed and hints. Variable 400-900
+ *    + italic.
  *
  * Each exposes a private --ff-* variable; globals.css builds the public
  * --font-display / --font-book / --font-num stacks from them.
  */
-import { Cinzel, Grenze_Gotisch, IM_Fell_English } from "next/font/google";
+import {
+	Alegreya,
+	Cinzel,
+	Grenze,
+	Grenze_Gotisch,
+	IM_Fell_English,
+} from "next/font/google";
 
 export const fontDisplay = Grenze_Gotisch({
 	subsets: ["latin"],
@@ -37,9 +49,26 @@ export const fontNum = Cinzel({
 	fallback: ["Georgia", "serif"],
 });
 
+export const fontRoman = Grenze({
+	subsets: ["latin"],
+	display: "swap",
+	variable: "--ff-roman",
+	fallback: ["Georgia", "serif"],
+});
+
+export const fontText = Alegreya({
+	subsets: ["latin"],
+	style: ["normal", "italic"],
+	display: "swap",
+	variable: "--ff-text",
+	fallback: ["Georgia", "serif"],
+});
+
 /** Put on <html>: defines the --ff-* variables for the whole tree. */
 export const fontVars = [
 	fontDisplay.variable,
 	fontBook.variable,
 	fontNum.variable,
+	fontRoman.variable,
+	fontText.variable,
 ].join(" ");

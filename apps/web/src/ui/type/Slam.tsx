@@ -23,6 +23,11 @@ export type SlamProps = {
 	sub?: string | readonly string[];
 	/** Small rubric above the lettering (e.g. which toll). */
 	kicker?: string;
+	/**
+	 * Words inside `text` to set apart from the tone (the names in "Old Marrow devours Gallow"):
+	 * drawn in the --slam-name-* colours, so the names read first and the tone carries the verb.
+	 */
+	names?: readonly string[];
 	tone?: SlamTone;
 	/** Seconds before the strike begins. */
 	delay?: number;
@@ -48,10 +53,50 @@ export function slamLines(text: string): string[] {
 	return [t.slice(0, best), t.slice(best + 1)];
 }
 
+/** Character ranges of `names` in `t`, in order, each searched after the previous one. */
+function nameRanges(t: string, names: readonly string[]): [number, number][] {
+	const out: [number, number][] = [];
+	let from = 0;
+	for (const raw of names) {
+		const n = raw.trim().replace(/\s+/g, " ");
+		if (!n) continue;
+		const at = t.indexOf(n, from);
+		if (at < 0) continue;
+		out.push([at, at + n.length]);
+		from = at + n.length;
+	}
+	return out;
+}
+
+/** A line cut into runs: [text, isName]. `start` is the line's offset in the whole text. */
+function runsOf(
+	line: string,
+	start: number,
+	ranges: readonly [number, number][],
+): [string, boolean][] {
+	if (!ranges.length) return [[line, false]];
+	const runs: [string, boolean][] = [];
+	let cur = "",
+		curName = false;
+	for (let i = 0; i < line.length; i++) {
+		const at = start + i;
+		const isName = ranges.some(([a, b]) => at >= a && at < b);
+		if (i > 0 && isName !== curName) {
+			runs.push([cur, curName]);
+			cur = "";
+		}
+		curName = isName;
+		cur += line[i];
+	}
+	runs.push([cur, curName]);
+	return runs;
+}
+
 export function Slam({
 	text,
 	sub,
 	kicker,
+	names,
 	tone = "neutral",
 	delay = 0,
 	onImpact,
@@ -62,6 +107,18 @@ export function Slam({
 	const [scope, animate] = useAnimate<HTMLDivElement>();
 	const reduce = useReducedMotion();
 	const lines = useMemo(() => slamLines(text), [text]);
+	const nameKey = names?.join("\u0001") ?? "";
+	// biome-ignore lint/correctness/useExhaustiveDependencies: keyed on the names' text
+	const runs = useMemo(() => {
+		const t = text.trim().replace(/\s+/g, " ");
+		const ranges = nameRanges(t, names ?? []);
+		let start = 0;
+		return lines.map((l) => {
+			const r = runsOf(l, start, ranges);
+			start += l.length + 1;
+			return r;
+		});
+	}, [lines, text, nameKey]);
 	const subs = useMemo(
 		() => (sub == null ? [] : typeof sub === "string" ? [sub] : [...sub]),
 		[sub],
@@ -163,10 +220,19 @@ export function Slam({
 		};
 	}, [text, subKey, kicker, delay, reduce]);
 
-	const lettering = lines.map((l, i) => (
+	const lettering = runs.map((line, i) => (
 		// biome-ignore lint/suspicious/noArrayIndexKey: lines are positional
 		<span key={i} className={s.line}>
-			{l}
+			{line.map(([chunk, isName], j) =>
+				isName ? (
+					// biome-ignore lint/suspicious/noArrayIndexKey: runs are positional
+					<span key={j} className={s.name}>
+						{chunk}
+					</span>
+				) : (
+					chunk
+				),
+			)}
 		</span>
 	));
 

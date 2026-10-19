@@ -1,5 +1,5 @@
 /**
- * Candidate faces for live type tuning. The three stock faces are self-hosted by app/fonts.ts and
+ * Candidate faces for live type tuning. The stock faces are self-hosted by app/fonts.ts and
  * referenced through their --font-* stacks; every other face comes from Google Fonts, and is only
  * requested when the tuning panel mounts (?tune in the URL). Nothing here loads for players.
  *
@@ -55,6 +55,13 @@ export const FONTS: readonly TuneFont[] = [
 		"ital,wght@0,400;0,700;0,900;1,400",
 	),
 	gf("New Rocker", "blackletter", [400], false),
+	{
+		family: "Grenze",
+		stack: "var(--font-roman)",
+		weights: ALL,
+		italic: false,
+		kind: "display",
+	},
 	gf("Uncial Antiqua", "display", [400], false),
 	gf("Almendra", "display", [400, 700], true, "ital,wght@0,400;0,700;1,400"),
 	gf("Metamorphous", "display", [400], false),
@@ -92,19 +99,26 @@ export const FONTS: readonly TuneFont[] = [
 		true,
 		"ital,wght@0,400;0,600;0,700;1,400;1,600",
 	),
+	{
+		family: "Alegreya",
+		stack: "var(--font-text)",
+		weights: [400, 500, 600, 700, 800, 900],
+		italic: true,
+		kind: "book",
+	},
 	gf(
 		"EB Garamond",
 		"book",
-		[400, 600, 800],
+		[400, 500, 600, 700, 800],
 		true,
-		"ital,wght@0,400;0,600;0,800;1,400;1,600",
+		"ital,wght@0,400..800;1,400..800",
 	),
 	gf(
 		"Spectral",
 		"book",
-		[400, 600, 800],
+		[400, 500, 600, 700, 800],
 		true,
-		"ital,wght@0,400;0,600;0,800;1,400;1,600",
+		"ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600",
 	),
 ];
 

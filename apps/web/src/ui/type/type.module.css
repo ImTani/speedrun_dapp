@@ -87,7 +87,7 @@
 	letter-spacing: calc(var(--track-rubric) * var(--slam-kicker-track, 1));
 	text-transform: var(--slam-kicker-transform, uppercase);
 	font-variant-caps: var(--slam-kicker-caps, normal);
-	color: var(--tone-mid);
+	color: var(--slam-kicker-color, var(--tone-mid));
 	text-shadow: var(--sh-ink);
 	opacity: 0;
 }
@@ -146,6 +146,19 @@
 		var(--tone-hi) 8%,
 		var(--tone-mid) 52%,
 		var(--tone-lo) 96%
+	);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+}
+/* Names set apart from the tone (the `names` prop): their own ramp, painted over the line's.
+   Without --slam-name-* hooks they take the tone, so nothing changes. */
+.face .name {
+	background: linear-gradient(
+		180deg,
+		var(--slam-name-hi, var(--tone-hi)) 8%,
+		var(--slam-name-mid, var(--tone-mid)) 52%,
+		var(--slam-name-lo, var(--tone-lo)) 96%
 	);
 	-webkit-background-clip: text;
 	background-clip: text;
@@ -421,7 +434,7 @@
 	color: var(--c-bone);
 }
 .rubric[data-tone="dim"] {
-	color: var(--c-bone-d);
+	color: var(--rubric-dim-color, var(--c-bone-d));
 }
 .rubric[data-tone="blood"] {
 	color: var(--c-blood-l);

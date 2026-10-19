@@ -45,6 +45,11 @@ export function Verdict({
 							text={duel.verdict}
 							sub={duel.sub}
 							kicker={T.verdictKicker(duel.toll)}
+							names={
+								duel.dev === "B"
+									? [duel.b.name, duel.a.name]
+									: [duel.a.name, duel.b.name]
+							}
 							tone={
 								duel.silent
 									? "neutral"

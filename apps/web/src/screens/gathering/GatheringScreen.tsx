@@ -343,6 +343,26 @@ export function GatheringScreen() {
 	);
 	useEffect(() => () => clearTimeout(replayTimer.current), []);
 
+	// Review captures (development only): ?freeze holds the first verdict on screen once it has
+	// played; ?freeze=devour or ?freeze=kindle then strikes it again as that kind, held landed.
+	const [freezeParam, setFreezeParam] = useState<string | null>(null);
+	useEffect(() => {
+		if (process.env.NODE_ENV === "production") return;
+		const q = new URLSearchParams(window.location.search);
+		if (!q.has("freeze")) return;
+		setFreezeParam(q.get("freeze") ?? "");
+		freeze(true);
+	}, [freeze]);
+	const struck = useRef(false);
+	useEffect(() => {
+		if (freezeParam === null || struck.current || beat !== "rest") return;
+		struck.current = true;
+		// again: the ?tune drawer lets go of the hold when it (re)mounts
+		freeze(true);
+		if (freezeParam === "devour" || freezeParam === "kindle")
+			replay(freezeParam);
+	}, [freezeParam, beat, replay, freeze]);
+
 	// ---------- juice ----------
 	const onImpact = useCallback(
 		(d: Duel) => {

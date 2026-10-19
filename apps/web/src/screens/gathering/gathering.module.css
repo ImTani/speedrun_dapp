@@ -30,14 +30,17 @@
 	font-synthesis-weight: none;
 
 	/* ---- Type tuning. Every text style on this screen reads these; the defaults are the
-	   shipped look. The ?tune panel (ui/tune) writes overrides inline on this element.
-	   Sizes are multipliers of the stock size; tracking in em unless marked. */
-	/* the verdict lettering (Slam) */
-	--g-verdict-font: var(--font-display);
-	--g-verdict-weight: 900;
+	   shipped look ("Readable"). The ?tune panel (ui/tune) writes overrides inline on this element.
+	   Sizes are multipliers of the stock size; tracking in em unless marked.
+	   Chosen 70% readability / 30% feel, every colour measured against what is really behind it
+	   (contrast in brackets; small text >= 7:1, display >= 4.5:1). No blackletter below 28px:
+	   Grenze roman for the verdict, header and names, Alegreya for running text, Cinzel rubrics. */
+	/* the verdict lettering (Slam): ivory names, the verb in the tone, on a solid ink outline */
+	--g-verdict-font: var(--font-roman);
+	--g-verdict-weight: 800;
 	--g-verdict-size: 1;
-	--g-verdict-tracking: 0.01em;
-	--g-verdict-lh: 0.9;
+	--g-verdict-tracking: 0.005em;
+	--g-verdict-lh: 0.94;
 	--g-verdict-transform: none;
 	--g-verdict-caps: normal;
 	--g-verdict-stroke: 0.17em;
@@ -46,21 +49,26 @@
 	--g-verdict-glow: 1;
 	--g-verdict-blot: #050403;
 	--g-verdict-blot-strength: 1;
-	--g-verdict-devour-hi: #ff8a5c;
-	--g-verdict-devour-mid: var(--c-blood-l);
-	--g-verdict-devour-lo: #6a0d12;
-	--g-verdict-devour-glow: #c7262c;
+	/* a light vermilion: no dark red fill (6.5:1 mid, 5.6:1 foot on the soot outline) */
+	--g-verdict-devour-hi: #ffa184;
+	--g-verdict-devour-mid: #f26a58;
+	--g-verdict-devour-lo: #e35d4a;
+	--g-verdict-devour-glow: #b3141c;
 	--g-verdict-devour-bleed: var(--c-ember);
-	--g-verdict-kindle-hi: var(--c-gilt-hi);
-	--g-verdict-kindle-mid: var(--c-gilt-l);
-	--g-verdict-kindle-lo: var(--c-gilt-d);
+	--g-verdict-kindle-hi: #fff4d0;
+	--g-verdict-kindle-mid: #f0cf7a;
+	--g-verdict-kindle-lo: var(--c-gilt);
 	--g-verdict-kindle-glow: #e3c27c;
 	--g-verdict-kindle-bleed: #fff1c8;
-	/* the line under the verdict (--g-sub-halo-far is left unset: stock #000) */
-	--g-sub-font: var(--font-book);
-	--g-sub-weight: 400;
+	/* the names in "Old Marrow devours Gallow": the tone ramps above carry the verb (16:1) */
+	--g-verdict-name-hi: #fff6e2;
+	--g-verdict-name-mid: var(--c-bone-hi);
+	--g-verdict-name-lo: #d2bb90;
+	/* the line under the verdict (--g-sub-halo-far is left unset: stock #000) (12:1) */
+	--g-sub-font: var(--font-text);
+	--g-sub-weight: 500;
 	--g-sub-size: 1;
-	--g-sub-color: var(--c-bone);
+	--g-sub-color: #e2d2ae;
 	--g-sub-color-2: var(--c-bone-hi);
 	--g-sub-halo: var(--c-soot);
 	--g-sub-style: italic;
@@ -68,8 +76,8 @@
 	--g-sub-lh: var(--lh-snug);
 	--g-sub-transform: none;
 	--g-sub-caps: normal;
-	/* the phase line in the banner, the waiting word, the Ledger's title */
-	--g-head-font: var(--font-display);
+	/* the phase line in the banner, the waiting word, the Ledger's title (16:1) */
+	--g-head-font: var(--font-roman);
 	--g-head-weight: 700;
 	--g-head-size: 1;
 	--g-head-color: var(--c-bone-hi);
@@ -77,7 +85,7 @@
 	--g-head-tracking: 0.01em;
 	--g-head-transform: none;
 	--g-head-caps: normal;
-	/* engraved labels: TOLL II OF VI, the verdict's kicker, LEDGER OF LIGHT, Aspect lines */
+	/* engraved labels: TOLL II OF VI, the verdict's kicker, LEDGER OF LIGHT, Aspect lines (9-11:1) */
 	--g-rubric-font: var(--font-num);
 	--g-rubric-weight: 700;
 	--g-rubric-size: 1;
@@ -85,40 +93,43 @@
 	--g-rubric-transform: uppercase;
 	--g-rubric-caps: normal;
 	--g-accent: var(--c-gilt-l);
-	/* numerals: the countdown, the tallies, the bell, the Ledger's ranks */
+	/* the quiet colour: rubrics over the feed and the seals, the clock's words, the Ledger's
+	   dim lines (8-10:1; bone-d gave 6.7, bone-dd 3.0) */
+	--g-rubric-dim: #c9b48a;
+	/* numerals: the countdown, the tallies, the bell, the Ledger's ranks (10-12:1) */
 	--g-num-font: var(--font-num);
 	--g-num-weight: 800;
 	--g-num-size: 1;
 	--g-num-color: var(--c-gilt-l);
-	/* the name plates under the windows (and names in the Ledger) */
-	--g-plate-font: var(--font-display);
-	--g-plate-weight: 800;
+	/* the name plates under the windows (and names in the Ledger) (12:1) */
+	--g-plate-font: var(--font-roman);
+	--g-plate-weight: 700;
 	--g-plate-size: 1;
 	--g-plate-color: var(--c-bone-hi);
 	--g-plate-mine: var(--c-gilt-hi);
 	--g-plate-style: normal;
-	--g-plate-tracking: 0.015em;
+	--g-plate-tracking: 0.01em;
 	--g-plate-transform: none;
 	--g-plate-caps: normal;
-	/* KINDLES / DEVOURS stamped under the masks */
+	/* KINDLES / DEVOURS stamped under the masks (devour 8.8:1 on its blood stamp) */
 	--g-banner-font: var(--font-num);
 	--g-banner-weight: 900;
 	--g-banner-size: 1;
 	--g-banner-tracking: 0.2em;
 	--g-banner-transform: uppercase;
 	--g-banner-caps: normal;
-	--g-banner-devour: #ff5a4e;
-	--g-banner-devour-glow: var(--c-blood-l);
+	--g-banner-devour: #ff977d;
+	--g-banner-devour-glow: var(--c-blood);
 	--g-banner-kindle: var(--c-gilt-hi);
-	--g-banner-kindle-glow: var(--c-gilt-l);
+	--g-banner-kindle-glow: #6b4f1d;
 	--g-banner-glow: 1;
-	/* running text: the feed of rites, hints, the Ledger plaque's line */
-	--g-body-font: var(--font-book);
-	--g-body-weight: 400;
+	/* running text: the feed of rites, hints, the Ledger plaque's line (8-10:1) */
+	--g-body-font: var(--font-text);
+	--g-body-weight: 500;
 	--g-body-size: 1;
 	--g-body-color: var(--c-bone);
-	--g-body-blood: #e5615f;
-	--g-body-style: italic;
+	--g-body-blood: #ff8a73;
+	--g-body-style: normal;
 	--g-body-tracking: 0em;
 
 	/* ---- feed the shared type primitives (src/ui/type hooks) */
@@ -145,6 +156,10 @@
 	--slam-kindle-lo: var(--g-verdict-kindle-lo);
 	--slam-kindle-glow: var(--g-verdict-kindle-glow);
 	--slam-kindle-bleed: var(--g-verdict-kindle-bleed);
+	--slam-name-hi: var(--g-verdict-name-hi);
+	--slam-name-mid: var(--g-verdict-name-mid);
+	--slam-name-lo: var(--g-verdict-name-lo);
+	--slam-kicker-color: var(--g-accent);
 	--slam-kicker-font: var(--g-rubric-font);
 	--slam-kicker-weight: var(--g-rubric-weight);
 	--slam-kicker-scale: var(--g-rubric-size);
@@ -186,6 +201,7 @@
 	--rubric-transform: var(--g-rubric-transform);
 	--rubric-caps: var(--g-rubric-caps);
 	--rubric-color: var(--g-accent);
+	--rubric-dim-color: var(--g-rubric-dim);
 	--count-font: var(--g-num-font);
 	--count-weight: var(--g-num-weight);
 	--count-scale: var(--g-num-size);
@@ -461,7 +477,7 @@
 	background: linear-gradient(180deg, #3a2c22f0, #0b0807f0);
 }
 .stamp[data-tone="silent"] {
-	color: var(--c-bone-d);
+	color: var(--g-rubric-dim);
 }
 
 /* ---------------------------------------------------------------- plates */
@@ -885,7 +901,7 @@
 	font-style: var(--g-body-style);
 	font-size: calc(var(--fs-small) * var(--g-body-size));
 	letter-spacing: var(--g-body-tracking);
-	color: var(--c-bone-d);
+	color: var(--g-rubric-dim);
 	text-shadow: var(--sh-ink);
 }
 .clockNum {
@@ -901,7 +917,7 @@
 	font-family: var(--g-body-font);
 	font-style: var(--g-body-style);
 	font-size: var(--fs-micro);
-	color: var(--c-bone-dd);
+	color: var(--g-rubric-dim);
 	text-shadow: var(--sh-ink);
 }
 
@@ -1121,7 +1137,7 @@
 	font-size: var(--fs-lead);
 	font-variant-numeric: lining-nums tabular-nums;
 	text-align: right;
-	color: var(--c-bone-dd);
+	color: var(--c-bone-d);
 	text-shadow: var(--sh-ink);
 }
 .rank[data-top="true"] {
@@ -1163,7 +1179,7 @@
 	font-size: var(--fs-micro);
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
-	color: var(--c-gilt-d);
+	color: var(--c-gilt);
 }
 .rowLight {
 	display: flex;
@@ -1177,19 +1193,19 @@
 	text-shadow: var(--sh-ink);
 }
 .rowLight[data-neg="true"] {
-	color: var(--c-blood-l);
+	color: var(--g-body-blood);
 }
 .rowLight small {
-	font-family: var(--font-book);
+	font-family: var(--g-body-font);
 	font-style: italic;
 	font-weight: 400;
 	font-size: var(--fs-micro);
-	color: var(--c-bone-dd);
+	color: var(--g-rubric-dim);
 }
 .empty {
 	padding: 24px 8px;
 	text-align: center;
-	font-family: var(--font-book);
+	font-family: var(--g-body-font);
 	font-style: italic;
-	color: var(--c-bone-d);
+	color: var(--g-rubric-dim);
 }

@@ -113,8 +113,9 @@
 }
 
 .label {
-	font-family: var(--font-display);
-	font-weight: 600;
+	/* Roman, not blackletter: blackletter below ~28px reads slowly on a phone. */
+	font-family: var(--font-roman);
+	font-weight: 700;
 	font-size: clamp(12.5px, 3.5vw, 14.5px);
 	line-height: 1;
 	letter-spacing: 0.02em;

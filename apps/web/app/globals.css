@@ -8,6 +8,9 @@
 	--font-display: var(--ff-display, "Grenze Gotisch"), Georgia, serif;
 	--font-book: var(--ff-book, "IM Fell English"), Georgia, serif;
 	--font-num: var(--ff-num, "Cinzel"), Georgia, serif;
+	/* readable faces for running play (the Gathering): Grenze roman and Alegreya */
+	--font-roman: var(--ff-roman, "Grenze"), Georgia, serif;
+	--font-text: var(--ff-text, "Alegreya"), Georgia, serif;
 
 	/* ---- Type scale: phone-first, 360 -> 430 wide, capped beyond ---- */
 	--fs-micro: clamp(11px, 2.95vw, 12.5px);
