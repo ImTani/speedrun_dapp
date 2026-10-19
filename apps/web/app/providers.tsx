@@ -9,7 +9,7 @@ export function Providers({ children }: { children: ReactNode }) {
 		<PrivyProvider
 			appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID ?? ""}
 			config={{
-				loginMethods: ["email"],
+				loginMethods: ["email", "google"],
 				appearance: { theme: "dark", accentColor: "#8e1218" },
 				embeddedWallets: {
 					ethereum: { createOnLogin: "users-without-wallets" },
