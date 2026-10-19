@@ -1,70 +1,32 @@
 // The Gathering stage, ported from .impeccable/mocks/glass/ink-devour.html (the approved ink study).
 // Same drawing, look values and timeline; generalised so any pair of Fragments can play any outcome:
 // one Devours (mirrored either way), both Kindle (both windows brighten), both Devour (both dim).
+//
+// This module draws the PLACE only: the ink cathedral, the two shader windows, their medallion rings,
+// the caustic floor and the floor eye. Everything a player reads (masks, names, the verdict, the
+// flash and the shake) is DOM laid over it by the screen, which listens to the beats emitted here
+// (opts.onBeat: "hush" -> "reveal" -> "tally" -> "end") and positions itself with `geom`.
+// The stage is a fixed 390 x 844 world; the caller scales it to COVER its box (see screens/gathering/layout.ts).
 // Browser-only: import dynamically from a client component.
 
 import { FLOOR } from "./floorgl.js";
 import { G } from "./glass.js";
 import { GL } from "./glassgl.js";
-import { MASK } from "./masks.js";
 
-const ASPECT_KEYS = [
-	"mercy",
-	"hunger",
-	"echo",
-	"rancour",
-	"appetite",
-	"inquisitor",
-	"madness",
-];
-// Eye positions per mask (mask space, viewBox 0 0 100 84), for the glowing eyes behind each mask.
-const EYES = {
-	mercy: [
-		[34, 39],
-		[66, 39],
-	],
-	hunger: [
-		[34, 34],
-		[66, 34],
-	],
-	echo: [
-		[31, 38],
-		[69, 38],
-	],
-	rancour: [
-		[31, 35],
-		[69, 35],
-	],
-	appetite: [
-		[32, 37],
-		[68, 37],
-	],
-	inquisitor: [
-		[33, 27],
-		[67, 27],
-	],
-	madness: [
-		[34, 42],
-		[68, 44],
-	],
-};
+/** World size of the stage (CSS px before the caller's scale). */
+const SW = 390,
+	SH = 844;
 
 const CSS = `
-.ink-stage{--ink:1;position:absolute;left:0;top:0;width:390px;height:844px;overflow:hidden;background:#0b0807;transform-origin:0 0;touch-action:manipulation;user-select:none;opacity:0;transition:opacity .5s cubic-bezier(.16,1,.3,1)}
+.ink-stage{--ink:1;position:absolute;left:0;top:0;width:390px;height:844px;overflow:hidden;background:#0b0807;transform-origin:0 0;touch-action:manipulation;user-select:none;opacity:0;transition:opacity .6s cubic-bezier(.16,1,.3,1)}
 .ink-stage.on{opacity:1}
 .ink-stage .cam,.ink-stage .cam>*{position:absolute;left:0;top:0;width:390px;height:844px;display:block}
 .ink-stage .light{mix-blend-mode:screen}
 .ink-stage .cam>.gwin{width:128px;height:179.2px;top:118px}.ink-stage .winA{left:33px}.ink-stage .winB{left:229px}
-.ink-stage .hmask,.ink-stage .heye{position:absolute;pointer-events:none}.ink-stage .hmask{mix-blend-mode:multiply;opacity:.92}.ink-stage .hmask svg{filter:grayscale(1) sepia(.55) brightness(.92) contrast(1.2)}.ink-stage .heye{mix-blend-mode:screen}
 .ink-stage .cam>.floorC{top:430px;height:414px;mix-blend-mode:screen}
-.ink-stage .flash,.ink-stage .redflash{position:absolute;inset:0;opacity:0;pointer-events:none}.ink-stage .flash{background:#f3e6c8}.ink-stage .redflash{background:#c7262c}
 .ink-stage .k{fill:none;stroke:#0b0807;stroke-linejoin:round;stroke-linecap:round}
 .ink-stage .k2{stroke-width:calc(var(--ink) * 2px)}.ink-stage .k3{stroke-width:calc(var(--ink) * 3px)}.ink-stage .k4{stroke-width:calc(var(--ink) * 4.5px)}.ink-stage .k6{stroke-width:calc(var(--ink) * 6px)}
-.ink-stage .screen{mix-blend-mode:screen}
-.ink-stage .lettering{paint-order:stroke;stroke:#0b0807;stroke-linejoin:round}
-.ink-stage .fit{position:absolute;width:52px;height:52px;border:0;background:transparent;border-radius:50%;cursor:pointer;right:8px;bottom:12px}
-.ink-stage .fit:focus-visible{outline:2px solid #c9a24f;outline-offset:2px}
-.ink-stage .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}`;
+.ink-stage .screen{mix-blend-mode:screen}`;
 
 function ensureHead() {
 	if (!document.getElementById("ink-stage-css")) {
@@ -73,29 +35,19 @@ function ensureHead() {
 		st.textContent = CSS;
 		document.head.appendChild(st);
 	}
-	if (!document.getElementById("ink-stage-fonts")) {
-		const l = document.createElement("link");
-		l.id = "ink-stage-fonts";
-		l.rel = "stylesheet";
-		l.href =
-			"https://fonts.googleapis.com/css2?family=Spectral:ital,wght@1,500&family=Grenze+Gotisch:wght@700;900&display=swap";
-		document.head.appendChild(l);
-	}
 }
 
 /**
- * mountStage(root, { passLabel }) -> Promise<{ setPair, play, destroy }>
- * Builds the 390 x 844 stage inside `root` (caller scales it).
+ * mountStage(root, { onBeat }) -> Promise<Stage>
+ * Builds the 390 x 844 stage inside `root` (the caller scales and crops it to cover its box).
  */
 export async function mountStage(root, opts = {}) {
 	ensureHead();
 	const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 	const el = document.createElement("main");
 	el.className = "ink-stage";
-	el.innerHTML = `<div class="cam"><img class="back" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><canvas class="gwin winA" id="winA"></canvas><canvas class="gwin winB" id="winB"></canvas><canvas class="floorC"></canvas><canvas class="light"></canvas><img class="front" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><svg class="scene" viewBox="0 0 390 844" aria-hidden="true"></svg></div>
-<div class="flash"></div><div class="redflash"></div>
-<button class="fit" type="button" aria-label="${opts.passLabel || ""}"></button>
-<p class="sr" aria-live="polite"></p>`;
+	el.innerHTML = `<div class="cam"><img class="back" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><canvas class="gwin winA" id="winA"></canvas><canvas class="gwin winB" id="winB"></canvas><canvas class="floorC"></canvas><canvas class="light"></canvas><img class="front" alt="" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="><svg class="scene" viewBox="0 0 390 844" aria-hidden="true"></svg></div>`;
+	el.setAttribute("aria-hidden", "true");
 	root.appendChild(el);
 	const $ = (s) => el.querySelector(s);
 	const byId = (id) => el.querySelector(`#${id}`);
@@ -105,8 +57,7 @@ export async function mountStage(root, opts = {}) {
 	const INK = "#0b0807",
 		BONE = "#d8c6a0",
 		BONE_D = "#a8916a",
-		BLOOD_L = "#c7262c",
-		GILT = "#e3c27c";
+		BLOOD_L = "#c7262c";
 	// Owner-tuned 2026-10-15 (locked).
 	const LOOK = {
 		ink: 0.4,
@@ -147,10 +98,6 @@ export async function mountStage(root, opts = {}) {
 		return k * k * (3 - 2 * k);
 	};
 	const outExp = (k) => (k >= 1 ? 1 : 1 - 2 ** (-10 * k));
-	const outBack = (k) => {
-		const c = 1.9;
-		return 1 + (c + 1) * (k - 1) ** 3 + c * (k - 1) ** 2;
-	};
 	function brush(pts, w, fill = INK, extra = "") {
 		const L = [],
 			Rt = [];
@@ -644,17 +591,9 @@ export async function mountStage(root, opts = {}) {
 		o += poly(cl, INK) + poly(cr, INK);
 		return o;
 	})();
-	// The hourglass on the floor (pass to the outcome)
-	const fittings = `
-		<g transform="translate(356 800)" filter="url(#wob)">
-			<ellipse cx="7" cy="21" rx="18" ry="4.5" fill="#000" opacity=".5"/>
-			<polygon points="-13,-21 13,-21 12,-16 -12,-16" fill="#4a3626" class="k k2"/><polygon points="-13,16 13,16 14,21 -14,21" fill="#4a3626" class="k k2"/>
-			<path d="M-11 -16 V16 M11 -16 V16" stroke="${INK}" stroke-width="2.6"/><path d="M-11 -16 V16" stroke="#6b5139" stroke-width="1"/>
-			<path d="M-8 -16 Q-8 -4 0 0 Q-8 4 -8 16 H8 Q8 4 0 0 Q8 -4 8 -16Z" fill="${BONE}" opacity=".1"/>
-			<path d="M-6.5 16 Q0 7 6.5 16Z" fill="${BONE_D}" opacity=".85"/><path d="M-4.5 -8 Q0 -3 4.5 -8Z" fill="${BONE_D}" opacity=".7"/><path d="M0 -2 V12" stroke="${BONE_D}" stroke-width=".8" opacity=".7"/>
-			<path d="M-8 -16 Q-8 -4 0 0 Q-8 4 -8 16 H8 Q8 4 0 0 Q8 -4 8 -16Z" class="k k2"/><path d="M-6 -12 Q-6 -5 -2 -2" fill="none" stroke="${BONE}" stroke-width=".9" opacity=".4"/>
-		</g>`;
-	const floorEye = `<g transform="translate(195 806)" filter="url(#wob)">
+	// The eye on the floor: opens when anyone devours. setView() keeps it above the visible bottom.
+	const EYE = { x: 195, y: 806 };
+	const floorEye = `<g id="floorEye" transform="translate(${EYE.x} ${EYE.y})" filter="url(#wob)">
 		<ellipse rx="46" ry="15" fill="#000" opacity=".22"/>
 		<path d="M-32 0 Q0 -20 32 0 Q0 20 -32 0Z" fill="#0d0907" class="k k4"/>
 		<path d="M-28 1.5 Q0 16 28 1.5" fill="none" stroke="${BONE_D}" stroke-width="1.3" opacity=".4"/>
@@ -662,22 +601,6 @@ export async function mountStage(root, opts = {}) {
 		<path id="eyeLid" d="M-30 0 Q0 -19 30 0 Q0 -19 -30 0Z" fill="#22170f" class="k k3"/>
 	</g>`;
 
-	const MW = 38,
-		MH = Math.round((MW * 84) / 100);
-	const maskBox = (k) => {
-		const w = WIN[k],
-			sc = GW / 300;
-		return [w.cx - MW / 2, GTOP + 244 * sc - MH / 2 - 3];
-	};
-	function eyeDots(aspect, x0, y0) {
-		return EYES[aspect]
-			.map(([x, y]) => {
-				const cx = f1(x0 + (x * MW) / 100),
-					cy = f1(y0 + (y * MH) / 84);
-				return `<ellipse cx="${cx}" cy="${cy}" rx="2.2" ry="1.3" fill="#7a1c0e" opacity=".85"/><ellipse cx="${cx}" cy="${cy}" rx=".9" ry=".55" fill="#ffb27a"/>`;
-			})
-			.join("");
-	}
 	function glassSVG(k) {
 		const w = WIN[k],
 			sc = GW / 300,
@@ -705,30 +628,16 @@ export async function mountStage(root, opts = {}) {
 		}
 		crack = `<clipPath id="crackClip${k}"><circle id="crackR${k}" cx="${w.cx}" cy="${f1(sunY)}" r="0"/></clipPath><g clip-path="url(#crackClip${k})">${crack}</g>`;
 		const cloud = `<g id="cloud${k}" opacity="0"><ellipse cx="0" cy="0" rx="58" ry="22" fill="${INK}"/><ellipse cx="38" cy="-10" rx="34" ry="20" fill="${INK}"/><ellipse cx="-40" cy="6" rx="30" ry="15" fill="${INK}"/></g>`;
-		const [mx, my] = maskBox(k);
 		return `<g clip-path="url(#glass${k})">
 			<use id="flat${k}" href="#art${k}" transform="translate(${w.x0} ${top}) scale(${sc})"/><use id="grey${k}" href="#art${k}g" opacity="0" transform="translate(${w.x0} ${top}) scale(${sc})"/>
 			<g class="screen" id="sun${k}" opacity=".55"><circle cx="${w.cx}" cy="${f1(sunY)}" r="30" fill="${w.tint}" opacity=".35"/><circle cx="${w.cx}" cy="${f1(sunY)}" r="18" fill="#fff4d6" opacity=".55"/></g>
 			<g id="flare${k}" class="screen" opacity="0"><circle cx="${w.cx}" cy="${f1(sunY)}" r="64" fill="${BLOOD_L}" opacity=".35"/><circle cx="${w.cx}" cy="${f1(sunY)}" r="40" fill="#ffcf7a" opacity=".55"/><circle cx="${w.cx}" cy="${f1(sunY)}" r="22" fill="#fff7e2" opacity=".8"/></g>
-			<g id="fm${k}" style="mix-blend-mode:multiply" opacity=".95"><svg x="${f1(mx)}" y="${f1(my)}" width="${MW}" height="${MH}" viewBox="0 0 100 84" id="fmi${k}"></svg></g>
-			<g id="meye${k}" class="screen" opacity=".7"></g>
 			${cloud}
 			<rect id="veil${k}" x="${w.x0 - 2}" y="${top - 2}" width="${GW + 4}" height="${f1(GH + 4)}" fill="${INK}" opacity="0"/>
 			${crack}
 		</g>
 		<path d="${archPath(w.cx, GW / 2, SPRING, GBOT)}" class="k k6"/>`;
 	}
-	const names = Object.keys(WIN)
-		.map(
-			(k) => `
-		<text id="name${k}" x="${WIN[k].cx}" y="${SC + 50}" text-anchor="middle" class="lettering" font-family="Grenze Gotisch" font-weight="900" font-size="25" fill="${BONE}" stroke-width="5"></text>
-		<text id="sub${k}" x="${WIN[k].cx}" y="${SC + 68}" text-anchor="middle" class="lettering" font-family="Spectral" font-style="italic" font-weight="500" font-size="12.5" fill="${BONE_D}" stroke-width="3.5"></text>`,
-		)
-		.join("");
-	const slam = `<g id="slam" opacity="0" transform="translate(195 716)">
-		<text id="slamT" text-anchor="middle" class="lettering" font-family="Grenze Gotisch" font-weight="900" font-size="34" fill="${BLOOD_L}" stroke-width="8"></text>
-		<g id="slamSub" opacity="0"><text id="slam1" y="27" text-anchor="middle" class="lettering" font-family="Spectral" font-style="italic" font-weight="500" font-size="15" fill="${BONE}" stroke-width="5"></text>
-		<text id="slam2" y="47" text-anchor="middle" class="lettering" font-family="Spectral" font-style="italic" font-weight="500" font-size="15" fill="${BONE}" stroke-width="5"></text></g></g>`;
 	const FIL = [0, 1, 2, 3, 4].map((i) => ({
 		y: 548 + i * 13,
 		c: (R() - 0.5) * 30,
@@ -738,12 +647,12 @@ export async function mountStage(root, opts = {}) {
 	}));
 
 	$(".scene").innerHTML =
-		`<defs>${defs.join("")}</defs>${glassSVG("A")}${glassSVG("B")}${medalsSVG}${names}${floorEye}${fittings}${slam}`;
+		`<defs>${defs.join("")}</defs>${glassSVG("A")}${glassSVG("B")}${medalsSVG}${floorEye}`;
 
 	// ---------- Bake static ink and window art once ----------
 	async function rasterC(svg, w, h) {
 		const img = new Image();
-		img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+		img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 		await img.decode();
 		const c = document.createElement("canvas");
 		c.width = w;
@@ -853,19 +762,12 @@ export async function mountStage(root, opts = {}) {
 		lightDirty = true;
 	}
 	const A_ = (n0, n, v) => {
-		const c = n0._c || (n0._c = {});
+		if (!n0._c) n0._c = {};
+		const c = n0._c;
 		v = String(v);
 		if (c[n] !== v) {
 			c[n] = v;
 			n0.setAttribute(n, v);
-		}
-	};
-	const S_ = (n0, n, v) => {
-		const c = n0._s || (n0._s = {});
-		v = String(v);
-		if (c[n] !== v) {
-			c[n] = v;
-			n0.style[n] = v;
 		}
 	};
 
@@ -877,7 +779,10 @@ export async function mountStage(root, opts = {}) {
 				theme: WIN[k].theme,
 				seed: WIN[k].seed,
 				preset: "locked",
-			}).catch((e) => (console.error(e), null));
+			}).catch((e) => {
+				console.error(e);
+				return null;
+			});
 			if (!api) {
 				$(`.win${k}`).remove();
 				continue;
@@ -889,14 +794,6 @@ export async function mountStage(root, opts = {}) {
 			GAPI[k] = api;
 			A_(byId(`flat${k}`), "opacity", 0);
 			A_(byId(`sun${k}`), "opacity", 0);
-			const [x0, y0] = maskBox(k);
-			const box = `left:${x0.toFixed(1)}px;top:${y0.toFixed(1)}px;width:${MW}px;height:${MH}px`;
-			$(".light").insertAdjacentHTML(
-				"beforebegin",
-				`<div class="hmask" id="hmask${k}" style="${box}"></div><svg class="heye" id="heye${k}" style="${box}" viewBox="0 0 ${MW} ${MH}"></svg>`,
-			);
-			A_(byId(`fm${k}`), "display", "none");
-			A_(byId(`meye${k}`), "display", "none");
 			A_(byId(`cloud${k}`), "display", "none");
 			A_(byId(`flare${k}`), "display", "none");
 			A_(byId(`grey${k}`), "display", "none");
@@ -921,7 +818,10 @@ export async function mountStage(root, opts = {}) {
 			zf: ZF,
 			vx: VX,
 			state: FS,
-		}).catch((e) => (console.error(e), null));
+		}).catch((e) => {
+			console.error(e);
+			return null;
+		});
 		if (!floor) $(".floorC").remove();
 		else if (dead) floor.stop();
 	}
@@ -1082,7 +982,10 @@ export async function mountStage(root, opts = {}) {
 			]) {
 				lx.globalAlpha = clamp(al * a2);
 				lx.beginPath();
-				q.forEach(([px, py], i) => (i ? lx.lineTo(px, py) : lx.moveTo(px, py)));
+				q.forEach(([px, py], i) => {
+					if (i) lx.lineTo(px, py);
+					else lx.moveTo(px, py);
+				});
 				lx.fill();
 			}
 		}
@@ -1132,7 +1035,6 @@ export async function mountStage(root, opts = {}) {
 		vic: "B",
 		lit: { A: 0, B: 0 },
 		gain: { A: 0, B: 0 },
-		announce: "",
 	};
 	const medal = (k, i, on, pop) => {
 		const g = byId(`m${k}${i}`);
@@ -1153,7 +1055,6 @@ export async function mountStage(root, opts = {}) {
 			`translate(${MEDALS[k][i][0].toFixed(1)} ${MEDALS[k][i][1].toFixed(1)}) scale(${sc.toFixed(3)})`,
 		);
 	};
-	let announced = false;
 	function render(t) {
 		const idle = D.kind === "idle";
 		const hush = idle
@@ -1244,24 +1145,6 @@ export async function mountStage(root, opts = {}) {
 				hit && (isVic || ruin)
 					? (reduce ? 120 : 120 * outExp(clamp(rv / 0.22))).toFixed(1)
 					: 0,
-			);
-			const fk = (seed) => {
-				const n = Math.floor(t * 8) + seed,
-					h = (Math.sin(n * 127.1) * 43758.5453) % 1,
-					r = Math.abs(h);
-				return r < 0.05 ? 0.2 : 0.7 + 0.3 * r;
-			};
-			const he = byId(`heye${k}`);
-			if (he)
-				S_(
-					he,
-					"opacity",
-					(0.75 * fk(k === "A" ? 0 : 17) * (1 - fall * 0.8)).toFixed(2),
-				);
-			A_(
-				byId(`meye${k}`),
-				"opacity",
-				Math.min(1, (0.7 + flare * 0.3) * (1 - fall * 0.8)).toFixed(2),
 			);
 			// floor pools
 			const p = pool[k],
@@ -1366,88 +1249,50 @@ export async function mountStage(root, opts = {}) {
 				medal(k, i, on, reduce ? 9 : popT);
 			}
 		}
-		// outcome slam
-		const sl = rv - 0.12;
-		if (hit && sl > 0) {
-			const k = reduce ? 1 : clamp(sl / 0.28),
-				sc = reduce ? 1 : lerp(2.3, 1, outBack(k));
-			A_(byId("slam"), "opacity", Math.min(1, k * 4).toFixed(2));
-			A_(
-				byId("slam"),
-				"transform",
-				`translate(195 716) scale(${sc.toFixed(3)})`,
-			);
-			A_(
-				byId("slamSub"),
-				"opacity",
-				(reduce ? 1 : smooth(0.45, 0.8, sl)).toFixed(2),
-			);
-		} else A_(byId("slam"), "opacity", 0);
-		const fl = hit && !reduce ? LOOK.flash * Math.exp(-rv * 22) : 0;
-		S_($(".flash"), "opacity", fl.toFixed(3));
-		S_(
-			$(".redflash"),
-			"opacity",
-			(hit && !reduce && !kin
-				? 0.3 *
-					LOOK.flash *
-					Math.exp(-Math.max(0, rv - 0.08) * 7) *
-					(rv > 0.08 ? 1 : 0)
-				: 0
-			).toFixed(3),
-		);
-		const sh2 =
-			hit && !reduce ? LOOK.shake * (kin ? 0.35 : 1) * Math.exp(-rv * 9) : 0;
-		S_(
-			$(".cam"),
-			"transform",
-			sh2 > 0.05
-				? `translate(${(Math.sin(rv * 93) * sh2).toFixed(2)}px, ${(Math.cos(rv * 71) * sh2 * 0.7).toFixed(2)}px)`
-				: "none",
-		);
-		if (hit && !announced) {
-			$(".sr").textContent = D.announce;
-			announced = true;
-		}
 	}
 
-	// ---------- Pair and texts ----------
-	function setSide(k, s) {
-		const aspect = ASPECT_KEYS[s.aspect] || "mercy";
-		WIN[k].aspect = aspect;
-		byId(`name${k}`).textContent = s.name;
-		A_(byId(`name${k}`), "fill", s.mine ? GILT : BONE);
-		byId(`sub${k}`).textContent = s.sub || "";
-		byId(`fmi${k}`).innerHTML = MASK.mask(aspect, MW)
-			.replace(/^<svg [^>]*>/, "")
-			.replace(/<\/svg>$/, "");
-		const [x0, y0] = maskBox(k);
-		byId(`meye${k}`).innerHTML = eyeDots(aspect, x0, y0);
-		const hm = byId(`hmask${k}`),
-			he = byId(`heye${k}`);
-		if (hm) hm.innerHTML = MASK.mask(aspect, MW);
-		if (he) he.innerHTML = eyeDots(aspect, 0, 0);
-		// the name fits the stone under the sill
-		const n = byId(`name${k}`);
-		A_(
-			n,
-			"font-size",
-			s.name.length > 12
-				? Math.max(14, Math.round((25 * 12) / s.name.length))
-				: 25,
-		);
-	}
-
-	// ---------- Clock ----------
+	// ---------- Clock and beats ----------
+	// The screen hangs its DOM (masks, verdict, flash, shake, tallies) on these beats.
+	const BEATS = [
+		["hush", TL.hush],
+		["reveal", TL.reveal],
+		["tally", TL.tally0],
+		["end", TL.end],
+	];
 	let t = 0,
 		last = performance.now(),
-		held = false,
 		freeze = 0,
 		crossed = false,
 		speed = 1,
+		beat = 0,
 		raf = 0,
 		done = null,
-		ready = false;
+		ready = false,
+		eyeY = EYE.y;
+	const rate = () => LOOK.speed * speed;
+	function emit(name) {
+		try {
+			opts.onBeat?.(name, {
+				kind: D.kind,
+				rate: rate(),
+				/** Seconds (wall clock) from this beat to the next one at the current rate. */
+				until: (() => {
+					const i = BEATS.findIndex(([n]) => n === name);
+					const next = BEATS[i + 1];
+					return next ? (next[1] - BEATS[i][1]) / rate() : 0;
+				})(),
+			});
+		} catch (e) {
+			console.error("[stage] beat", e);
+		}
+	}
+	function settle() {
+		if (done) {
+			const d = done;
+			done = null;
+			d();
+		}
+	}
 	function tick(now) {
 		if (dead) return;
 		let dt = Math.min(0.2, (now - last) / 1000);
@@ -1456,9 +1301,10 @@ export async function mountStage(root, opts = {}) {
 		if (now < freeze) dt = 0;
 		if (D.kind !== "idle") {
 			const before = t;
-			t = Math.min(TL.end + 2, t + dt * LOOK.speed * speed * (held ? 3 : 1));
+			t = Math.min(TL.end + 2, t + dt * rate());
 			if (!crossed && before < TL.reveal && t >= TL.reveal) {
 				crossed = true;
+				// hit-stop: hold the frame on the unveiling (the screen slams its verdict in this pause)
 				t = TL.reveal;
 				if (!reduce && speed < 2) freeze = now + LOOK.hitstop;
 				if (D.kind === "devour") GAPI[D.dev]?.swell();
@@ -1467,84 +1313,60 @@ export async function mountStage(root, opts = {}) {
 					GAPI.B?.swell();
 				}
 			}
-			if (done && t >= TL.end) {
-				const d = done;
-				done = null;
-				d();
-			}
+			while (beat < BEATS.length && t >= BEATS[beat][1]) emit(BEATS[beat++][0]);
+			if (t >= TL.end) settle();
 		}
 		render(t);
 		raf = requestAnimationFrame(tick);
 	}
-	const onDown = (e) => {
-		if (e.target.closest(".fit") || D.kind === "idle") return;
-		holdTimer = setTimeout(() => {
-			held = true;
-		}, 220);
-		if (t < TL.reveal - 0.3) t = TL.reveal - 0.3; // a tap hastens to the unveiling
-	};
-	let holdTimer = null;
-	const onUp = () => {
-		clearTimeout(holdTimer);
-		held = false;
-	};
-	el.addEventListener("pointerdown", onDown);
-	for (const n of ["pointerup", "pointercancel", "pointerleave"])
-		el.addEventListener(n, onUp);
-	$(".fit").addEventListener("click", () => {
-		if (D.kind !== "idle") {
-			t = TL.end;
-			crossed = true;
-		}
-	});
 
-	await Promise.all([
-		bake(),
-		bakeArt(),
-		document.fonts.ready,
-		mountGlass(),
-		mountFloor(),
-	]);
+	await Promise.all([bake(), bakeArt(), mountGlass(), mountFloor()]);
 	ready = true;
 	last = performance.now();
 	if (!dead) el.classList.add("on");
 	raf = requestAnimationFrame(tick);
 
+	const litOf = (s) =>
+		Math.max(0, Math.min(25 - Math.min(25, s.gain || 0), s.lit || 0));
+
 	return {
-		/** Show a pair at rest (no outcome). sides: {name, sub, aspect, mine, lit} */
+		/** Fixed world geometry, so the screen can lay its DOM over the drawing. */
+		geom: {
+			W: SW,
+			H: SH,
+			GW,
+			GH,
+			GTOP,
+			GBOT,
+			SPRING,
+			SC,
+			FT,
+			pier: VX,
+			win: { A: { cx: WIN.A.cx }, B: { cx: WIN.B.cx } },
+			tint: { A: WIN.A.tint, B: WIN.B.tint },
+		},
+		/** Show a pair at rest (no outcome). */
 		setPair(a, b) {
-			setSide("A", a);
-			setSide("B", b);
 			D = {
 				kind: "idle",
 				dev: "A",
 				vic: "B",
-				lit: { A: a.lit || 0, B: b.lit || 0 },
+				lit: { A: litOf(a), B: litOf(b) },
 				gain: { A: 0, B: 0 },
-				announce: "",
 			};
 			t = 0;
+			beat = 0;
 			crossed = false;
-			announced = false;
+			freeze = 0;
 			lightDirty = true;
-			if (done) {
-				const d = done;
-				done = null;
-				d();
-			}
+			settle();
 		},
 		/**
-		 * Play one duel. duel: { a, b (sides as setPair plus move 0|1 and gain), title, line1, line2, announce, speed }
-		 * Resolves when the outcome has settled; the final tableau stays on stage until the next call.
+		 * Play one duel. Resolves when the outcome has settled ("end" beat); the final tableau
+		 * stays on stage until the next call.
 		 */
 		play(duel) {
-			if (done) {
-				const d = done;
-				done = null;
-				d();
-			}
-			setSide("A", duel.a);
-			setSide("B", duel.b);
+			settle();
 			const ma = duel.a.move,
 				mb = duel.b.move;
 			const kind =
@@ -1554,48 +1376,46 @@ export async function mountStage(root, opts = {}) {
 						? "ruin"
 						: "devour";
 			const dev = ma === 1 && mb === 0 ? "A" : "B";
-			const lit = (s) =>
-				Math.max(0, Math.min(25 - Math.min(25, s.gain || 0), s.lit || 0));
 			D = {
 				kind,
 				dev,
 				vic: dev === "A" ? "B" : "A",
-				lit: { A: lit(duel.a), B: lit(duel.b) },
+				lit: { A: litOf(duel.a), B: litOf(duel.b) },
 				gain: {
 					A: Math.min(25, duel.a.gain || 0),
 					B: Math.min(25, duel.b.gain || 0),
 				},
-				announce: duel.announce || "",
 			};
-			byId("slamT").textContent = duel.title || "";
-			A_(byId("slamT"), "fill", kind === "kindle" ? GILT : BLOOD_L);
-			A_(
-				byId("slamT"),
-				"font-size",
-				(duel.title || "").length > 18
-					? Math.max(18, Math.round((34 * 18) / duel.title.length))
-					: 34,
-			);
-			byId("slam1").textContent = duel.line1 || "";
-			byId("slam2").textContent = duel.line2 || "";
 			speed = duel.speed || 1;
 			t = 0;
+			beat = 0;
 			crossed = false;
-			announced = false;
 			freeze = 0;
 			lightDirty = true;
 			return new Promise((r) => {
 				done = r;
 			});
 		},
+		/** A tap: hasten to the unveiling, or past it to the settled outcome. */
+		skip() {
+			if (D.kind === "idle" || t >= TL.end) return;
+			if (t < TL.reveal - 0.35) t = TL.reveal - 0.35;
+			else if (t >= TL.reveal) {
+				t = TL.end;
+				freeze = 0;
+			}
+		},
+		/** The world rows the caller can see; keeps the floor eye above the visible bottom. */
+		setView({ bottom }) {
+			const y = Math.round(Math.max(600, Math.min(EYE.y, bottom - 96)));
+			if (y === eyeY) return;
+			eyeY = y;
+			A_(byId("floorEye"), "transform", `translate(${EYE.x} ${y})`);
+		},
 		destroy() {
 			dead = true;
 			cancelAnimationFrame(raf);
-			if (done) {
-				const d = done;
-				done = null;
-				d();
-			}
+			settle();
 			GAPI.A?.destroy();
 			GAPI.B?.destroy();
 			floor?.stop();
@@ -1608,7 +1428,7 @@ export async function mountStage(root, opts = {}) {
 					/* 2d canvas */
 				}
 			}
-			urls.forEach((u) => URL.revokeObjectURL(u));
+			for (const u of urls) URL.revokeObjectURL(u);
 			el.remove();
 		},
 	};

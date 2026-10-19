@@ -1,36 +1,182 @@
+/* =====================================================================
+   Apostasy: Sede Vacante — tokens, type, full-bleed phone base.
+   Palette from the approved ink-devour baseline: bone, umber, soot,
+   dried blood, ember, gilt. The stained glass is the only other colour.
+   ===================================================================== */
 :root {
-	--ink: #0b0807;
-	--void: #050403;
-	--stone: #1a1210;
-	--umber: #3a2c22;
-	--bone: #d8c6a0;
-	--bone-d: #a8916a;
-	--blood: #8e1218;
-	--blood-l: #c7262c;
-	--gold: #c9a24f;
-	--gothic: "Grenze Gotisch", serif;
-	--serif: "Spectral", Georgia, serif;
+	/* ---- Faces (next/font defines --ff-*; see app/fonts.ts) ---- */
+	--font-display: var(--ff-display, "Grenze Gotisch"), Georgia, serif;
+	--font-book: var(--ff-book, "IM Fell English"), Georgia, serif;
+	--font-num: var(--ff-num, "Cinzel"), Georgia, serif;
+
+	/* ---- Type scale: phone-first, 360 -> 430 wide, capped beyond ---- */
+	--fs-micro: clamp(11px, 2.95vw, 12.5px);
+	--fs-small: clamp(12.5px, 3.45vw, 14px);
+	--fs-body: clamp(15px, 4.1vw, 17px);
+	--fs-lead: clamp(17px, 4.7vw, 19.5px);
+	--fs-h3: clamp(20px, 5.6vw, 24px);
+	--fs-h2: clamp(26px, 7.3vw, 32px);
+	--fs-h1: clamp(34px, 9.6vw, 44px);
+	--fs-slam: clamp(44px, 13vw, 60px);
+	--fs-title: clamp(54px, 16.5vw, 76px);
+	--lh-tight: 0.92;
+	--lh-snug: 1.15;
+	--lh-book: 1.42;
+	--track-rubric: 0.16em;
+
+	/* ---- Colour ---- */
+	--c-void: #050403;
+	--c-soot: #0b0807;
+	--c-soot-2: #120c0a;
+	--c-stone: #1a1210;
+	--c-umber-d: #241912;
+	--c-umber: #3a2c22;
+	--c-umber-l: #5a4632;
+	--c-bone: #d8c6a0;
+	--c-bone-d: #a8916a;
+	--c-bone-dd: #6e5c46;
+	--c-bone-hi: #f3e6c8;
+	--c-blood-dd: #3a0709;
+	--c-blood: #8e1218;
+	--c-blood-l: #c7262c;
+	--c-ember-d: #7a1c0e;
+	--c-ember: #ff6a4a;
+	--c-ember-hi: #ffb27a;
+	--c-gilt-d: #9a7a35;
+	--c-gilt: #c9a24f;
+	--c-gilt-l: #e3c27c;
+	--c-gilt-hi: #f5dfa0;
+	--c-scrim: #050403cc;
+
+	/* ---- Shadows / glows ---- */
+	--sh-ink: 0 2px 0 var(--c-soot), 0 0 2px var(--c-soot);
+	--sh-ink-heavy:
+		0 3px 0 var(--c-soot), 0 0 3px var(--c-soot), 0 6px 14px #000c;
+	--sh-glow-gilt: 0 0 18px #e3c27c55;
+	--sh-glow-blood: 0 0 22px #c7262c66;
+	--sh-glow-ember: 0 0 16px #ff6a4a66;
+	--sh-plate:
+		inset 0 1px 0 #ffffff14, inset 0 -2px 0 #0008,
+		inset 0 0 0 1px var(--c-umber), 0 8px 20px #000a;
+	--sh-sheet: 0 -18px 40px #000d;
+	--sh-drop: drop-shadow(0 4px 0 var(--c-soot)) drop-shadow(0 10px 18px #000a);
+
+	/* ---- Shape ---- */
+	--r-0: 0;
+	--r-1: 2px;
+	--r-2: 6px;
+	--r-round: 999px;
+	--cut: 8px; /* chamfer for ink-edged slabs */
+	--rule: 2px solid var(--c-soot);
+
+	/* ---- Layers ---- */
+	--z-scene: 0;
+	--z-ui: 10;
+	--z-hud: 20;
+	--z-tabbar: 30;
+	--z-sheet: 40;
+	--z-flash: 50;
+	--z-toast: 60;
+	--z-modal: 70;
+
+	/* ---- Space, safe areas, touch ---- */
+	--safe-t: env(safe-area-inset-top, 0px);
+	--safe-r: env(safe-area-inset-right, 0px);
+	--safe-b: env(safe-area-inset-bottom, 0px);
+	--safe-l: env(safe-area-inset-left, 0px);
+	--gutter: clamp(14px, 4.6vw, 20px);
+	--pad-l: max(var(--gutter), var(--safe-l));
+	--pad-r: max(var(--gutter), var(--safe-r));
+	--tap: 44px;
+	--tabbar-h: calc(64px + var(--safe-b));
+	--column: 560px; /* reading column on tablets/desktop; background stays full-bleed */
+
+	/* ---- Motion (CSS side; motion/react presets live in src/ui/motion) ---- */
+	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+	--ease-slam: cubic-bezier(0.2, 1.4, 0.35, 1);
+	--dur-1: 120ms;
+	--dur-2: 220ms;
+	--dur-3: 420ms;
+
+	/* ---- Legacy aliases (existing screens use these) ---- */
+	--ink: var(--c-soot);
+	--void: var(--c-void);
+	--stone: var(--c-stone);
+	--umber: var(--c-umber);
+	--bone: var(--c-bone);
+	--bone-d: var(--c-bone-d);
+	--blood: var(--c-blood);
+	--blood-l: var(--c-blood-l);
+	--gold: var(--c-gilt);
+	--gothic: var(--font-display);
+	--serif: var(--font-book);
+
+	color-scheme: dark;
 }
-* {
+
+/* ---- Reset ---- */
+*,
+*::before,
+*::after {
 	box-sizing: border-box;
 	margin: 0;
 	padding: 0;
 }
-html,
-body {
+
+/* ---- Full-bleed phone base ---- */
+html {
+	width: 100%;
 	height: 100%;
-	background: var(--void);
-	color: var(--bone);
-}
-body {
-	font-family: var(--serif);
-	-webkit-font-smoothing: antialiased;
-	-webkit-tap-highlight-color: transparent;
+	background: var(--c-void);
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+	overflow-x: hidden;
 	overscroll-behavior: none;
 }
+body {
+	width: 100%;
+	min-height: 100dvh;
+	overflow-x: hidden;
+	overscroll-behavior: none;
+	background: var(--c-void);
+	color: var(--c-bone);
+	font-family: var(--font-book);
+	font-size: var(--fs-body);
+	line-height: var(--lh-book);
+	font-kerning: normal;
+	font-variant-ligatures: common-ligatures;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-rendering: optimizeLegibility;
+	-webkit-tap-highlight-color: transparent;
+	-webkit-touch-callout: none;
+	touch-action: manipulation;
+	/* Game chrome is not selectable; inputs and .selectable opt back in. */
+	-webkit-user-select: none;
+	user-select: none;
+}
+input,
+textarea,
+[contenteditable="true"],
+.selectable {
+	-webkit-user-select: text;
+	user-select: text;
+	-webkit-touch-callout: default;
+}
+img,
+svg,
+canvas,
+video {
+	display: block;
+	max-width: 100%;
+}
+img {
+	-webkit-user-drag: none;
+}
 ::selection {
-	background: var(--blood);
-	color: #f1e4c4;
+	background: var(--c-blood);
+	color: var(--c-bone-hi);
 }
 button {
 	font: inherit;
@@ -38,26 +184,59 @@ button {
 	cursor: pointer;
 	border: 0;
 	background: none;
+	touch-action: manipulation;
 }
 button:disabled {
 	cursor: default;
 	opacity: 0.55;
 }
 :focus-visible {
-	outline: 2px solid var(--gold);
+	outline: 2px solid var(--c-gilt);
 	outline-offset: 2px;
 }
+:focus:not(:focus-visible) {
+	outline: none;
+}
 
+/* The app frame: full-bleed on every width (no letterbox bars). */
 main {
-	max-width: 480px;
-	margin: 0 auto;
-	min-height: 100dvh;
 	position: relative;
+	width: 100%;
+	min-height: 100dvh;
 	background:
 		radial-gradient(120% 60% at 50% 0%, #2a1c14 0%, transparent 60%),
 		repeating-linear-gradient(0deg, transparent 0 46px, #0000004d 46px 48px),
 		repeating-linear-gradient(90deg, transparent 0 92px, #00000033 92px 94px),
-		#120c0a;
+		var(--c-soot-2);
+}
+
+/* Tokens as small utilities */
+.font-display {
+	font-family: var(--font-display);
+}
+.font-book {
+	font-family: var(--font-book);
+}
+.font-num {
+	font-family: var(--font-num);
+	font-variant-numeric: lining-nums tabular-nums;
+}
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
 }
 
 /* Lettering */
@@ -69,19 +248,22 @@ main {
 		0 2px 0 var(--ink),
 		0 0 18px #c9a24f33;
 	letter-spacing: 0.02em;
-	line-height: 1;
+	line-height: var(--lh-tight);
 	text-align: center;
-	font-size: 34px;
+	font-size: var(--fs-h1);
+	text-wrap: balance;
 }
 .kicker {
 	font-style: italic;
 	color: var(--bone-d);
 	text-align: center;
-	font-size: 15px;
+	font-size: var(--fs-body);
+	text-wrap: balance;
 }
 .prose {
-	font-size: 16px;
-	line-height: 1.45;
+	font-size: var(--fs-body);
+	line-height: var(--lh-book);
+	text-wrap: pretty;
 	text-align: center;
 	color: var(--bone);
 }
@@ -117,7 +299,7 @@ main {
 	min-height: 56px;
 	padding: 14px 18px;
 	font-family: var(--gothic);
-	font-size: 22px;
+	font-size: var(--fs-h3);
 	font-weight: 700;
 	letter-spacing: 0.04em;
 	border: 3px solid var(--ink);
@@ -157,7 +339,7 @@ main {
 }
 .row .btn {
 	flex: 1;
-	font-size: 19px;
+	font-size: var(--fs-lead);
 }
 
 /* Title */
@@ -167,10 +349,15 @@ main {
 	align-items: center;
 	justify-content: center;
 	gap: 14px;
-	padding: 32px 26px calc(32px + env(safe-area-inset-bottom));
+	min-height: 100dvh;
+	padding: calc(32px + var(--safe-t)) var(--pad-r) calc(32px + var(--safe-b))
+		var(--pad-l);
+}
+.title-screen > .btn {
+	max-width: 360px;
 }
 .title-rose {
-	width: 210px;
+	width: min(210px, 54vw);
 	filter: drop-shadow(0 0 28px #e8c46a55);
 	animation: rose 40s linear infinite;
 }
@@ -180,12 +367,12 @@ main {
 	}
 }
 .title-name {
-	font-size: 64px;
+	font-size: var(--fs-title);
 	margin-top: 12px;
 }
 .title-sub {
 	font-family: var(--gothic);
-	font-size: 26px;
+	font-size: var(--fs-h2);
 	color: var(--blood-l);
 	text-shadow: 0 2px 0 var(--ink);
 }
@@ -201,14 +388,22 @@ main {
 	display: flex;
 	flex-direction: column;
 	height: 100dvh;
+	overflow: hidden;
 }
 .shell-body {
+	position: relative;
 	flex: 1;
+	min-height: 0;
+	overflow-x: hidden;
 	overflow-y: auto;
+	overscroll-behavior: contain;
 	-webkit-overflow-scrolling: touch;
 }
 .screen {
-	padding: 18px 18px 28px;
+	width: 100%;
+	max-width: var(--column);
+	margin-inline: auto;
+	padding: calc(18px + var(--safe-t)) var(--pad-r) 28px var(--pad-l);
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
@@ -220,6 +415,8 @@ main {
 
 /* Tab bar: carved stone ledge */
 .tabbar {
+	position: relative;
+	z-index: var(--z-tabbar);
 	display: grid;
 	grid-template-columns: repeat(5, 1fr);
 	background: linear-gradient(#24190f, #120c0a);
@@ -227,7 +424,7 @@ main {
 	box-shadow:
 		0 -1px 0 var(--umber),
 		0 -12px 30px #000a;
-	padding-bottom: env(safe-area-inset-bottom);
+	padding: 0 var(--safe-r) var(--safe-b) var(--safe-l);
 }
 .tab {
 	display: flex;
@@ -237,7 +434,7 @@ main {
 	min-height: 64px;
 	padding: 8px 0 6px;
 	color: var(--bone-d);
-	font-size: 12px;
+	font-size: var(--fs-micro);
 	letter-spacing: 0.04em;
 }
 .tab svg {
@@ -316,7 +513,7 @@ main {
 }
 .aspect-name {
 	font-family: var(--gothic);
-	font-size: 30px;
+	font-size: var(--fs-h2);
 	text-align: center;
 	color: #f3e6c8;
 	text-shadow: 0 2px 0 var(--ink);
@@ -324,7 +521,7 @@ main {
 .aspect-mask {
 	font-family: var(--serif);
 	font-style: italic;
-	font-size: 16px;
+	font-size: var(--fs-body);
 	color: var(--bone-d);
 }
 .mask-row {
@@ -378,16 +575,18 @@ main {
 }
 .sigil-name {
 	font-family: var(--gothic);
-	font-size: 21px;
+	font-size: var(--fs-h3);
 	color: #f3e6c8;
 }
 .sigil-val {
-	font-family: var(--gothic);
-	font-size: 20px;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-variant-numeric: lining-nums tabular-nums;
+	font-size: var(--fs-h3);
 	color: #e8c46a;
 }
 .sigil-desc {
-	font-size: 13px;
+	font-size: var(--fs-small);
 	font-style: italic;
 	color: var(--bone-d);
 }
@@ -406,7 +605,7 @@ main {
 	border: 2px solid var(--ink);
 	background: #1f1612;
 	font-family: var(--gothic);
-	font-size: 18px;
+	font-size: var(--fs-lead);
 	color: var(--bone-d);
 }
 .gesture.on {
@@ -423,7 +622,7 @@ main {
 	min-height: 52px;
 	padding: 10px 14px;
 	font-family: var(--gothic);
-	font-size: 24px;
+	font-size: max(16px, var(--fs-h3));
 	text-align: center;
 	color: #f3e6c8;
 	background: #0b0807;
@@ -436,7 +635,7 @@ main {
 
 /* Hero */
 .frag-name {
-	font-size: 40px;
+	font-size: var(--fs-h1);
 }
 .plaques {
 	display: grid;
@@ -453,15 +652,17 @@ main {
 	box-shadow: inset 0 0 0 1px var(--umber);
 }
 .plaque-num {
-	font-family: var(--gothic);
-	font-size: 38px;
+	font-family: var(--font-num);
+	font-weight: 800;
+	font-variant-numeric: lining-nums tabular-nums;
+	font-size: var(--fs-h1);
 	color: #e8c46a;
 	text-shadow:
 		0 2px 0 var(--ink),
 		0 0 16px #e8c46a66;
 }
 .plaque-label {
-	font-size: 13px;
+	font-size: var(--fs-small);
 	font-style: italic;
 	color: var(--bone-d);
 }
@@ -475,7 +676,7 @@ main {
 	padding: 6px 10px;
 	border: 2px solid var(--ink);
 	background: #1f1612;
-	font-size: 14px;
+	font-size: var(--fs-small);
 	color: var(--bone-d);
 }
 .chip b {
@@ -506,7 +707,7 @@ main {
 .sealed-tag {
 	font-family: var(--gothic);
 	color: var(--blood-l);
-	font-size: 20px;
+	font-size: var(--fs-h3);
 	letter-spacing: 0.2em;
 	text-transform: uppercase;
 }

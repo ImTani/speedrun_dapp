@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { ServiceWorker } from "@/ui/ServiceWorker";
+import { fontVars } from "./fonts";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -14,31 +15,23 @@ export const metadata: Metadata = {
 		title: "Apostasy",
 		statusBarStyle: "black-translucent",
 	},
+	formatDetection: { telephone: false, email: false, address: false },
 };
 
 export const viewport: Viewport = {
-	themeColor: "#0b0807",
+	themeColor: "#050403",
+	colorScheme: "dark",
 	width: "device-width",
 	initialScale: 1,
 	maximumScale: 1,
+	userScalable: false,
 	viewportFit: "cover",
+	interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
-		<html lang="en">
-			<head>
-				<link rel="preconnect" href="https://fonts.googleapis.com" />
-				<link
-					rel="preconnect"
-					href="https://fonts.gstatic.com"
-					crossOrigin=""
-				/>
-				<link
-					rel="stylesheet"
-					href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;1,500&family=Grenze+Gotisch:wght@700;900&display=swap"
-				/>
-			</head>
+		<html lang="en" className={fontVars}>
 			<body>
 				<Providers>{children}</Providers>
 				<ServiceWorker />

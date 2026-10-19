@@ -1,97 +1,304 @@
-// The seven Aspect masks, Venetian carnival forms drawn in SVG (viewBox 0 0 100 84).
-// Mercy=Volto, Hunger=Bauta, Echo=Colombina (mirrored), Rancour=Pantalone, Appetite=Arlecchino,
-// Inquisitor=Medico della Peste, Madness=Jolly. Paid "mask skins" later swap the material, not the form.
-(() => {
-	const INK = "#0b0a10",
-		GOLD = "#c9a24e",
-		GOLD_D = "#8a6a2e",
-		BONE = "#f1e9da",
-		BONE_D = "#d9ccb6";
-	const eye = (x, y, w = 15, h = 7, tilt = 0) =>
-		`<path d="M${x - w / 2} ${y} Q${x} ${y - h - tilt} ${x + w / 2} ${y} Q${x} ${y + h * 0.55} ${x - w / 2} ${y}Z" fill="${INK}"/>`;
-	const curl = (x, y, s = 1, flip = 1) =>
-		`<path d="M${x} ${y} q${4 * s * flip} ${-6 * s} ${9 * s * flip} ${-2 * s} q${3 * s * flip} ${3 * s} ${-1 * s * flip} ${5 * s}" fill="none" stroke="${GOLD}" stroke-width="1.6" stroke-linecap="round"/>`;
+// The seven Aspect masks as SVG markup (mask space: viewBox 0 0 100 84).
+// Mercy = Volto, Hunger = Bauta, Echo = Colombina, Rancour = Pantalone, Appetite = Arlecchino,
+// Inquisitor = Medico della Peste, Madness = Jolly.
+//
+// Forms: game-icons.net silhouettes (CC BY 3.0, Lorc and Delapouite), re-fitted into one mask
+// space by src/ui/masks/tools/build-geometry.mjs. Look: one shared treatment for all seven:
+// material gradient lit from the upper left, carved relief (SVG lighting), age grime, ink
+// hatching in the shadow side and one ink outline weight. Credits: public/ATTRIBUTION.md.
+//
+// Pure ESM, no DOM access: safe to call during server render, in the browser and in Node.
 
-	const MASKS = {
-		mercy: `
-			<path d="M50 3 C75 3 89 22 89 44 C89 65 72 81 50 81 C28 81 11 65 11 44 C11 22 25 3 50 3Z" fill="${BONE}" stroke="${GOLD}" stroke-width="2.4"/>
-			<path d="M50 3 C64 3 74 10 80 20 C70 13 60 10 50 10 C40 10 30 13 20 20 C26 10 36 3 50 3Z" fill="${BONE_D}"/>
-			${eye(34, 39, 16, 6)}${eye(66, 39, 16, 6)}
-			<path d="M50 41 L46.5 56 Q50 58.5 53.5 56 Z" fill="${BONE_D}"/>
-			<path d="M41 66 Q50 62 59 66 Q50 69.5 41 66Z" fill="#c4b19a"/>
-			${curl(15, 40, 1, 1)}${curl(85, 40, 1, -1)}
-			<circle cx="50" cy="16" r="2.4" fill="${GOLD}"/>`,
-		hunger: `
-			<path d="M20 9 Q50 -1 80 9 Q90 28 85 50 L88 74 Q50 86 12 74 L15 50 Q10 28 20 9Z" fill="${GOLD}" stroke="${GOLD_D}" stroke-width="2"/>
-			<path d="M22 54 L78 54 L87 74 Q50 86 13 74Z" fill="${GOLD_D}"/>
-			<path d="M28 54 Q50 49 72 54" fill="none" stroke="${INK}" stroke-width="1.6"/>
-			${eye(34, 34, 15, 7)}${eye(66, 34, 15, 7)}
-			<path d="M50 34 L45 50 L55 50Z" fill="#a8813a"/>
-			<path d="M24 20 Q50 12 76 20" fill="none" stroke="#e8cf86" stroke-width="1.4"/>`,
-		echo: `
-			<defs><clipPath id="echoL"><rect x="0" y="0" width="50" height="84"/></clipPath><clipPath id="echoR"><rect x="50" y="0" width="50" height="84"/></clipPath></defs>
-			<path id="echoShape" d="M7 36 Q17 19 50 23 Q83 19 93 36 Q89 53 70 55 Q58 55 50 48 Q42 55 30 55 Q11 53 7 36Z" fill="${GOLD}" clip-path="url(#echoL)"/>
-			<path d="M7 36 Q17 19 50 23 Q83 19 93 36 Q89 53 70 55 Q58 55 50 48 Q42 55 30 55 Q11 53 7 36Z" fill="#c9ccd4" clip-path="url(#echoR)"/>
-			<path d="M7 36 Q17 19 50 23 Q83 19 93 36 Q89 53 70 55 Q58 55 50 48 Q42 55 30 55 Q11 53 7 36Z" fill="none" stroke="${INK}" stroke-width="1.6"/>
-			<path d="M50 23 V48" stroke="${INK}" stroke-width="1.2"/>
-			${eye(31, 38, 16, 7)}${eye(69, 38, 16, 7)}
-			<path d="M22 22 L16 6 L27 19 L30 3 L35 20" fill="none" stroke="${GOLD}" stroke-width="2" stroke-linejoin="round"/>
-			<path d="M78 22 L84 6 L73 19 L70 3 L65 20" fill="none" stroke="#c9ccd4" stroke-width="2" stroke-linejoin="round"/>`,
-		rancour: `
-			<path d="M9 31 Q29 15 50 19 Q71 15 91 31 Q87 49 67 51 Q57 52 50 57 Q43 52 33 51 Q13 49 9 31Z" fill="#6b3b2a" stroke="${INK}" stroke-width="1.8"/>
-			<path d="M47 33 Q43 44 45 55 Q52 57 57 51 Q53 50 52.5 44 Q52 37 54 33Z" fill="#4a2719" stroke="#0b0a10" stroke-width="1.2"/>
-			${eye(31, 35, 14, 5)}${eye(69, 35, 14, 5)}
-			<path d="M18 24 L42 31" stroke="${INK}" stroke-width="4" stroke-linecap="round"/>
-			<path d="M82 24 L58 31" stroke="${INK}" stroke-width="4" stroke-linecap="round"/>
-			<path d="M30 43 Q36 46 42 44 M70 43 Q64 46 58 44" fill="none" stroke="#4a2719" stroke-width="1.4"/>`,
-		appetite: `
-			<defs><clipPath id="harl"><path d="M8 33 Q30 21 50 25 Q70 21 92 33 Q86 51 64 51 Q56 51 50 45 Q44 51 36 51 Q14 51 8 33Z"/></clipPath></defs>
-			<path d="M8 33 Q30 21 50 25 Q70 21 92 33 Q86 51 64 51 Q56 51 50 45 Q44 51 36 51 Q14 51 8 33Z" fill="#1a1418"/>
-			<g clip-path="url(#harl)" opacity=".9">
-				<path d="M10 26 L20 36 L10 46 L0 36Z M30 22 L40 32 L30 42 L20 32Z M70 22 L80 32 L70 42 L60 32Z M90 26 L100 36 L90 46 L80 36Z" fill="#a3172f"/>
-				<path d="M20 36 L30 46 L20 56 L10 46Z M80 36 L90 46 L80 56 L70 46Z M50 20 L58 28 L50 36 L42 28Z" fill="#176a4f"/>
-				<path d="M40 32 L50 42 L40 52 L30 42Z M60 32 L70 42 L60 52 L50 42Z" fill="#d9951f"/>
-			</g>
-			<path d="M8 33 Q30 21 50 25 Q70 21 92 33 Q86 51 64 51 Q56 51 50 45 Q44 51 36 51 Q14 51 8 33Z" fill="none" stroke="${INK}" stroke-width="1.8"/>
-			${eye(32, 37, 12, 6)}${eye(68, 37, 12, 6)}
-			<circle cx="50" cy="26" r="3.2" fill="#1a1418" stroke="${INK}" stroke-width="1"/>`,
-		inquisitor: `
-			<path d="M20 8 Q50 -2 80 8 Q90 26 78 42 L60 46 L40 46 L22 42 Q10 26 20 8Z" fill="#f1e9da" stroke="${INK}" stroke-width="1.8"/>
-			<path d="M38 42 Q50 38 62 42 L53 82 Q50 85 47 82Z" fill="#e2d6bf" stroke="${INK}" stroke-width="1.8"/>
-			<path d="M50 44 V80" stroke="#b9a98d" stroke-width="1.2"/>
-			<circle cx="33" cy="27" r="10" fill="#7a5a2e"/><circle cx="67" cy="27" r="10" fill="#7a5a2e"/>
-			<circle cx="33" cy="27" r="7" fill="#1d3f8f"/><circle cx="67" cy="27" r="7" fill="#1d3f8f"/>
-			<path d="M29 23 Q31 21 34 22" stroke="#cfe0ff" stroke-width="1.6" fill="none"/><path d="M63 23 Q65 21 68 22" stroke="#cfe0ff" stroke-width="1.6" fill="none"/>
-			<path d="M43 27 H57" stroke="#7a5a2e" stroke-width="2.4"/>`,
-		madness: `
-			<path d="M14 26 L4 4 L28 18 L50 0 L72 18 L96 4 L86 26Z" fill="#4e2a7a" stroke="${INK}" stroke-width="1.6"/>
-			<path d="M14 26 L4 4 L28 18 L50 0 L50 26Z" fill="#a3172f"/>
-			<circle cx="4" cy="4" r="3.6" fill="${GOLD}"/><circle cx="50" cy="1" r="3.6" fill="${GOLD}"/><circle cx="96" cy="4" r="3.6" fill="${GOLD}"/>
-			<path d="M16 26 Q50 20 84 26 Q90 52 72 72 Q50 84 28 72 Q10 52 16 26Z" fill="${BONE}" stroke="${INK}" stroke-width="1.8"/>
-			<path d="M16 26 Q50 20 84 26 L16 62Z" fill="#e7dccb"/>
-			<circle cx="34" cy="42" r="8" fill="${INK}"/>${eye(68, 44, 14, 3)}
-			<path d="M28 60 Q44 74 60 62 Q70 56 76 60" fill="none" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/>
-			<path d="M38 66 l2 4 M46 68 l1 4 M54 66 l0 4" stroke="${INK}" stroke-width="1.6"/>`,
+import { GEOMETRY } from "../ui/masks/geometry.js";
+
+export const ASPECT_KEYS = [
+	"mercy",
+	"hunger",
+	"echo",
+	"rancour",
+	"appetite",
+	"inquisitor",
+	"madness",
+];
+
+const ASPECTS = {
+	mercy: "Mercy",
+	hunger: "Hunger",
+	echo: "Echo",
+	rancour: "Rancour",
+	appetite: "Appetite",
+	inquisitor: "Inquisitor",
+	madness: "Madness",
+};
+
+const INK = "#0b0a10";
+const PAPER = "#efe4c9";
+
+/** Materials: [highlight, base, shadow]. */
+const MAT = {
+	bone: ["#fff9ec", "#e9dcc1", "#9a8262"],
+	ivory: ["#f7ecd3", "#d8c49c", "#7f6644"],
+	gold: ["#ffeaa6", "#d0a54c", "#5f4316"],
+	brass: ["#f0cb7c", "#a87b31", "#3f2a0e"],
+	silver: ["#ffffff", "#c3c8d1", "#565b69"],
+	leather: ["#be8253", "#7a432a", "#2a130a"],
+	ash: ["#7a6a60", "#3d322e", "#121013"],
+	felt: ["#5a5160", "#28232e", "#0c0a10"],
+	lacquer: ["#615b6b", "#221e28", "#08070b"],
+	crimson: ["#ee7180", "#a8192f", "#3f050d"],
+	verdigris: ["#6cc8a2", "#1f7a59", "#062b1c"],
+	amber: ["#ffd77a", "#da9620", "#643a05"],
+	violet: ["#a77fe0", "#55318d", "#1a0c31"],
+};
+
+const hex = (h) =>
+	[1, 3, 5].map((i) => Number.parseInt(h.slice(i, i + 2), 16) / 255);
+const toHex = (c) =>
+	`#${c
+		.map((v) =>
+			Math.round(Math.max(0, Math.min(1, v)) * 255)
+				.toString(16)
+				.padStart(2, "0"),
+		)
+		.join("")}`;
+const lum = (h) => {
+	const [r, g, b] = hex(h);
+	return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const mix = (a, b, t) => {
+	const A = hex(a),
+		B = hex(b);
+	return toHex(A.map((v, i) => v + (B[i] - v) * t));
+};
+
+// Grisaille: the brown monochrome the glass painters used. Tone comes from the material.
+const G_DARK = "#2a180d",
+	G_MID = "#86603c",
+	G_LIGHT = "#ecdcbb";
+function grisaille(m) {
+	const t = lum(MAT[m][1]);
+	const at = (v) =>
+		v < 0.5
+			? mix(G_DARK, G_MID, Math.max(0, v) * 2)
+			: mix(G_MID, G_LIGHT, Math.min(1, (v - 0.5) * 2));
+	return [at(t + 0.28), at(t), at(t - 0.32)];
+}
+
+/** Ink treatment of a material: "paper", "mid" (paper + hatching) or "ink". */
+function inkTone(m) {
+	const t = lum(MAT[m][1]);
+	return t > 0.55 ? "paper" : t < 0.22 ? "ink" : "mid";
+}
+
+let uid = 0;
+const r = (v) => Math.round(v * 100) / 100;
+
+/**
+ * An Aspect mask as an SVG string.
+ * @param {string} aspect  aspect key ("mercy" .. "madness")
+ * @param {number} [width] rendered width in px (height = width * 0.84)
+ * @param {string | {variant?: "gilded"|"grisaille"|"ink", glow?: boolean, still?: boolean, void?: boolean, fit?: "space"|"square", title?: string, id?: string}} [opts]
+ *   variant: material treatment (default gilded); glow: ember eyes (flicker unless still);
+ *   void: dark behind the eye holes; fit "square": a size x size box framed tightly on this
+ *   mask (chips, heroes) instead of the shared 100 x 84 mask space (the scene).
+ */
+function mask(aspect, width = 60, opts = {}) {
+	const o = typeof opts === "string" ? { variant: opts } : opts || {};
+	const variant =
+		o.variant === "grisaille" || o.variant === "ink" ? o.variant : "gilded";
+	const geo = GEOMETRY[aspect] ?? GEOMETRY.mercy;
+	const ai = Math.max(0, ASPECT_KEYS.indexOf(aspect));
+	const u = ++uid;
+	// A caller-supplied suffix keeps ids stable between server and client renders.
+	const sfx = o.id ? String(o.id).replace(/\W/g, "") : String(u);
+	const id = (s) => `${s}${sfx}`;
+	const url = (s) => `url(#${id(s)})`;
+	const ink = variant === "ink";
+	const line = variant === "grisaille" ? "#1e1209" : INK;
+	const defs = [];
+	const used = new Set();
+
+	const colors = (m) => (variant === "grisaille" ? grisaille(m) : MAT[m]);
+	const grad = (m) => {
+		if (!used.has(m)) {
+			used.add(m);
+			const [hi, base, lo] = colors(m);
+			defs.push(
+				`<radialGradient id="${id(`g${m}`)}" cx=".34" cy=".26" r=".9"><stop offset="0" stop-color="${hi}"/><stop offset=".5" stop-color="${base}"/><stop offset="1" stop-color="${lo}"/></radialGradient>`,
+			);
+		}
+		return url(`g${m}`);
 	};
-	const ASPECTS = {
-		mercy: "Mercy",
-		hunger: "Hunger",
-		echo: "Echo",
-		rancour: "Rancour",
-		appetite: "Appetite",
-		inquisitor: "Inquisitor",
-		madness: "Madness",
+	const fillOf = (m) => {
+		if (!ink) return grad(m);
+		const t = inkTone(m);
+		return t === "ink" ? INK : PAPER;
 	};
-	let n = 0;
-	/** An Aspect mask as SVG. Clip ids are suffixed so several masks can share a page. */
-	function mask(aspect, width = 60) {
-		const id = ++n;
-		const body = MASKS[aspect]
-			.replace(/id="(\w+)"/g, `id="$1${id}"`)
-			.replace(/url\(#(\w+)\)/g, `url(#$1${id})`);
-		return `<svg class="mask" width="${width}" height="${Math.round((width * 84) / 100)}" viewBox="0 0 100 84" aria-hidden="true">${body}</svg>`;
+
+	// Shared defs: hatching, carved-relief filters (big for bodies, small for reliefs).
+	const hatchW = ink ? 1.7 : 1.9;
+	defs.push(
+		`<pattern id="${id("h")}" width="${hatchW}" height="${hatchW}" patternUnits="userSpaceOnUse" patternTransform="rotate(-38)"><path d="M0 0V${hatchW}" stroke="${INK}" stroke-width="${ink ? 0.7 : 0.55}"/></pattern>`,
+		`<pattern id="${id("hp")}" width="1.9" height="1.9" patternUnits="userSpaceOnUse" patternTransform="rotate(52)"><path d="M0 0V1.9" stroke="${PAPER}" stroke-width=".5"/></pattern>`,
+	);
+	if (!ink) {
+		const grim = variant === "grisaille" ? [-1.5, 0.86] : [-1.15, 0.64];
+		const relief = (name, blur, scale, spec) =>
+			`<filter id="${id(name)}" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">` +
+			`<feGaussianBlur in="SourceAlpha" stdDeviation="${blur}" result="b"/>` +
+			`<feDiffuseLighting in="b" surfaceScale="${scale}" diffuseConstant="1.04" lighting-color="#fff" result="d"><feDistantLight azimuth="235" elevation="54"/></feDiffuseLighting>` +
+			`<feSpecularLighting in="b" surfaceScale="${scale}" specularConstant="${spec}" specularExponent="34" lighting-color="#fff2d2" result="s"><feDistantLight azimuth="235" elevation="54"/></feSpecularLighting>` +
+			`<feComposite in="SourceGraphic" in2="d" operator="arithmetic" k1="1.16" result="l"/>` +
+			`<feComposite in="s" in2="SourceAlpha" operator="in" result="s2"/>` +
+			`<feComposite in="l" in2="s2" operator="arithmetic" k2="1" k3=".6" result="o"/>` +
+			`<feTurbulence type="fractalNoise" baseFrequency=".075 .06" numOctaves="3" seed="${ai + 3}" result="n"/>` +
+			`<feColorMatrix in="n" type="matrix" values="0 0 0 0 .24  0 0 0 0 .15  0 0 0 0 .08  0 0 0 ${grim[0]} ${grim[1]}" result="g"/>` +
+			`<feComposite in="g" in2="SourceAlpha" operator="in" result="g2"/>` +
+			`<feBlend in="g2" in2="o" mode="multiply"/></filter>`;
+		defs.push(relief("fb", 0.9, 1.7, 0.7), relief("fr", 0.45, 1.2, 0.9));
 	}
-	window.MASK = { mask, ASPECTS };
-})();
 
-export const MASK = window.MASK;
+	// Eye embers sit under the mask and show through the eye holes.
+	const eyes = geo.eyes;
+	const er = geo.eyeR ?? [6, 4];
+	let under = "",
+		over = "";
+	if (o.glow) {
+		defs.push(
+			`<radialGradient id="${id("e")}"><stop offset="0" stop-color="#fff0c0"/><stop offset=".16" stop-color="#ffb04a"/><stop offset=".42" stop-color="#c8361a"/><stop offset=".78" stop-color="#3d0907"/><stop offset="1" stop-color="#140404"/></radialGradient>`,
+			`<radialGradient id="${id("eh")}"><stop offset="0" stop-color="#ff8a3a" stop-opacity=".55"/><stop offset=".5" stop-color="#d2401a" stop-opacity=".16"/><stop offset="1" stop-color="#d2401a" stop-opacity="0"/></radialGradient>`,
+		);
+		const flick = o.still
+			? ""
+			: `<animate attributeName="opacity" values="1;.78;.95;.84;1" keyTimes="0;.3;.5;.8;1" dur="${(2.4 + (ai % 5) * 0.23).toFixed(2)}s" repeatCount="indefinite"/>`;
+		under = `<g>${flick}${eyes
+			.map(
+				([x, y]) =>
+					`<ellipse cx="${x}" cy="${y}" rx="${er[0] * 1.15}" ry="${er[1] * 1.3}" fill="${url("e")}"/>`,
+			)
+			.join("")}</g>`;
+		over = `<g style="mix-blend-mode:screen" opacity=".7">${flick}${eyes
+			.map(
+				([x, y]) =>
+					`<circle cx="${x}" cy="${y}" r="${Math.max(er[0], er[1]) * 1.7}" fill="${url("eh")}"/>`,
+			)
+			.join("")}</g>`;
+	} else if (o.void) {
+		under = eyes
+			.map(
+				([x, y]) =>
+					`<ellipse cx="${x}" cy="${y}" rx="${er[0] * 1.2}" ry="${er[1] * 1.2}" fill="${INK}"/>`,
+			)
+			.join("");
+	}
+
+	const layers = geo.layers;
+	const body = [];
+	layers.forEach((L, i) => {
+		if (L.role === "inlay") return; // drawn inside the layer it clips to
+		if (L.role === "engrave") {
+			body.push(
+				`<path d="${L.d}" fill="${ink ? INK : line}" opacity="${ink ? 1 : 0.92}"/>`,
+			);
+			return;
+		}
+		const isBody = L.role === "body";
+		const tone = ink ? inkTone(L.mat) : "";
+		const parts = [];
+		if (L.holes)
+			defs.push(
+				`<mask id="${id(`m${i}`)}" maskUnits="userSpaceOnUse" x="-5" y="-5" width="110" height="94"><path d="${L.d}" fill="#fff"/><path d="${L.holes}" fill="#000"/></mask>`,
+			);
+		// base fill (Echo's body splits gold | silver down the middle)
+		if (L.split && !ink) {
+			defs.push(
+				`<clipPath id="${id(`l${i}`)}"><rect x="-5" y="-5" width="${L.split + 5}" height="94"/></clipPath><clipPath id="${id(`r${i}`)}"><rect x="${L.split}" y="-5" width="${105 - L.split}" height="94"/></clipPath>`,
+			);
+			parts.push(
+				`<path d="${L.d}" fill="${grad(L.mat)}" clip-path="${url(`l${i}`)}"/><path d="${L.d}" fill="${grad(L.mat2)}" clip-path="${url(`r${i}`)}"/>`,
+			);
+		} else parts.push(`<path d="${L.d}" fill="${fillOf(L.mat)}"/>`);
+		if (ink && tone === "mid")
+			parts.push(`<path d="${L.d}" fill="${url("h")}"/>`);
+		// inlays clipped to this layer
+		layers.forEach((I) => {
+			if (I.role !== "inlay" || layers[I.clip] !== L) return;
+			if (!defs.some((d) => d.includes(`id="${id(`c${i}`)}"`)))
+				defs.push(
+					`<clipPath id="${id(`c${i}`)}"><path d="${L.d}"/></clipPath>`,
+				);
+			const t = ink ? inkTone(I.mat) : "";
+			const f = ink
+				? t === "paper"
+					? PAPER
+					: t === "ink"
+						? INK
+						: url("h")
+				: grad(I.mat);
+			parts.push(
+				`<path d="${I.d}" fill="${f}" stroke="${line}" stroke-width="${ink ? 0.7 : 0.45}" stroke-linejoin="round" clip-path="${url(`c${i}`)}"/>`,
+			);
+		});
+		// shadow-side hatching: the shape minus itself nudged towards the light
+		const off = isBody ? (ink ? [-2.6, -3] : [-4.2, -5]) : [-1.1, -1.3];
+		const sm = (name, dx, dy) =>
+			defs.push(
+				`<mask id="${id(name)}" maskUnits="userSpaceOnUse" x="-5" y="-5" width="110" height="94"><path d="${L.d}" fill="#fff"/><path d="${L.d}" fill="#000" transform="translate(${dx} ${dy})"/></mask>`,
+			);
+		if (tone === "ink") {
+			// dark ink shapes get paper hatching on the lit side instead
+			sm(`s${i}`, -off[0], -off[1]);
+			parts.push(
+				`<path d="${L.d}" fill="${url("hp")}" mask="${url(`s${i}`)}"/>`,
+			);
+		} else {
+			sm(`s${i}`, off[0], off[1]);
+			parts.push(
+				`<path d="${L.d}" fill="${url("h")}" mask="${url(`s${i}`)}" opacity="${ink ? 1 : 0.3}"/>`,
+			);
+		}
+		let g = parts.join("");
+		if (L.holes) g = `<g mask="${url(`m${i}`)}">${g}</g>`;
+		if (!ink) g = `<g filter="${url(isBody ? "fb" : "fr")}">${g}</g>`;
+		const w = ink ? (isBody ? 2 : 1.2) : isBody ? 1.35 : 0.8;
+		const stroke = ink && tone === "ink" ? PAPER : line;
+		const outline = `<path d="${L.d}${L.holes ?? ""}" fill="none" stroke="${stroke}" stroke-width="${L.trim && !ink ? w * 1.6 : w}" stroke-linejoin="round"${ink && tone === "ink" ? ' opacity=".9"' : ""}/>`;
+		// dark ink layers keep a black silhouette edge under the paper line
+		const edge =
+			ink && tone === "ink"
+				? `<path d="${L.d}" fill="none" stroke="${INK}" stroke-width="${w + 1.6}" stroke-linejoin="round"/>`
+				: "";
+		const trim =
+			L.trim && !ink
+				? `<path d="${L.d}" fill="none" stroke="${colors(L.trim)[1]}" stroke-width="${w * 0.6}" stroke-linejoin="round"/>`
+				: "";
+		// soft reliefs (a nose ridge in the same material) melt into the face: no hard outline
+		body.push(L.soft && !ink ? g : edge + g + outline + trim);
+	});
+
+	const title = o.title
+		? `<title>${String(o.title).replace(/[<&]/g, "")}</title>`
+		: "";
+	const aria = o.title ? 'role="img"' : 'aria-hidden="true"';
+	let h = Math.round((width * 84) / 100),
+		vb = "0 0 100 84";
+	if (o.fit === "square" && geo.box) {
+		const [x0, y0, x1, y1] = geo.box;
+		const side = Math.max(x1 - x0, y1 - y0) + 6;
+		const cx = (x0 + x1) / 2,
+			cy = (y0 + y1) / 2;
+		vb = `${r(cx - side / 2)} ${r(cy - side / 2)} ${r(side)} ${r(side)}`;
+		h = width;
+	}
+	return `<svg class="mask mask-${aspect}" width="${width}" height="${h}" viewBox="${vb}" ${aria}>${title}<defs>${defs.join("")}</defs>${under}${body.join("")}${over}</svg>`;
+}
+
+/** Eye centres per mask, in mask space (viewBox 0 0 100 84), for the scene's ember eyes. */
+const EYES = Object.fromEntries(
+	Object.entries(GEOMETRY).map(([k, v]) => [k, v.eyes]),
+);
+
+export const MASK = { mask, ASPECTS, EYES, KEYS: ASPECT_KEYS };
+
+// Older mocks read the API from window.MASK.
+if (typeof window !== "undefined") window.MASK = MASK;

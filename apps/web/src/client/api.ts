@@ -1,7 +1,7 @@
 "use client";
 
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { useCallback, useMemo } from "react";
+import { createContext, useCallback, useContext, useMemo } from "react";
 import { createWalletClient, custom, type Hex } from "viem";
 
 export type FragmentStatus =
@@ -79,16 +79,36 @@ async function parse<T>(res: Response): Promise<T> {
 	return body as T;
 }
 
+/**
+ * Optional replacement for the unauthenticated reads. Only the dev preview harness
+ * (MockApiProvider in src/client/mock.tsx) sets this; production never does.
+ * Each reader resolves the payload, or rejects with ApiError like the real endpoints.
+ */
+export interface PublicReads {
+	gathering: () => Promise<GatheringState>;
+	standings: () => Promise<{ rows: StandingRow[] }>;
+}
+let readsOverride: PublicReads | null = null;
+
+/** Install (or clear with null) the module-level reads override. Dev preview only. */
+export function setPublicReads(reads: PublicReads | null) {
+	readsOverride = reads;
+}
+
 /** Unauthenticated reads (usable outside Privy context too). */
 export const publicApi = {
 	gathering: () =>
-		fetch("/api/gathering", { cache: "no-store" }).then((r) =>
-			parse<GatheringState>(r),
-		),
+		readsOverride
+			? readsOverride.gathering()
+			: fetch("/api/gathering", { cache: "no-store" }).then((r) =>
+					parse<GatheringState>(r),
+				),
 	standings: () =>
-		fetch("/api/standings", { cache: "no-store" }).then((r) =>
-			parse<{ rows: StandingRow[] }>(r),
-		),
+		readsOverride
+			? readsOverride.standings()
+			: fetch("/api/standings", { cache: "no-store" }).then((r) =>
+					parse<{ rows: StandingRow[] }>(r),
+				),
 	opStatus: (hash: string) =>
 		fetch(`/api/op/status?hash=${encodeURIComponent(hash)}`, {
 			cache: "no-store",
@@ -97,9 +117,59 @@ export const publicApi = {
 		),
 };
 
+/**
+ * Null-on-failure reads for screens that fall back to a vision when the nave is silent
+ * (the Gathering screen). Use these instead of fetching /api/gathering or /api/standings
+ * directly, so the preview harness can stand in for the server.
+ */
+export const readGathering = (): Promise<GatheringState | null> =>
+	publicApi.gathering().catch(() => null);
+export const readStandings = (): Promise<{ rows: StandingRow[] } | null> =>
+	publicApi.standings().catch(() => null);
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export function useApi() {
+export interface Api {
+	me: () => Promise<Me>;
+	createFragment: (
+		name: string,
+		config: string,
+	) => Promise<{ fragment: FragmentRow }>;
+	prepare: (
+		body: PlayerAction,
+	) => Promise<{ userOp: Record<string, unknown>; userOpHash: Hex }>;
+	submit: (
+		userOp: Record<string, unknown>,
+		signature: Hex,
+	) => Promise<{ userOpHash: string }>;
+	signRaw: (hash: Hex) => Promise<Hex>;
+	/** prepare -> sign -> submit -> poll until landed. Resolves true on success. */
+	runPlayerOp: (action: PlayerAction) => Promise<boolean>;
+	gathering: () => Promise<GatheringState>;
+	standings: () => Promise<{ rows: StandingRow[] }>;
+	opStatus: (
+		hash: string,
+	) => Promise<{ state: "pending" | "landed"; tx?: string; success?: boolean }>;
+}
+
+/**
+ * When a provider sets this, useApi() returns it instead of the real Privy-backed client.
+ * Only the dev preview harness provides one (see src/client/mock.tsx).
+ */
+export const ApiContext = createContext<Api | null>(null);
+
+/**
+ * The API client. Real (Privy-authenticated) by default; an ApiContext provider overrides it.
+ * The real hooks always run (hook order stays fixed); they are inert until called, and the
+ * root layout always supplies PrivyProvider, so this is safe under the override too.
+ */
+export function useApi(): Api {
+	const override = useContext(ApiContext);
+	const real = useRealApi();
+	return override ?? real;
+}
+
+function useRealApi(): Api {
 	const { getAccessToken } = usePrivy();
 	const { wallets } = useWallets();
 

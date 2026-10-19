@@ -1,0 +1,913 @@
+/* ======================================================================
+   The Gathering: a duel viewer laid over the ink stage.
+   The stage (src/scene/inkStage.js) is the place; everything here is what
+   a player reads, positioned in box px from the stage fit (layout.ts).
+   Layers, low to high: world (shaken) > shades > HUD > flash > buttons > sheet.
+   ====================================================================== */
+
+.root {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	min-height: 100%;
+	overflow: hidden;
+	/* the vault in darkness while the glass is kindled (the stage fades in over it) */
+	background:
+		radial-gradient(
+			70% 32% at 50% 24%,
+			#2b1e15 0%,
+			#1a110c 45%,
+			transparent 100%
+		),
+		radial-gradient(90% 40% at 50% 78%, #1d140e 0%, transparent 100%),
+		var(--c-soot);
+	isolation: isolate;
+	touch-action: manipulation;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+/* Everything that trembles on an impact. */
+.world {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+}
+.stageHost {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 390px;
+	height: 844px;
+	transform-origin: 0 0;
+}
+/* Wide, short boxes only: the drawing's sides melt into the vault. */
+.stageHost[data-narrow="true"] {
+	-webkit-mask-image: linear-gradient(
+		90deg,
+		transparent 0,
+		#000 9%,
+		#000 91%,
+		transparent 100%
+	);
+	mask-image: linear-gradient(
+		90deg,
+		transparent 0,
+		#000 9%,
+		#000 91%,
+		transparent 100%
+	);
+}
+
+/* Shade behind the phase banner and under the floor's far edge. */
+.shadeTop,
+.shadeBottom,
+.hush {
+	position: absolute;
+	left: 0;
+	right: 0;
+	pointer-events: none;
+}
+.shadeTop {
+	top: 0;
+	height: calc(var(--hud-h, 84px) + 28px);
+	background: linear-gradient(
+		180deg,
+		#050403f0 0%,
+		#050403b8 55%,
+		#05040300 100%
+	);
+}
+.shadeBottom {
+	bottom: 0;
+	height: 30%;
+	background: linear-gradient(
+		0deg,
+		var(--c-soot) 0%,
+		#0b0807d0 20%,
+		#0b080760 58%,
+		#0b080700 100%
+	);
+}
+/* The hush before the unveiling: the nave closes in on the two windows. */
+.hush {
+	inset: 0;
+	background: radial-gradient(
+		90% 34% at 50% var(--hush-y, 30%),
+		#05040300 0%,
+		#05040300 55%,
+		#050403b0 85%,
+		#050403ee 100%
+	);
+	opacity: 0;
+}
+/* The camera leans in on the windows in the hush (inside the shake). */
+.zoom {
+	position: absolute;
+	inset: 0;
+}
+
+/* A point in the box; its child is centred on it. */
+.anchor {
+	position: absolute;
+	width: 0;
+	height: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+}
+.anchor > * {
+	flex: none;
+}
+
+/* ---------------------------------------------------------------- masks */
+.maskSlot {
+	position: relative;
+	width: var(--mw);
+	height: var(--mw);
+}
+/* The glass light behind the mask. */
+.maskSlot::before {
+	content: "";
+	position: absolute;
+	inset: -22%;
+	border-radius: 50%;
+	background: radial-gradient(
+		closest-side,
+		var(--halo) 0%,
+		color-mix(in srgb, var(--halo) 40%, transparent) 45%,
+		transparent 100%
+	);
+	opacity: 0.5;
+	mix-blend-mode: screen;
+	transition: opacity 0.6s var(--ease-out);
+}
+.maskSlot[data-state="drained"]::before,
+.maskSlot[data-state="ruin"]::before {
+	opacity: 0.08;
+}
+.maskSlot[data-state="kindle"]::before,
+.maskSlot[data-state="devour"]::before {
+	opacity: 0.85;
+}
+.maskMotion,
+.maskFace {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+}
+.maskFace > span {
+	filter: drop-shadow(0 0 1.5px #0b0807) drop-shadow(0 6px 6px #000c)
+		drop-shadow(0 0 14px #00000080);
+}
+
+/* ---------------------------------------------------------------- bell (the toll between the windows) */
+.bell {
+	position: relative;
+	width: var(--bell, 46px);
+	height: var(--bell, 46px);
+	display: grid;
+	place-items: center;
+}
+.bellDisc {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	border-radius: 50%;
+	font-family: var(--font-num);
+	font-weight: 800;
+	font-size: calc(var(--bell, 46px) * 0.36);
+	letter-spacing: 0.02em;
+	color: var(--c-gilt-hi);
+	text-shadow: var(--sh-ink);
+	background: radial-gradient(
+		circle at 36% 30%,
+		#6b5139 0%,
+		#3a2c22 38%,
+		#1a1210 72%,
+		#0b0807 100%
+	);
+	box-shadow:
+		0 0 0 2px var(--c-soot),
+		0 0 0 3.5px var(--c-gilt-d),
+		0 0 0 5px var(--c-soot),
+		inset 0 2px 0 #ffffff1c,
+		inset 0 -3px 6px #000a,
+		0 6px 14px #000c;
+}
+.bellRing {
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	border: 2px solid var(--c-gilt-l);
+	box-shadow:
+		0 0 10px #e3c27c88,
+		inset 0 0 8px #e3c27c55;
+	opacity: 0;
+}
+
+/* ---------------------------------------------------------------- seals (choices not yet unveiled) */
+.seal {
+	position: relative;
+	display: grid;
+	place-items: center;
+	width: var(--seal, 36px);
+	height: var(--seal, 36px);
+	/* a wax blot: irregular, glossy, pressed */
+	border-radius: 48% 52% 45% 55% / 55% 46% 54% 45%;
+	background:
+		radial-gradient(circle at 34% 28%, #ff8a7a66 0%, transparent 32%),
+		radial-gradient(circle at 50% 55%, #a3171e 0%, #7a0f14 52%, #3a0709 100%);
+	box-shadow:
+		0 0 0 2px var(--c-soot),
+		inset 0 -3px 5px #0009,
+		inset 0 2px 2px #ffffff22,
+		0 4px 8px #000c;
+}
+/* the impressed sigil: a ring with a lozenge, like a signet */
+.seal > i {
+	width: 58%;
+	height: 58%;
+	border-radius: 50%;
+	box-shadow:
+		inset 0 0 0 2px #3a0709,
+		inset 0 1px 0 2px #ff8a7a33;
+	display: grid;
+	place-items: center;
+}
+.seal > i::after {
+	content: "";
+	width: 34%;
+	height: 34%;
+	rotate: 45deg;
+	background: #3a0709;
+	box-shadow: 0 1px 0 #ff8a7a33;
+}
+
+/* ---------------------------------------------------------------- stamps (what each chose) */
+.stamp {
+	position: relative;
+	padding: 0.32em 0.75em 0.26em;
+	font-family: var(--font-num);
+	font-weight: 900;
+	font-size: var(--fs-small);
+	line-height: 1;
+	letter-spacing: 0.2em;
+	text-indent: 0.2em;
+	text-transform: uppercase;
+	white-space: nowrap;
+	background: #0b0807e6;
+	clip-path: polygon(
+		6px 0,
+		calc(100% - 6px) 0,
+		100% 50%,
+		calc(100% - 6px) 100%,
+		6px 100%,
+		0 50%
+	);
+}
+.stamp::before {
+	content: "";
+	position: absolute;
+	inset: 3px;
+	border-top: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	opacity: 0.7;
+}
+.stamp[data-tone="devour"] {
+	color: #ff5a4e;
+	text-shadow:
+		0 0 8px #c7262c,
+		0 1px 0 var(--c-soot);
+	background: linear-gradient(180deg, #3a0709f0, #0b0807f0);
+}
+.stamp[data-tone="kindle"] {
+	color: var(--c-gilt-hi);
+	text-shadow:
+		0 0 8px #e3c27c,
+		0 1px 0 var(--c-soot);
+	background: linear-gradient(180deg, #3a2c22f0, #0b0807f0);
+}
+.stamp[data-tone="silent"] {
+	color: var(--c-bone-d);
+}
+
+/* ---------------------------------------------------------------- plates */
+.plateSlot {
+	position: absolute;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	pointer-events: none;
+}
+.plateStack {
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	width: 100%;
+	justify-items: center;
+}
+.plateStack > * {
+	grid-area: 1 / 1;
+	min-width: 0;
+}
+/* The Claimant's own Fragment: a gilt tag riding the top edge of its plate. */
+.yours {
+	position: absolute;
+	top: -1em;
+	left: 50%;
+	translate: -50% 0;
+	z-index: 1;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: var(--fs-micro);
+	line-height: 1;
+	letter-spacing: var(--track-rubric);
+	text-indent: var(--track-rubric);
+	text-transform: uppercase;
+	color: var(--c-soot);
+	background: linear-gradient(180deg, var(--c-gilt-hi), var(--c-gilt-d));
+	padding: 0.32em 0.8em 0.26em;
+	clip-path: polygon(
+		5px 0,
+		calc(100% - 5px) 0,
+		100% 50%,
+		calc(100% - 5px) 100%,
+		5px 100%,
+		0 50%
+	);
+	filter: drop-shadow(0 2px 0 var(--c-soot));
+}
+/* The shared Plate, fitted to a window's width: its text column may not outgrow the slab,
+   and the slab leaves room at its foot for the tally medallion. */
+.plateStack .plate[data-size] {
+	width: 100%;
+	min-height: 4.9em;
+	padding-bottom: 1.15em;
+}
+.plateStack .plate > span:last-child {
+	align-self: stretch;
+	max-width: 100%;
+}
+.plateSlot[data-long="1"] {
+	--fs-h3: clamp(17px, 4.7vw, 20px);
+}
+.plateSlot[data-long="2"] {
+	--fs-h3: clamp(15px, 4.1vw, 17px);
+}
+.tally {
+	position: relative;
+	z-index: 1;
+	margin-top: -0.95em;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4em;
+	padding: 0.18em 0.75em 0.18em 0.4em;
+	border-radius: var(--r-round);
+	background: linear-gradient(180deg, #2b1e15, #0b0807);
+	box-shadow:
+		0 0 0 1.5px var(--c-soot),
+		0 0 0 2.5px var(--c-gilt-d),
+		0 0 0 4px var(--c-soot),
+		0 6px 12px #000c;
+}
+.tally[data-flare="true"] {
+	box-shadow:
+		0 0 0 1.5px var(--c-soot),
+		0 0 0 2.5px var(--c-gilt-l),
+		0 0 0 4px var(--c-soot),
+		0 0 22px #e3c27c88;
+}
+.coin {
+	flex: none;
+	width: 1em;
+	height: 1em;
+	border-radius: 50%;
+	font-size: var(--fs-body);
+	background: radial-gradient(
+		circle at 34% 30%,
+		#fff4d6 0%,
+		#f5dfa0 22%,
+		#c9a24f 55%,
+		#7a5a24 82%,
+		#3a2c22 100%
+	);
+	box-shadow:
+		0 0 0 1.5px var(--c-soot),
+		inset 0 0 0 1px #fff3cf55,
+		0 0 8px #e3c27c88;
+}
+
+/* ---------------------------------------------------------------- the verdict */
+/* The verdict sits in the middle of the open floor, between the plates and the dock. */
+.verdict {
+	position: absolute;
+	left: 0;
+	right: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding-bottom: 4%;
+	pointer-events: none;
+}
+.verdict > div {
+	max-width: var(--column);
+}
+/* The verdict is the biggest slam in the game: Grenze Gotisch runs about 0.4em a letter, so the
+   shared fit (1.8 / letters) leaves long names small. Fit it tighter here, with headroom. */
+.verdict [data-part="word"] {
+	font-size: min(var(--fs-slam), calc(100cqi * 2.2 / var(--slam-len, 8)));
+}
+
+/* Medallions in flight (one per point of Light). */
+.flight {
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	pointer-events: none;
+	overflow: hidden;
+}
+.flyer {
+	position: absolute;
+	left: 0;
+	top: 0;
+	margin: -0.5em 0 0 -0.5em;
+	font-size: 24px;
+	filter: drop-shadow(0 0 6px #f5dfa0) drop-shadow(0 0 14px #e3c27c99);
+}
+
+/* ---------------------------------------------------------------- feed of rites and the waiting word */
+.lower {
+	position: absolute;
+	left: var(--pad-l);
+	right: var(--pad-r);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding-bottom: 8%;
+	gap: 14px;
+	pointer-events: none;
+	text-align: center;
+}
+.waiting {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	max-width: 30ch;
+}
+.waitingTitle {
+	font-family: var(--font-display);
+	font-weight: 800;
+	font-size: var(--fs-h2);
+	line-height: var(--lh-tight);
+	color: var(--c-gilt-l);
+	text-shadow: var(--sh-ink-heavy);
+}
+.waitingHint {
+	font-family: var(--font-book);
+	font-style: italic;
+	font-size: var(--fs-body);
+	line-height: var(--lh-snug);
+	color: var(--c-bone);
+	text-shadow:
+		0 1px 0 var(--c-soot),
+		0 0 10px var(--c-soot);
+	text-wrap: balance;
+}
+.feed {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	width: min(100%, 34ch);
+}
+.feedList {
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 3px;
+	width: 100%;
+}
+.feedItem {
+	display: flex;
+	align-items: baseline;
+	justify-content: center;
+	gap: 0.55em;
+	font-family: var(--font-book);
+	font-style: italic;
+	font-size: var(--fs-body);
+	line-height: var(--lh-snug);
+	color: var(--c-bone);
+	text-shadow:
+		0 1px 0 var(--c-soot),
+		0 0 8px var(--c-soot),
+		0 0 16px #000;
+	text-wrap: balance;
+}
+.feedItem[data-age="1"] > span,
+.feedItem[data-age="1"]::before {
+	opacity: 0.84;
+}
+.feedItem[data-age="2"] > span,
+.feedItem[data-age="2"]::before {
+	opacity: 0.68;
+}
+.feedItem[data-age="3"] > span,
+.feedItem[data-age="3"]::before {
+	opacity: 0.52;
+}
+.feedItem::before {
+	content: "";
+	flex: none;
+	width: 0.42em;
+	height: 0.42em;
+	rotate: 45deg;
+	translate: 0 -0.12em;
+	background: currentColor;
+	box-shadow: 0 0 6px currentColor;
+}
+.feedItem[data-tone="blood"] {
+	color: #e5615f;
+}
+.feedItem[data-tone="gilt"] {
+	color: var(--c-gilt-l);
+}
+.feedItem[data-mine="true"] {
+	font-style: normal;
+	color: var(--c-gilt-hi);
+}
+
+/* ---------------------------------------------------------------- HUD: the bell's count and the phase */
+.hud {
+	position: absolute;
+	z-index: 4;
+	left: 0;
+	right: 0;
+	top: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 3px;
+	padding: calc(var(--safe-t) + 10px) var(--pad-r) 6px var(--pad-l);
+	text-align: center;
+	pointer-events: none;
+}
+.tollRow {
+	display: flex;
+	align-items: center;
+	gap: 0.7em;
+}
+.pips {
+	display: flex;
+	gap: 5px;
+}
+.pip {
+	width: 7px;
+	height: 7px;
+	rotate: 45deg;
+	border: 1.5px solid var(--c-gilt-d);
+	background: var(--c-soot);
+	box-shadow: 0 0 0 1px var(--c-soot);
+}
+.pip[data-on="past"] {
+	background: var(--c-gilt-d);
+}
+.pip[data-on="now"] {
+	border-color: var(--c-ember-hi);
+	background: var(--c-ember);
+	box-shadow:
+		0 0 0 1px var(--c-soot),
+		0 0 8px var(--c-ember);
+}
+.phase {
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: var(--fs-h3);
+	line-height: var(--lh-tight);
+	letter-spacing: 0.01em;
+	color: var(--c-bone-hi);
+	text-shadow: var(--sh-ink-heavy);
+	text-wrap: balance;
+}
+.clock {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 0.45em;
+	font-family: var(--font-book);
+	font-style: italic;
+	font-size: var(--fs-small);
+	color: var(--c-bone-d);
+	text-shadow: var(--sh-ink);
+}
+.clockNum {
+	font-family: var(--font-num);
+	font-style: normal;
+	font-weight: 700;
+	font-size: var(--fs-body);
+	font-variant-numeric: lining-nums tabular-nums;
+	letter-spacing: 0.04em;
+	color: var(--c-gilt-l);
+}
+.vision {
+	font-family: var(--font-book);
+	font-style: italic;
+	font-size: var(--fs-micro);
+	color: var(--c-bone-dd);
+	text-shadow: var(--sh-ink);
+}
+
+/* ---------------------------------------------------------------- flash */
+.flash,
+.flashBlood {
+	position: absolute;
+	z-index: 5;
+	inset: 0;
+	pointer-events: none;
+	opacity: 0;
+}
+.flash {
+	background: radial-gradient(
+		120% 80% at 50% 45%,
+		#fff6e0 0%,
+		#f3e6c8 50%,
+		#d8c6a0 100%
+	);
+	mix-blend-mode: screen;
+}
+.flashBlood {
+	background: radial-gradient(
+		120% 90% at 50% 50%,
+		#c7262c55 0%,
+		#8e1218cc 70%,
+		#3a0709 100%
+	);
+	mix-blend-mode: multiply;
+}
+
+/* ---------------------------------------------------------------- bottom controls */
+.dock {
+	position: absolute;
+	z-index: 6;
+	left: var(--pad-l);
+	right: var(--pad-r);
+	bottom: 12px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	pointer-events: none;
+}
+.dock > * {
+	pointer-events: auto;
+}
+.ledgerBtn {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 50px;
+	max-width: 100%;
+	padding: 6px 16px 6px 10px;
+	background: linear-gradient(180deg, #2f2118 0%, #1a110c 60%, #110b08 100%);
+	clip-path: polygon(
+		0 var(--cut),
+		var(--cut) 0,
+		calc(100% - var(--cut)) 0,
+		100% var(--cut),
+		100% calc(100% - var(--cut)),
+		calc(100% - var(--cut)) 100%,
+		var(--cut) 100%,
+		0 calc(100% - var(--cut))
+	);
+	box-shadow:
+		inset 0 0 0 2px var(--c-soot),
+		inset 0 0 0 3px var(--c-gilt-d),
+		inset 0 2px 0 3px #ffffff12,
+		inset 0 -3px 0 2px #0009;
+	text-align: left;
+}
+.ledgerMasks {
+	display: flex;
+	flex: none;
+}
+.ledgerMasks > * + * {
+	margin-left: -9px;
+}
+.ledgerText {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	min-width: 0;
+}
+.ledgerSub {
+	font-family: var(--font-book);
+	font-style: italic;
+	font-size: var(--fs-small);
+	color: var(--c-bone);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.chev {
+	flex: none;
+	width: 14px;
+	height: 14px;
+	color: var(--c-gilt-l);
+}
+.skip {
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: 50px;
+	height: 50px;
+	border-radius: 50%;
+	background: radial-gradient(circle at 40% 30%, #3a2c22, #120c0a 70%);
+	box-shadow:
+		inset 0 0 0 2px var(--c-soot),
+		inset 0 0 0 3px var(--c-umber-l),
+		0 6px 14px #000c;
+	color: var(--c-bone);
+}
+.skip svg {
+	width: 26px;
+	height: 26px;
+}
+
+/* ---------------------------------------------------------------- the Ledger sheet */
+.scrim {
+	position: absolute;
+	z-index: 10;
+	inset: 0;
+	background: var(--c-scrim);
+}
+.sheet {
+	position: absolute;
+	z-index: 11;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	max-height: 86%;
+	display: flex;
+	flex-direction: column;
+	background:
+		radial-gradient(120% 40% at 50% 0%, #3a2c2240, transparent 70%),
+		linear-gradient(180deg, #1f150f 0%, #120c0a 30%, #0b0807 100%);
+	border-top: 3px solid var(--c-soot);
+	box-shadow:
+		0 -1px 0 var(--c-umber),
+		0 -2px 0 var(--c-soot),
+		var(--sh-sheet);
+	-webkit-user-select: none;
+	user-select: none;
+}
+.sheetHead {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	padding: 10px var(--pad-r) 12px var(--pad-l);
+	touch-action: none;
+	cursor: grab;
+	border-bottom: 1px solid #2b1e16;
+}
+.grabber {
+	width: 44px;
+	height: 5px;
+	border-radius: var(--r-round);
+	background: var(--c-bone-dd);
+	margin-bottom: 4px;
+}
+.sheetTitle {
+	font-family: var(--font-display);
+	font-weight: 800;
+	font-size: var(--fs-h2);
+	line-height: var(--lh-tight);
+	color: var(--c-gilt-l);
+	text-shadow: var(--sh-ink-heavy);
+}
+.sheetClose {
+	position: absolute;
+	right: max(6px, var(--safe-r));
+	top: 6px;
+	width: 44px;
+	height: 44px;
+	display: grid;
+	place-items: center;
+	color: var(--c-bone-d);
+}
+.sheetClose svg {
+	width: 18px;
+	height: 18px;
+}
+.rows {
+	list-style: none;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	-webkit-overflow-scrolling: touch;
+	padding: 4px var(--pad-r) calc(16px + var(--safe-b)) var(--pad-l);
+}
+.row {
+	display: grid;
+	grid-template-columns: 2.1em 46px minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 10px;
+	min-height: 58px;
+	padding: 4px 6px;
+	border-bottom: 1px solid #241912;
+}
+.row[data-mine="true"] {
+	background: linear-gradient(90deg, #e3c27c1c, #e3c27c00 75%);
+	box-shadow: inset 3px 0 0 var(--c-gilt);
+}
+.rank {
+	font-family: var(--font-num);
+	font-weight: 800;
+	font-size: var(--fs-lead);
+	font-variant-numeric: lining-nums tabular-nums;
+	text-align: right;
+	color: var(--c-bone-dd);
+	text-shadow: var(--sh-ink);
+}
+.rank[data-top="true"] {
+	color: var(--c-gilt-l);
+	text-shadow:
+		var(--sh-ink),
+		0 0 10px #e3c27c66;
+}
+.rowMask {
+	display: grid;
+	place-items: center;
+}
+.rowName {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	gap: 1px;
+}
+.rowTitle {
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: var(--fs-lead);
+	line-height: 1.05;
+	color: var(--c-bone-hi);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	text-shadow: var(--sh-ink);
+}
+.row[data-mine="true"] .rowTitle {
+	color: var(--c-gilt-hi);
+}
+.rowAspect {
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: var(--fs-micro);
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--c-gilt-d);
+}
+.rowAspect em {
+	font-family: var(--font-book);
+	font-weight: 400;
+	font-style: italic;
+	letter-spacing: 0;
+	text-transform: none;
+	color: var(--c-bone-dd);
+	margin-right: 0.35em;
+}
+.rowLight {
+	display: flex;
+	align-items: baseline;
+	gap: 0.3em;
+	font-family: var(--font-num);
+	font-weight: 800;
+	font-size: var(--fs-lead);
+	font-variant-numeric: lining-nums tabular-nums;
+	color: var(--c-gilt-l);
+	text-shadow: var(--sh-ink);
+}
+.rowLight[data-neg="true"] {
+	color: var(--c-blood-l);
+}
+.rowLight small {
+	font-family: var(--font-book);
+	font-style: italic;
+	font-weight: 400;
+	font-size: var(--fs-micro);
+	color: var(--c-bone-dd);
+}
+.empty {
+	padding: 24px 8px;
+	text-align: center;
+	font-family: var(--font-book);
+	font-style: italic;
+	color: var(--c-bone-d);
+}

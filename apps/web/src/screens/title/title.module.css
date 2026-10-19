@@ -1,0 +1,446 @@
+/* ======================================================================
+   Title: the lit nave and the name struck over it. Full-bleed, safe-area
+   aware; the scene covers every edge, the words sit on the floor.
+   ====================================================================== */
+
+.title {
+	position: relative;
+	width: 100%;
+	height: 100dvh;
+	min-height: 0;
+	overflow: hidden;
+	background: var(--c-void);
+	isolation: isolate;
+}
+
+/* ---------------------------------------------------------------- scene */
+.quake {
+	position: absolute;
+	inset: -12px;
+	z-index: 0;
+}
+.scene {
+	position: absolute;
+	inset: 12px;
+	overflow: hidden;
+	background: var(--c-void);
+	pointer-events: none;
+}
+.stage {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 390px;
+	height: 844px;
+	transform-origin: 0 0;
+	pointer-events: none;
+}
+.nave {
+	position: absolute;
+	max-width: none;
+	user-select: none;
+	pointer-events: none;
+}
+.overlay {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	max-width: none;
+	overflow: visible;
+	pointer-events: none;
+}
+.caustic {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	mix-blend-mode: screen;
+}
+.glass {
+	position: absolute;
+	pointer-events: auto; /* drag across the glass to move the light */
+	touch-action: none;
+}
+.glassArt,
+.glassGL {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	transition: opacity 0.9s var(--ease-out);
+}
+.glassArt :global(svg) {
+	width: 100%;
+	height: 100%;
+}
+
+/* ---------------------------------------------------------------- front */
+.front {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-end;
+	gap: clamp(8px, 1.6dvh, 14px);
+	padding: calc(24px + var(--safe-t)) var(--pad-r) calc(10px + var(--safe-b))
+		var(--pad-l);
+	pointer-events: none;
+	text-align: center;
+}
+.front > * {
+	pointer-events: auto;
+}
+/* Ink pool under the words: legible over the lit floor. */
+.front > .pool {
+	pointer-events: none;
+	position: absolute;
+	left: 50%;
+	bottom: 0;
+	width: min(150vw, 760px);
+	height: min(62dvh, 520px);
+	transform: translateX(-50%);
+	background: radial-gradient(
+		50% 58% at 50% 70%,
+		#050403f0 0%,
+		#050403c0 46%,
+		#05040366 72%,
+		transparent 100%
+	);
+	z-index: -1;
+}
+
+.mark {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.15em;
+	margin: 0;
+	font-weight: inherit;
+}
+.name {
+	position: relative;
+	display: grid;
+	font-family: var(--font-display);
+	font-weight: 900;
+	font-size: clamp(64px, 21vw, 96px);
+	line-height: 0.86;
+	letter-spacing: 0.01em;
+	will-change: transform, filter;
+}
+.nameInk,
+.nameFill {
+	grid-area: 1 / 1;
+	padding: 0 0.08em 0.06em;
+}
+/* the cut: a thick ink outline and a cast shadow on the stone */
+.nameInk {
+	color: var(--c-soot);
+	-webkit-text-stroke: 0.14em var(--c-soot);
+	text-shadow:
+		0 0.06em 0 var(--c-soot),
+		0 0.12em 0.3em #000;
+}
+/* the gilt: bone-hi to old gold, with a slow light passing along it */
+.nameFill {
+	color: transparent;
+	background:
+		linear-gradient(
+			100deg,
+			transparent 0 38%,
+			#fff6dc 47%,
+			#fff6dc 50%,
+			transparent 60% 100%
+		)
+		0 0 / 300% 100% no-repeat,
+		linear-gradient(
+			180deg,
+			var(--c-bone-hi) 0%,
+			var(--c-gilt-l) 46%,
+			var(--c-gilt) 62%,
+			var(--c-gilt-d) 100%
+		);
+	background-clip: text;
+	-webkit-background-clip: text;
+	filter: drop-shadow(0 0 18px #e3c27c40);
+	animation: sheen 7.5s 2.4s var(--ease-out) infinite;
+}
+@keyframes sheen {
+	0% {
+		background-position:
+			120% 0,
+			0 0;
+	}
+	36%,
+	100% {
+		background-position:
+			-30% 0,
+			0 0;
+	}
+}
+
+.sub {
+	display: flex;
+	align-items: center;
+	gap: 0.7em;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: clamp(13px, 3.9vw, 17px);
+	text-transform: uppercase;
+	color: var(--c-blood-l);
+	text-shadow:
+		0 2px 0 var(--c-soot),
+		0 0 14px #c7262c66;
+	white-space: nowrap;
+	/* letter-spacing trails the last letter; pull it back so it centres */
+	margin-right: -0.3em;
+}
+.rule {
+	display: block;
+	width: clamp(18px, 7vw, 34px);
+	height: 2px;
+	background: linear-gradient(90deg, transparent, var(--c-blood-l));
+	position: relative;
+}
+.rule:last-child {
+	transform-origin: left center;
+	background: linear-gradient(90deg, var(--c-blood-l), transparent);
+}
+.rule:first-child {
+	transform-origin: right center;
+}
+.rule::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	width: 6px;
+	height: 6px;
+	background: var(--c-blood-l);
+	transform: translateY(-50%) rotate(45deg);
+}
+.rule:first-child::after {
+	right: -3px;
+}
+.rule:last-child::after {
+	left: -3px;
+}
+
+.tagline {
+	max-width: 30ch;
+	font-family: var(--font-book);
+	font-style: italic;
+	font-size: var(--fs-body);
+	line-height: var(--lh-snug);
+	color: var(--c-bone-d);
+	text-shadow: 0 1px 0 var(--c-soot);
+	text-wrap: balance;
+	margin-top: 2px;
+}
+
+/* ---------------------------------------------------------------- the way in */
+.ctaWrap {
+	width: min(100%, 340px);
+	margin-top: clamp(6px, 1.8dvh, 16px);
+	filter: drop-shadow(0 6px 0 var(--c-soot)) drop-shadow(0 14px 22px #000c);
+}
+.cta {
+	position: relative;
+	display: grid;
+	place-items: center;
+	width: 100%;
+	min-height: 60px;
+	padding: 12px 22px 14px;
+	color: var(--c-bone-hi);
+	background:
+		radial-gradient(120% 90% at 50% 0%, #ffffff1f, transparent 55%),
+		linear-gradient(180deg, #b01c24 0%, #8e1218 45%, #5a0b10 100%);
+	clip-path: polygon(
+		var(--cut) 0,
+		calc(100% - var(--cut)) 0,
+		100% var(--cut),
+		100% calc(100% - var(--cut)),
+		calc(100% - var(--cut)) 100%,
+		var(--cut) 100%,
+		0 calc(100% - var(--cut)),
+		0 var(--cut)
+	);
+	box-shadow:
+		inset 0 0 0 3px var(--c-soot),
+		inset 0 0 0 4px #e3c27c55,
+		inset 0 -5px 0 3px #0007,
+		inset 0 3px 0 3px #ffffff1a;
+}
+.cta:disabled {
+	opacity: 1;
+	color: var(--c-bone-d);
+	background: linear-gradient(180deg, #3a2a1d 0%, #241912 100%);
+}
+.cta::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(60% 120% at 50% 120%, #ff6a4a55, transparent 70%);
+	opacity: 0;
+	pointer-events: none;
+}
+.cta[data-ready]::before {
+	animation: ember 3.2s ease-in-out infinite;
+}
+@keyframes ember {
+	50% {
+		opacity: 1;
+	}
+}
+.ctaLabel {
+	position: relative;
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: clamp(22px, 6.4vw, 27px);
+	line-height: 1;
+	letter-spacing: 0.03em;
+	text-shadow:
+		0 2px 0 var(--c-soot),
+		0 0 12px #00000080;
+}
+.cta:disabled .ctaLabel {
+	animation: groan 2.2s ease-in-out infinite;
+}
+@keyframes groan {
+	50% {
+		opacity: 0.5;
+	}
+}
+
+.colophonLink {
+	min-height: var(--tap);
+	min-width: var(--tap);
+	padding: 0 14px;
+	font-family: var(--font-num);
+	font-weight: 600;
+	font-size: var(--fs-micro);
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: var(--c-bone-dd);
+	text-shadow: 0 1px 0 var(--c-soot);
+}
+.colophonLink:active {
+	color: var(--c-bone-d);
+}
+
+/* ---------------------------------------------------------------- colophon */
+.colophonLayer {
+	position: fixed;
+	inset: 0;
+	z-index: var(--z-modal);
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+}
+.scrim {
+	position: absolute;
+	inset: 0;
+	background: #050403d9;
+}
+.leaf {
+	position: relative;
+	width: min(100%, var(--column));
+	max-height: min(86dvh, 720px);
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	background:
+		radial-gradient(120% 50% at 50% 0%, #3a2a1d 0%, transparent 70%),
+		linear-gradient(180deg, #241912 0%, #120c0a 100%);
+	box-shadow:
+		var(--sh-sheet),
+		inset 0 3px 0 var(--c-soot),
+		inset 0 4px 0 #e3c27c33;
+	clip-path: polygon(
+		0 14px,
+		14px 0,
+		calc(100% - 14px) 0,
+		100% 14px,
+		100% 100%,
+		0 100%
+	);
+}
+.leafInner {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	padding: 26px var(--pad-r) calc(18px + var(--safe-b)) var(--pad-l);
+	text-align: center;
+}
+.leafHead {
+	font-family: var(--font-display);
+	font-weight: 900;
+	font-size: var(--fs-h2);
+	line-height: 1;
+	color: var(--c-bone-hi);
+	text-shadow: var(--sh-ink);
+}
+.leafLead {
+	font-style: italic;
+	color: var(--c-bone-d);
+	font-size: var(--fs-body);
+	margin-bottom: 4px;
+}
+.leafSection {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 12px 4px 0;
+	border-top: 1px solid #5a463266;
+}
+.leafRubric {
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: var(--fs-micro);
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+	color: var(--c-gilt-l);
+}
+.leafLine {
+	font-size: var(--fs-small);
+	line-height: var(--lh-book);
+	color: var(--c-bone);
+	text-wrap: pretty;
+	overflow-wrap: anywhere;
+}
+.leafRoll {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--tap);
+	padding: 0 10px;
+	font-style: italic;
+	color: var(--c-gilt-l);
+	text-decoration: underline;
+	text-decoration-color: #c9a24f66;
+	text-underline-offset: 4px;
+}
+.leafClose {
+	width: min(100%, 300px);
+	min-height: 52px;
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: var(--fs-lead);
+	color: var(--c-bone);
+	background: linear-gradient(180deg, #3a2a1d, #1a120d);
+	box-shadow:
+		inset 0 0 0 2px var(--c-soot),
+		inset 0 0 0 3px var(--c-umber);
+	clip-path: polygon(
+		var(--cut) 0,
+		calc(100% - var(--cut)) 0,
+		100% var(--cut),
+		100% calc(100% - var(--cut)),
+		calc(100% - var(--cut)) 100%,
+		var(--cut) 100%,
+		0 calc(100% - var(--cut)),
+		0 var(--cut)
+	);
+}
