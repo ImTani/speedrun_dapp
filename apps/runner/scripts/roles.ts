@@ -11,23 +11,10 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { predictSimpleAccountAddress } from "@smoothsend/sdk/avax";
-import { type Address, createPublicClient, type Hex, http } from "viem";
+import { createPublicClient, type Hex, http } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { avalanche, avalancheFuji } from "viem/chains";
-
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const NETWORKS = {
-	fuji: {
-		chain: avalancheFuji,
-		factory: "0x55326f005a0959F75496cdd692505fFB520972f5" as Address,
-	},
-	avalanche: {
-		chain: avalanche,
-		factory: "0x863b8E15D37Abf33d5177108f6a07D541a698D25" as Address,
-	},
-};
+import { NETWORKS, ROOT } from "../src/config.ts";
 
 const net = (process.argv.slice(2).find((a) => a !== "--") ??
 	"fuji") as keyof typeof NETWORKS;
@@ -49,7 +36,7 @@ else {
 
 const publicClient = createPublicClient({
 	chain: cfg.chain,
-	transport: http(),
+	transport: http(process.env[cfg.rpcEnv] || undefined),
 });
 const operatorOwner = privateKeyToAccount(roles.operatorOwner).address;
 const operator = await predictSimpleAccountAddress({
