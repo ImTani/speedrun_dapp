@@ -16,6 +16,8 @@ import {
 } from "motion/react";
 import {
 	type CSSProperties,
+	lazy,
+	Suspense,
 	useCallback,
 	useEffect,
 	useEffectEvent,
@@ -33,6 +35,7 @@ import type {
 	StageGeom,
 } from "@/scene/inkStage.js";
 import { easeInOut, IMPACT, impact, spring, useShake } from "@/ui/motion";
+import { useTuneParam } from "@/ui/tune/useTuneParam.ts";
 import { type Beat, FaceOff } from "./FaceOff.tsx";
 import { Lower } from "./Feed.tsx";
 import { fixtureGathering, fixtureStandings } from "./fixture.ts";
@@ -49,6 +52,7 @@ import {
 	low,
 	makeLookup,
 	num,
+	recastDuel,
 	type SideKey,
 	type Who,
 } from "./model.ts";
@@ -65,6 +69,8 @@ const DOCK_H = 74;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const PLAYING = new Set<Beat>(["arrive", "hush", "reveal", "tally"]);
 const SHOWS_VERDICT = new Set<Beat>(["reveal", "tally", "end"]);
+/** The ?tune drawer: fetched only when the address asks for it. */
+const GatheringTune = lazy(() => import("./GatheringTune.tsx"));
 
 export function GatheringScreen() {
 	const rootRef = useRef<HTMLDivElement>(null);
@@ -93,6 +99,13 @@ export function GatheringScreen() {
 	const [hushSpan, setHushSpan] = useState(1.1);
 	const [tally, setTally] = useState<Record<SideKey, number>>({ A: 0, B: 0 });
 	const [ledgerOpen, setLedgerOpen] = useState(false);
+	// Type tuning (?tune): a verdict struck again on demand, and a hold on the duel queue.
+	const tuneParam = useTuneParam();
+	const [replayed, setReplayed] = useState<{ duel: Duel; n: number } | null>(
+		null,
+	);
+	const [frozen, setFrozen] = useState(false);
+	const frozenRef = useRef(false);
 
 	// ---------- measure the box and the banner ----------
 	useLayoutEffect(() => {
@@ -152,11 +165,13 @@ export function GatheringScreen() {
 
 	const pump = useCallback(() => {
 		const st = stageRef.current;
-		if (!st || busy.current) return;
+		// Frozen (tuning): hold the duel on screen; the queue waits.
+		if (!st || busy.current || (frozenRef.current && duelRef.current)) return;
 		const next = queue.current.shift();
 		if (!next) return;
 		busy.current = true;
 		posed.current = true;
+		setReplayed(null);
 		const backlog = queue.current.length;
 		const speed = backlog > 4 ? 3 : backlog > 1 ? 1.7 : 1;
 		const d = describeDuel(next, dataRef.current?.events ?? [], whoRef.current);
@@ -296,34 +311,67 @@ export function GatheringScreen() {
 		setBeat("idle");
 	}, [ready, data, standings, who]);
 
+	// ---------- type tuning ----------
+	const replays = useRef(0);
+	const replayTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+		undefined,
+	);
+	/** Strike the verdict again; from the gold section as a kindling, else as a devouring. */
+	const replay = useCallback((section: string) => {
+		const base = duelRef.current;
+		if (!base) return;
+		replays.current += 1;
+		setReplayed({
+			duel: recastDuel(base, section === "kindle" ? "kindle" : "devour"),
+			n: replays.current,
+		});
+		clearTimeout(replayTimer.current);
+		if (!frozenRef.current)
+			replayTimer.current = setTimeout(() => setReplayed(null), 5200);
+	}, []);
+	const freeze = useCallback(
+		(on: boolean) => {
+			frozenRef.current = on;
+			setFrozen(on);
+			clearTimeout(replayTimer.current);
+			if (!on) {
+				setReplayed(null);
+				pump();
+			}
+		},
+		[pump],
+	);
+	useEffect(() => () => clearTimeout(replayTimer.current), []);
+
 	// ---------- juice ----------
-	const onImpact = useCallback(() => {
-		const d = duelRef.current;
-		if (!d) return;
-		const preset =
-			d.kind === "kindle"
-				? IMPACT.kindle
-				: d.kind === "ruin"
-					? IMPACT.ruin
-					: IMPACT.devour;
-		void impact(shaker, { ...preset, stop: 0 });
-		if (reduce) return;
-		const root = flashScope.current;
-		const light = root?.querySelector<HTMLElement>("[data-flash]");
-		const blood = root?.querySelector<HTMLElement>("[data-blood]");
-		if (light)
-			animateFlash(
-				light,
-				{ opacity: [0, d.kind === "kindle" ? 0.42 : 0.55, 0] },
-				{ duration: 0.34, times: [0, 0.1, 1], ease: "easeOut" },
-			);
-		if (blood && d.kind !== "kindle")
-			animateFlash(
-				blood,
-				{ opacity: [0, d.kind === "ruin" ? 0.7 : 0.55, 0] },
-				{ duration: 0.8, delay: 0.05, times: [0, 0.14, 1], ease: "easeOut" },
-			);
-	}, [shaker, reduce, flashScope, animateFlash]);
+	const onImpact = useCallback(
+		(d: Duel) => {
+			const preset =
+				d.kind === "kindle"
+					? IMPACT.kindle
+					: d.kind === "ruin"
+						? IMPACT.ruin
+						: IMPACT.devour;
+			void impact(shaker, { ...preset, stop: 0 });
+			if (reduce) return;
+			const root = flashScope.current;
+			const light = root?.querySelector<HTMLElement>("[data-flash]");
+			const blood = root?.querySelector<HTMLElement>("[data-blood]");
+			if (light)
+				animateFlash(
+					light,
+					{ opacity: [0, d.kind === "kindle" ? 0.42 : 0.55, 0] },
+					{ duration: 0.34, times: [0, 0.1, 1], ease: "easeOut" },
+				);
+			if (blood && d.kind !== "kindle")
+				animateFlash(
+					blood,
+					{ opacity: [0, d.kind === "ruin" ? 0.7 : 0.55, 0] },
+					{ duration: 0.8, delay: 0.05, times: [0, 0.14, 1], ease: "easeOut" },
+				);
+		},
+		[shaker, reduce, flashScope, animateFlash],
+	);
 
 	const onLand = useCallback((k: SideKey) => {
 		const d = duelRef.current;
@@ -372,6 +420,10 @@ export function GatheringScreen() {
 	const lowerTop = Math.max(fit.y(geom.FT) + 10, fit.y(geom.SC) + 100);
 	const lowerBottom = DOCK_H;
 	const showVerdict = !!duel && SHOWS_VERDICT.has(beat);
+	// What the verdict spells: a tuning replay over the live duel, held while frozen.
+	const verdictDuel = replayed?.duel ?? duel;
+	const verdictShown =
+		!!verdictDuel && (!!replayed || showVerdict || (frozen && beat === "rest"));
 	// Between the two masks: where the camera leans in during the hush.
 	const focusY = fit.y(geom.GTOP + geom.GH * 0.5);
 	const openLedger = useCallback(() => setLedgerOpen(true), []);
@@ -429,18 +481,20 @@ export function GatheringScreen() {
 							toll={toll}
 							tallyRefs={tallyRefs}
 							hush={hushSpan}
+							stamps={replayed}
 						/>
 					)}
 					<Verdict
-						duel={duel}
-						show={showVerdict}
+						duel={verdictDuel}
+						show={verdictShown}
+						again={replayed?.n ?? 0}
 						top={lowerTop}
 						bottom={lowerBottom}
 						onImpact={onImpact}
 					/>
 				</motion.div>
 				<Lower
-					show={ready && !showVerdict && (!playing || !!seals)}
+					show={ready && !verdictShown && (!playing || !!seals)}
 					top={lowerTop}
 					bottom={lowerBottom}
 					active={active}
@@ -491,6 +545,17 @@ export function GatheringScreen() {
 				mine={mine}
 				onClose={closeLedger}
 			/>
+
+			{tuneParam !== null && (
+				<Suspense fallback={null}>
+					<GatheringTune
+						target={rootRef}
+						param={tuneParam}
+						onReplay={replay}
+						onFreeze={freeze}
+					/>
+				</Suspense>
+			)}
 		</div>
 	);
 }

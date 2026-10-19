@@ -25,6 +25,171 @@
 	touch-action: manipulation;
 	-webkit-user-select: none;
 	user-select: none;
+	/* Never fake a bold: a face without the asked weight shows its nearest real one. (Every
+	   stock face here has the weights it is set in, so this changes nothing until tuned.) */
+	font-synthesis-weight: none;
+
+	/* ---- Type tuning. Every text style on this screen reads these; the defaults are the
+	   shipped look. The ?tune panel (ui/tune) writes overrides inline on this element.
+	   Sizes are multipliers of the stock size; tracking in em unless marked. */
+	/* the verdict lettering (Slam) */
+	--g-verdict-font: var(--font-display);
+	--g-verdict-weight: 900;
+	--g-verdict-size: 1;
+	--g-verdict-tracking: 0.01em;
+	--g-verdict-lh: 0.9;
+	--g-verdict-transform: none;
+	--g-verdict-caps: normal;
+	--g-verdict-stroke: 0.17em;
+	--g-verdict-stroke-color: var(--c-soot);
+	--g-verdict-drop: 1;
+	--g-verdict-glow: 1;
+	--g-verdict-blot: #050403;
+	--g-verdict-blot-strength: 1;
+	--g-verdict-devour-hi: #ff8a5c;
+	--g-verdict-devour-mid: var(--c-blood-l);
+	--g-verdict-devour-lo: #6a0d12;
+	--g-verdict-devour-glow: #c7262c;
+	--g-verdict-devour-bleed: var(--c-ember);
+	--g-verdict-kindle-hi: var(--c-gilt-hi);
+	--g-verdict-kindle-mid: var(--c-gilt-l);
+	--g-verdict-kindle-lo: var(--c-gilt-d);
+	--g-verdict-kindle-glow: #e3c27c;
+	--g-verdict-kindle-bleed: #fff1c8;
+	/* the line under the verdict (--g-sub-halo-far is left unset: stock #000) */
+	--g-sub-font: var(--font-book);
+	--g-sub-weight: 400;
+	--g-sub-size: 1;
+	--g-sub-color: var(--c-bone);
+	--g-sub-color-2: var(--c-bone-hi);
+	--g-sub-halo: var(--c-soot);
+	--g-sub-style: italic;
+	--g-sub-tracking: 0em;
+	--g-sub-lh: var(--lh-snug);
+	--g-sub-transform: none;
+	--g-sub-caps: normal;
+	/* the phase line in the banner, the waiting word, the Ledger's title */
+	--g-head-font: var(--font-display);
+	--g-head-weight: 700;
+	--g-head-size: 1;
+	--g-head-color: var(--c-bone-hi);
+	--g-head-style: normal;
+	--g-head-tracking: 0.01em;
+	--g-head-transform: none;
+	--g-head-caps: normal;
+	/* engraved labels: TOLL II OF VI, the verdict's kicker, LEDGER OF LIGHT, Aspect lines */
+	--g-rubric-font: var(--font-num);
+	--g-rubric-weight: 700;
+	--g-rubric-size: 1;
+	--g-rubric-track: 1; /* multiplier of each label's stock tracking */
+	--g-rubric-transform: uppercase;
+	--g-rubric-caps: normal;
+	--g-accent: var(--c-gilt-l);
+	/* numerals: the countdown, the tallies, the bell, the Ledger's ranks */
+	--g-num-font: var(--font-num);
+	--g-num-weight: 800;
+	--g-num-size: 1;
+	--g-num-color: var(--c-gilt-l);
+	/* the name plates under the windows (and names in the Ledger) */
+	--g-plate-font: var(--font-display);
+	--g-plate-weight: 800;
+	--g-plate-size: 1;
+	--g-plate-color: var(--c-bone-hi);
+	--g-plate-mine: var(--c-gilt-hi);
+	--g-plate-style: normal;
+	--g-plate-tracking: 0.015em;
+	--g-plate-transform: none;
+	--g-plate-caps: normal;
+	/* KINDLES / DEVOURS stamped under the masks */
+	--g-banner-font: var(--font-num);
+	--g-banner-weight: 900;
+	--g-banner-size: 1;
+	--g-banner-tracking: 0.2em;
+	--g-banner-transform: uppercase;
+	--g-banner-caps: normal;
+	--g-banner-devour: #ff5a4e;
+	--g-banner-devour-glow: var(--c-blood-l);
+	--g-banner-kindle: var(--c-gilt-hi);
+	--g-banner-kindle-glow: var(--c-gilt-l);
+	--g-banner-glow: 1;
+	/* running text: the feed of rites, hints, the Ledger plaque's line */
+	--g-body-font: var(--font-book);
+	--g-body-weight: 400;
+	--g-body-size: 1;
+	--g-body-color: var(--c-bone);
+	--g-body-blood: #e5615f;
+	--g-body-style: italic;
+	--g-body-tracking: 0em;
+
+	/* ---- feed the shared type primitives (src/ui/type hooks) */
+	--slam-font: var(--g-verdict-font);
+	--slam-weight: var(--g-verdict-weight);
+	--slam-scale: var(--g-verdict-size);
+	--slam-tracking: var(--g-verdict-tracking);
+	--slam-lh: var(--g-verdict-lh);
+	--slam-transform: var(--g-verdict-transform);
+	--slam-caps: var(--g-verdict-caps);
+	--slam-stroke: var(--g-verdict-stroke);
+	--slam-stroke-color: var(--g-verdict-stroke-color);
+	--slam-drop: var(--g-verdict-drop);
+	--slam-glow: var(--g-verdict-glow);
+	--slam-blot: var(--g-verdict-blot);
+	--slam-blot-strength: var(--g-verdict-blot-strength);
+	--slam-devour-hi: var(--g-verdict-devour-hi);
+	--slam-devour-mid: var(--g-verdict-devour-mid);
+	--slam-devour-lo: var(--g-verdict-devour-lo);
+	--slam-devour-glow: var(--g-verdict-devour-glow);
+	--slam-devour-bleed: var(--g-verdict-devour-bleed);
+	--slam-kindle-hi: var(--g-verdict-kindle-hi);
+	--slam-kindle-mid: var(--g-verdict-kindle-mid);
+	--slam-kindle-lo: var(--g-verdict-kindle-lo);
+	--slam-kindle-glow: var(--g-verdict-kindle-glow);
+	--slam-kindle-bleed: var(--g-verdict-kindle-bleed);
+	--slam-kicker-font: var(--g-rubric-font);
+	--slam-kicker-weight: var(--g-rubric-weight);
+	--slam-kicker-scale: var(--g-rubric-size);
+	--slam-kicker-track: var(--g-rubric-track);
+	--slam-kicker-transform: var(--g-rubric-transform);
+	--slam-kicker-caps: var(--g-rubric-caps);
+	--slam-sub-font: var(--g-sub-font);
+	--slam-sub-weight: var(--g-sub-weight);
+	--slam-sub-scale: var(--g-sub-size);
+	--slam-sub-color: var(--g-sub-color);
+	--slam-sub-color-2: var(--g-sub-color-2);
+	--slam-sub-halo: var(--g-sub-halo);
+	--slam-sub-halo-far: var(--g-sub-halo-far);
+	--slam-sub-style: var(--g-sub-style);
+	--slam-sub-tracking: var(--g-sub-tracking);
+	--slam-sub-lh: var(--g-sub-lh);
+	--slam-sub-transform: var(--g-sub-transform);
+	--slam-sub-caps: var(--g-sub-caps);
+	--plate-font: var(--g-plate-font);
+	--plate-weight: var(--g-plate-weight);
+	--plate-scale: var(--g-plate-size);
+	--plate-name-color: var(--g-plate-color);
+	--plate-mine-color: var(--g-plate-mine);
+	--plate-style: var(--g-plate-style);
+	--plate-tracking: var(--g-plate-tracking);
+	--plate-transform: var(--g-plate-transform);
+	--plate-caps: var(--g-plate-caps);
+	--plate-aspect-font: var(--g-rubric-font);
+	--plate-aspect-weight: var(--g-rubric-weight);
+	--plate-aspect-scale: var(--g-rubric-size);
+	--plate-aspect-track: var(--g-rubric-track);
+	--plate-aspect-transform: var(--g-rubric-transform);
+	--plate-aspect-caps: var(--g-rubric-caps);
+	--plate-aspect-color: var(--g-accent);
+	--rubric-font: var(--g-rubric-font);
+	--rubric-weight: var(--g-rubric-weight);
+	--rubric-scale: var(--g-rubric-size);
+	--rubric-track: var(--g-rubric-track);
+	--rubric-transform: var(--g-rubric-transform);
+	--rubric-caps: var(--g-rubric-caps);
+	--rubric-color: var(--g-accent);
+	--count-font: var(--g-num-font);
+	--count-weight: var(--g-num-weight);
+	--count-scale: var(--g-num-size);
+	--count-color: var(--g-num-color);
 }
 
 /* Everything that trembles on an impact. */
@@ -177,8 +342,8 @@
 	display: grid;
 	place-items: center;
 	border-radius: 50%;
-	font-family: var(--font-num);
-	font-weight: 800;
+	font-family: var(--g-num-font);
+	font-weight: var(--g-num-weight);
 	font-size: calc(var(--bell, 46px) * 0.36);
 	letter-spacing: 0.02em;
 	color: var(--c-gilt-hi);
@@ -251,13 +416,14 @@
 .stamp {
 	position: relative;
 	padding: 0.32em 0.75em 0.26em;
-	font-family: var(--font-num);
-	font-weight: 900;
-	font-size: var(--fs-small);
+	font-family: var(--g-banner-font);
+	font-weight: var(--g-banner-weight);
+	font-size: calc(var(--fs-small) * var(--g-banner-size));
 	line-height: 1;
-	letter-spacing: 0.2em;
-	text-indent: 0.2em;
-	text-transform: uppercase;
+	letter-spacing: var(--g-banner-tracking);
+	text-indent: var(--g-banner-tracking);
+	text-transform: var(--g-banner-transform);
+	font-variant-caps: var(--g-banner-caps);
 	white-space: nowrap;
 	background: #0b0807e6;
 	clip-path: polygon(
@@ -277,17 +443,20 @@
 	border-bottom: 1.5px solid currentColor;
 	opacity: 0.7;
 }
+/* --g-banner-glow scales the glow; above 1 a tight second glow joins in (hidden at 1). */
 .stamp[data-tone="devour"] {
-	color: #ff5a4e;
+	color: var(--g-banner-devour);
 	text-shadow:
-		0 0 8px #c7262c,
+		0 0 calc(8px * var(--g-banner-glow)) var(--g-banner-devour-glow),
+		0 0 calc(3px * max(0, var(--g-banner-glow) - 1)) var(--g-banner-devour-glow),
 		0 1px 0 var(--c-soot);
 	background: linear-gradient(180deg, #3a0709f0, #0b0807f0);
 }
 .stamp[data-tone="kindle"] {
-	color: var(--c-gilt-hi);
+	color: var(--g-banner-kindle);
 	text-shadow:
-		0 0 8px #e3c27c,
+		0 0 calc(8px * var(--g-banner-glow)) var(--g-banner-kindle-glow),
+		0 0 calc(3px * max(0, var(--g-banner-glow) - 1)) var(--g-banner-kindle-glow),
 		0 1px 0 var(--c-soot);
 	background: linear-gradient(180deg, #3a2c22f0, #0b0807f0);
 }
@@ -321,8 +490,8 @@
 	left: 50%;
 	translate: -50% 0;
 	z-index: 1;
-	font-family: var(--font-num);
-	font-weight: 700;
+	font-family: var(--g-rubric-font);
+	font-weight: var(--g-rubric-weight);
 	font-size: var(--fs-micro);
 	line-height: 1;
 	letter-spacing: var(--track-rubric);
@@ -433,9 +602,10 @@
 	max-width: var(--column);
 }
 /* The verdict is the biggest slam in the game: Grenze Gotisch runs about 0.4em a letter, so the
-   shared fit (1.8 / letters) leaves long names small. Fit it tighter here, with headroom. */
-.verdict [data-part="word"] {
-	font-size: min(var(--fs-slam), calc(100cqi * 2.2 / var(--slam-len, 8)));
+   shared fit (1.8 / letters) leaves long names small. Fit it tighter here, with headroom.
+   (A wider face wants a smaller --g-verdict-size.) */
+.verdict {
+	--slam-fit: 2.2;
 }
 
 /* Medallions in flight (one per point of Light). */
@@ -477,19 +647,25 @@
 	max-width: 30ch;
 }
 .waitingTitle {
-	font-family: var(--font-display);
+	font-family: var(--g-head-font);
 	font-weight: 800;
-	font-size: var(--fs-h2);
+	font-style: var(--g-head-style);
+	font-size: calc(var(--fs-h2) * var(--g-head-size));
 	line-height: var(--lh-tight);
+	letter-spacing: var(--g-head-tracking);
+	text-transform: var(--g-head-transform);
+	font-variant-caps: var(--g-head-caps);
 	color: var(--c-gilt-l);
 	text-shadow: var(--sh-ink-heavy);
 }
 .waitingHint {
-	font-family: var(--font-book);
-	font-style: italic;
-	font-size: var(--fs-body);
+	font-family: var(--g-body-font);
+	font-weight: var(--g-body-weight);
+	font-style: var(--g-body-style);
+	font-size: calc(var(--fs-body) * var(--g-body-size));
 	line-height: var(--lh-snug);
-	color: var(--c-bone);
+	letter-spacing: var(--g-body-tracking);
+	color: var(--g-body-color);
 	text-shadow:
 		0 1px 0 var(--c-soot),
 		0 0 10px var(--c-soot);
@@ -566,11 +742,13 @@
 	filter: drop-shadow(0 1px 0 #e0585055);
 }
 .sealCount {
-	font-family: var(--font-book);
-	font-style: italic;
-	font-size: var(--fs-small);
+	font-family: var(--g-body-font);
+	font-weight: var(--g-body-weight);
+	font-style: var(--g-body-style);
+	font-size: calc(var(--fs-small) * var(--g-body-size));
 	line-height: var(--lh-snug);
-	color: var(--c-bone);
+	letter-spacing: var(--g-body-tracking);
+	color: var(--g-body-color);
 	text-shadow:
 		0 1px 0 var(--c-soot),
 		0 0 8px var(--c-soot),
@@ -597,11 +775,13 @@
 	align-items: baseline;
 	justify-content: center;
 	gap: 0.55em;
-	font-family: var(--font-book);
-	font-style: italic;
-	font-size: var(--fs-body);
+	font-family: var(--g-body-font);
+	font-weight: var(--g-body-weight);
+	font-style: var(--g-body-style);
+	font-size: calc(var(--fs-body) * var(--g-body-size));
 	line-height: var(--lh-snug);
-	color: var(--c-bone);
+	letter-spacing: var(--g-body-tracking);
+	color: var(--g-body-color);
 	text-shadow:
 		0 1px 0 var(--c-soot),
 		0 0 8px var(--c-soot),
@@ -631,7 +811,7 @@
 	box-shadow: 0 0 6px currentColor;
 }
 .feedItem[data-tone="blood"] {
-	color: #e5615f;
+	color: var(--g-body-blood);
 }
 .feedItem[data-tone="gilt"] {
 	color: var(--c-gilt-l);
@@ -684,12 +864,15 @@
 		0 0 8px var(--c-ember);
 }
 .phase {
-	font-family: var(--font-display);
-	font-weight: 700;
-	font-size: var(--fs-h3);
+	font-family: var(--g-head-font);
+	font-weight: var(--g-head-weight);
+	font-style: var(--g-head-style);
+	font-size: calc(var(--fs-h3) * var(--g-head-size));
 	line-height: var(--lh-tight);
-	letter-spacing: 0.01em;
-	color: var(--c-bone-hi);
+	letter-spacing: var(--g-head-tracking);
+	text-transform: var(--g-head-transform);
+	font-variant-caps: var(--g-head-caps);
+	color: var(--g-head-color);
 	text-shadow: var(--sh-ink-heavy);
 	text-wrap: balance;
 }
@@ -697,24 +880,26 @@
 	display: inline-flex;
 	align-items: baseline;
 	gap: 0.45em;
-	font-family: var(--font-book);
-	font-style: italic;
-	font-size: var(--fs-small);
+	font-family: var(--g-body-font);
+	font-weight: var(--g-body-weight);
+	font-style: var(--g-body-style);
+	font-size: calc(var(--fs-small) * var(--g-body-size));
+	letter-spacing: var(--g-body-tracking);
 	color: var(--c-bone-d);
 	text-shadow: var(--sh-ink);
 }
 .clockNum {
-	font-family: var(--font-num);
+	font-family: var(--g-num-font);
 	font-style: normal;
 	font-weight: 700;
-	font-size: var(--fs-body);
+	font-size: calc(var(--fs-body) * var(--g-num-size));
 	font-variant-numeric: lining-nums tabular-nums;
 	letter-spacing: 0.04em;
-	color: var(--c-gilt-l);
+	color: var(--g-num-color);
 }
 .vision {
-	font-family: var(--font-book);
-	font-style: italic;
+	font-family: var(--g-body-font);
+	font-style: var(--g-body-style);
 	font-size: var(--fs-micro);
 	color: var(--c-bone-dd);
 	text-shadow: var(--sh-ink);
@@ -804,10 +989,12 @@
 	min-width: 0;
 }
 .ledgerSub {
-	font-family: var(--font-book);
-	font-style: italic;
-	font-size: var(--fs-small);
-	color: var(--c-bone);
+	font-family: var(--g-body-font);
+	font-weight: var(--g-body-weight);
+	font-style: var(--g-body-style);
+	font-size: calc(var(--fs-small) * var(--g-body-size));
+	letter-spacing: var(--g-body-tracking);
+	color: var(--g-body-color);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -816,7 +1003,7 @@
 	flex: none;
 	width: 14px;
 	height: 14px;
-	color: var(--c-gilt-l);
+	color: var(--g-accent);
 }
 .skip {
 	flex: none;
@@ -883,10 +1070,14 @@
 	margin-bottom: 4px;
 }
 .sheetTitle {
-	font-family: var(--font-display);
+	font-family: var(--g-head-font);
 	font-weight: 800;
-	font-size: var(--fs-h2);
+	font-style: var(--g-head-style);
+	font-size: calc(var(--fs-h2) * var(--g-head-size));
 	line-height: var(--lh-tight);
+	letter-spacing: var(--g-head-tracking);
+	text-transform: var(--g-head-transform);
+	font-variant-caps: var(--g-head-caps);
 	color: var(--c-gilt-l);
 	text-shadow: var(--sh-ink-heavy);
 }
@@ -925,8 +1116,8 @@
 	box-shadow: inset 3px 0 0 var(--c-gilt);
 }
 .rank {
-	font-family: var(--font-num);
-	font-weight: 800;
+	font-family: var(--g-num-font);
+	font-weight: var(--g-num-weight);
 	font-size: var(--fs-lead);
 	font-variant-numeric: lining-nums tabular-nums;
 	text-align: right;
@@ -950,8 +1141,11 @@
 	gap: 1px;
 }
 .rowTitle {
-	font-family: var(--font-display);
+	font-family: var(--g-plate-font);
 	font-weight: 700;
+	font-style: var(--g-plate-style);
+	text-transform: var(--g-plate-transform);
+	font-variant-caps: var(--g-plate-caps);
 	font-size: var(--fs-lead);
 	line-height: 1.05;
 	color: var(--c-bone-hi);
@@ -964,8 +1158,8 @@
 	color: var(--c-gilt-hi);
 }
 .rowAspect {
-	font-family: var(--font-num);
-	font-weight: 700;
+	font-family: var(--g-rubric-font);
+	font-weight: var(--g-rubric-weight);
 	font-size: var(--fs-micro);
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
@@ -975,8 +1169,8 @@
 	display: flex;
 	align-items: baseline;
 	gap: 0.3em;
-	font-family: var(--font-num);
-	font-weight: 800;
+	font-family: var(--g-num-font);
+	font-weight: var(--g-num-weight);
 	font-size: var(--fs-lead);
 	font-variant-numeric: lining-nums tabular-nums;
 	color: var(--c-gilt-l);

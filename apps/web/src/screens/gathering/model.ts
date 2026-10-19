@@ -172,6 +172,35 @@ export function describeDuel(
 	};
 }
 
+/**
+ * The same pair, recast as a duel of the given kind (for replaying the verdict while tuning its
+ * look): a devouring A, or both kindling. Returned as is when it already is that kind.
+ */
+export function recastDuel(d: Duel, kind: "devour" | "kindle"): Duel {
+	if (d.kind === kind && !d.silent) return d;
+	if (kind === "kindle")
+		return {
+			...d,
+			kind,
+			dev: null,
+			silent: false,
+			a: { ...d.a, move: 0 },
+			b: { ...d.b, move: 0 },
+			verdict: T.verdict.bothKindle,
+			sub: T.verdictSub.kindle,
+		};
+	return {
+		...d,
+		kind,
+		dev: "A",
+		silent: false,
+		a: { ...d.a, move: 1 },
+		b: { ...d.b, move: 0 },
+		verdict: T.verdict.devours(d.a.name, d.b.name),
+		sub: T.verdictSub.devour(d.b.name),
+	};
+}
+
 export function feedOf(
 	events: GatheringEvent[],
 	who: (agent: unknown) => Who,

@@ -12,23 +12,27 @@ import type { Duel, SideKey } from "./model.ts";
 export function Verdict({
 	duel,
 	show,
+	again = 0,
 	top,
 	bottom,
 	onImpact,
 }: {
 	duel: Duel | null;
 	show: boolean;
+	/** Bump to strike the same verdict again (type tuning). */
+	again?: number;
 	/** The open floor, in box px from the top and from the bottom. */
 	top: number;
 	bottom: number;
-	onImpact: () => void;
+	/** Fires as the lettering lands, with the duel it spells. */
+	onImpact: (duel: Duel) => void;
 }) {
 	return (
 		<div className={css.verdict} style={{ top, bottom }}>
 			<AnimatePresence>
 				{show && duel && (
 					<motion.div
-						key={duel.key}
+						key={`${duel.key}#${again}`}
 						style={{ width: "100%", display: "grid", justifyItems: "center" }}
 						exit={{
 							opacity: 0,
@@ -48,7 +52,7 @@ export function Verdict({
 										? "kindle"
 										: "devour"
 							}
-							onImpact={onImpact}
+							onImpact={() => onImpact(duel)}
 						/>
 						<span className="sr-only" aria-live="polite">
 							{duel.gains}

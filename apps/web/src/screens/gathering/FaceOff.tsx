@@ -144,6 +144,7 @@ export function FaceOff({
 	toll,
 	tallyRefs,
 	hush = 1.1,
+	stamps = null,
 }: {
 	fit: StageFit;
 	geom: StageGeom;
@@ -156,10 +157,13 @@ export function FaceOff({
 	tallyRefs: Record<SideKey, RefObject<HTMLSpanElement | null>>;
 	/** Seconds the hush lasts at the current pace. */
 	hush?: number;
+	/** Type tuning: stamp this duel's banners now (again for each new `n`). */
+	stamps?: { duel: Duel; n: number } | null;
 }) {
 	const mw = Math.round(MASK_W * fit.s);
 	const fy = fit.y(faceY(geom));
-	const showStamps = !!duel && OUTCOME.has(beat);
+	const stampDuel = stamps?.duel ?? duel;
+	const showStamps = !!stampDuel && (!!stamps || OUTCOME.has(beat));
 	const showSeals = !!duel && (beat === "arrive" || beat === "hush");
 
 	return (
@@ -314,13 +318,13 @@ export function FaceOff({
 
 			<AnimatePresence>
 				{showStamps &&
-					duel &&
+					stampDuel &&
 					SIDES.map((k, i) => {
-						const s = k === "A" ? duel.a : duel.b;
+						const s = k === "A" ? stampDuel.a : stampDuel.b;
 						const tone = s.move === 1 ? "devour" : "kindle";
 						return (
 							<div
-								key={`${duel.key}${k}`}
+								key={`${stampDuel.key}${k}${stamps?.n ?? 0}`}
 								className={css.anchor}
 								style={{
 									left: fit.x(geom.win[k].cx),

@@ -2,6 +2,12 @@
    Type primitives: Slam, Plate, Rubric, Count.
    Tokens come from app/globals.css. Phone-first; everything scales off
    the container (cqi) so the same component works in a card or full-bleed.
+
+   Hooks: a screen may restyle the primitives inside it by setting the
+   --slam-*, --plate-*, --rubric-* and --count-* custom properties on an
+   ancestor (the Gathering maps its --g-* tuning variables onto them).
+   Every hook falls back to the stock look, so screens that set none are
+   unchanged.
    ====================================================================== */
 
 /* ---------------------------------------------------------------- Slam */
@@ -24,18 +30,28 @@
 	isolation: isolate;
 }
 .slam[data-tone="devour"] {
-	--tone-hi: #ff8a5c;
-	--tone-mid: var(--c-blood-l);
-	--tone-lo: #6a0d12;
-	--tone-glow: #c7262c88;
-	--tone-bleed: var(--c-ember);
+	--tone-hi: var(--slam-devour-hi, #ff8a5c);
+	--tone-mid: var(--slam-devour-mid, var(--c-blood-l));
+	--tone-lo: var(--slam-devour-lo, #6a0d12);
+	/* stock: #c7262c88 */
+	--tone-glow: color-mix(
+		in srgb,
+		var(--slam-devour-glow, #c7262c) 53.33%,
+		transparent
+	);
+	--tone-bleed: var(--slam-devour-bleed, var(--c-ember));
 }
 .slam[data-tone="kindle"] {
-	--tone-hi: var(--c-gilt-hi);
-	--tone-mid: var(--c-gilt-l);
-	--tone-lo: var(--c-gilt-d);
-	--tone-glow: #e3c27c77;
-	--tone-bleed: #fff1c8;
+	--tone-hi: var(--slam-kindle-hi, var(--c-gilt-hi));
+	--tone-mid: var(--slam-kindle-mid, var(--c-gilt-l));
+	--tone-lo: var(--slam-kindle-lo, var(--c-gilt-d));
+	/* stock: #e3c27c77 */
+	--tone-glow: color-mix(
+		in srgb,
+		var(--slam-kindle-glow, #e3c27c) 46.67%,
+		transparent
+	);
+	--tone-bleed: var(--slam-kindle-bleed, #fff1c8);
 }
 
 /* Pool of ink behind the lettering: legibility over any scene. */
@@ -44,23 +60,33 @@
 	z-index: -1;
 	/* inset, not translate: motion owns `transform` on this element */
 	inset: -24% -14%;
-	background: radial-gradient(
-		closest-side,
-		#050403f2 0%,
-		#050403d0 45%,
-		#05040366 72%,
-		transparent 100%
-	);
 	opacity: 0;
 	transform: scale(0.5);
 }
+/* The pool itself, on a child layer so its strength can be tuned while motion owns the
+   blot's own opacity. Stock: #050403 at f2 / d0 / 66. */
+.blot::before {
+	--blot-c: var(--slam-blot, #050403);
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(
+		closest-side,
+		color-mix(in srgb, var(--blot-c) 94.9%, transparent) 0%,
+		color-mix(in srgb, var(--blot-c) 81.57%, transparent) 45%,
+		color-mix(in srgb, var(--blot-c) 40%, transparent) 72%,
+		transparent 100%
+	);
+	opacity: var(--slam-blot-strength, 1);
+}
 
 .slamKicker {
-	font-family: var(--font-num);
-	font-weight: 700;
-	font-size: var(--fs-micro);
-	letter-spacing: var(--track-rubric);
-	text-transform: uppercase;
+	font-family: var(--slam-kicker-font, var(--font-num));
+	font-weight: var(--slam-kicker-weight, 700);
+	font-size: calc(var(--fs-micro) * var(--slam-kicker-scale, 1));
+	letter-spacing: calc(var(--track-rubric) * var(--slam-kicker-track, 1));
+	text-transform: var(--slam-kicker-transform, uppercase);
+	font-variant-caps: var(--slam-kicker-caps, normal);
 	color: var(--tone-mid);
 	text-shadow: var(--sh-ink);
 	opacity: 0;
@@ -69,12 +95,22 @@
 .word {
 	position: relative;
 	display: grid;
-	font-family: var(--font-display);
-	font-weight: 900;
-	/* --slam-len is the longest line in characters (set inline). */
-	font-size: min(var(--fs-slam), calc(100cqi * 1.8 / var(--slam-len, 8)));
-	line-height: 0.9;
-	letter-spacing: 0.01em;
+	font-family: var(--slam-font, var(--font-display));
+	font-weight: var(--slam-weight, 900);
+	font-style: var(--slam-style, normal);
+	/* --slam-len is the longest line in characters (set inline); --slam-fit is the share of
+	   the width one character may take, --slam-scale an overall multiplier. */
+	font-size: calc(
+		min(
+			var(--fs-slam),
+			calc(100cqi * var(--slam-fit, 1.8) / var(--slam-len, 8))
+		) *
+		var(--slam-scale, 1)
+	);
+	line-height: var(--slam-lh, 0.9);
+	letter-spacing: var(--slam-tracking, 0.01em);
+	text-transform: var(--slam-transform, none);
+	font-variant-caps: var(--slam-caps, normal);
 	opacity: 0;
 	will-change: transform, filter, opacity;
 }
@@ -92,11 +128,16 @@
 /* Ink outline + drop + glow, drawn under the fill. */
 .under {
 	color: var(--c-soot);
-	-webkit-text-stroke: 0.17em var(--c-soot);
+	-webkit-text-stroke: var(--slam-stroke, 0.17em)
+		var(--slam-stroke-color, var(--c-soot));
+	/* --slam-drop scales the ink drop, --slam-glow the tone's glow. Above 1 a second, wider
+	   halo joins in; at 1 or below it has no blur and hides under the lettering. */
 	text-shadow:
-		0 0.07em 0 var(--c-soot),
-		0 0.14em 0.28em #000d,
-		0 0 0.6em var(--tone-glow);
+		0 calc(0.07em * var(--slam-drop, 1)) 0 var(--c-soot),
+		0 calc(0.14em * var(--slam-drop, 1)) calc(0.28em * var(--slam-drop, 1))
+		#000d,
+		0 0 calc(0.6em * var(--slam-glow, 1)) var(--tone-glow),
+		0 0 calc(1.4em * max(0, var(--slam-glow, 1) - 1)) var(--tone-glow);
 }
 /* Fill: a vertical tone ramp, like light through glass onto metal leaf. */
 .face {
@@ -122,23 +163,27 @@
 	align-items: center;
 	gap: 0.1em;
 	max-width: 30ch;
-	font-family: var(--font-book);
-	font-style: italic;
-	font-size: var(--fs-lead);
-	line-height: var(--lh-snug);
-	color: var(--c-bone);
+	font-family: var(--slam-sub-font, var(--font-book));
+	font-weight: var(--slam-sub-weight, 400);
+	font-style: var(--slam-sub-style, italic);
+	font-size: calc(var(--fs-lead) * var(--slam-sub-scale, 1));
+	line-height: var(--slam-sub-lh, var(--lh-snug));
+	letter-spacing: var(--slam-sub-tracking, normal);
+	text-transform: var(--slam-sub-transform, none);
+	font-variant-caps: var(--slam-sub-caps, normal);
+	color: var(--slam-sub-color, var(--c-bone));
 	text-wrap: balance;
 	text-shadow:
-		0 1px 0 var(--c-soot),
-		0 0 6px var(--c-soot),
-		0 0 14px #000;
+		0 1px 0 var(--slam-sub-halo, var(--c-soot)),
+		0 0 6px var(--slam-sub-halo, var(--c-soot)),
+		0 0 14px var(--slam-sub-halo-far, #000);
 }
 .subLine {
 	display: block;
 	opacity: 0;
 }
 .subLine + .subLine {
-	color: var(--c-bone-hi);
+	color: var(--slam-sub-color-2, var(--c-bone-hi));
 	font-style: normal;
 }
 
@@ -256,12 +301,15 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	font-family: var(--font-display);
-	font-weight: 800;
-	font-size: var(--plate-size);
+	font-family: var(--plate-font, var(--font-display));
+	font-weight: var(--plate-weight, 800);
+	font-style: var(--plate-style, normal);
+	font-size: calc(var(--plate-size) * var(--plate-scale, 1));
 	line-height: var(--lh-tight);
-	letter-spacing: 0.015em;
-	color: var(--c-bone-hi);
+	letter-spacing: var(--plate-tracking, 0.015em);
+	text-transform: var(--plate-transform, none);
+	font-variant-caps: var(--plate-caps, normal);
+	color: var(--plate-name-color, var(--c-bone-hi));
 	text-shadow:
 		0 -1px 0 #ffffff12,
 		0 2px 0 var(--c-soot),
@@ -270,7 +318,7 @@
 	padding-bottom: 0.06em;
 }
 .plate[data-marked="true"] .plateName {
-	color: var(--c-gilt-hi);
+	color: var(--plate-mine-color, var(--c-gilt-hi));
 	text-shadow:
 		0 2px 0 var(--c-soot),
 		0 0 2px var(--c-soot),
@@ -322,12 +370,13 @@
 	text-shadow: var(--sh-ink);
 }
 .plateAspect {
-	font-family: var(--font-num);
-	font-weight: 700;
-	font-size: var(--fs-small);
-	letter-spacing: 0.12em;
-	text-transform: uppercase;
-	color: var(--c-gilt-l);
+	font-family: var(--plate-aspect-font, var(--font-num));
+	font-weight: var(--plate-aspect-weight, 700);
+	font-size: calc(var(--fs-small) * var(--plate-aspect-scale, 1));
+	letter-spacing: calc(0.12em * var(--plate-aspect-track, 1));
+	text-transform: var(--plate-aspect-transform, uppercase);
+	font-variant-caps: var(--plate-aspect-caps, normal);
+	color: var(--plate-aspect-color, var(--c-gilt-l));
 	text-shadow: var(--sh-ink);
 }
 .plateMark {
@@ -354,18 +403,19 @@
 	display: flex;
 	align-items: center;
 	gap: 0.7em;
-	font-family: var(--font-num);
-	font-weight: 700;
-	font-size: var(--fs-small);
+	font-family: var(--rubric-font, var(--font-num));
+	font-weight: var(--rubric-weight, 700);
+	font-size: calc(var(--fs-small) * var(--rubric-scale, 1));
 	line-height: 1.1;
-	letter-spacing: var(--track-rubric);
-	text-transform: uppercase;
-	color: var(--c-gilt-l);
+	letter-spacing: calc(var(--track-rubric) * var(--rubric-track, 1));
+	text-transform: var(--rubric-transform, uppercase);
+	font-variant-caps: var(--rubric-caps, normal);
+	color: var(--rubric-color, var(--c-gilt-l));
 	text-shadow: var(--sh-ink);
 }
 .rubric[data-size="xs"] {
-	font-size: var(--fs-micro);
-	letter-spacing: 0.2em;
+	font-size: calc(var(--fs-micro) * var(--rubric-scale, 1));
+	letter-spacing: calc(0.2em * var(--rubric-track, 1));
 }
 .rubric[data-tone="bone"] {
 	color: var(--c-bone);
@@ -404,25 +454,25 @@
 	display: inline-flex;
 	align-items: baseline;
 	gap: 0.25em;
-	font-family: var(--font-num);
-	font-weight: 800;
-	font-size: var(--fs-h2);
+	font-family: var(--count-font, var(--font-num));
+	font-weight: var(--count-weight, 800);
+	font-size: calc(var(--fs-h2) * var(--count-scale, 1));
 	line-height: 1;
 	font-variant-numeric: lining-nums tabular-nums;
-	color: var(--c-gilt-l);
+	color: var(--count-color, var(--c-gilt-l));
 	text-shadow:
 		0 2px 0 var(--c-soot),
 		0 0 2px var(--c-soot),
 		0 0 16px #e3c27c55;
 }
 .count[data-size="sm"] {
-	font-size: var(--fs-h3);
+	font-size: calc(var(--fs-h3) * var(--count-scale, 1));
 }
 .count[data-size="lg"] {
-	font-size: var(--fs-h1);
+	font-size: calc(var(--fs-h1) * var(--count-scale, 1));
 }
 .count[data-size="xl"] {
-	font-size: var(--fs-slam);
+	font-size: calc(var(--fs-slam) * var(--count-scale, 1));
 }
 .count[data-tone="bone"] {
 	color: var(--c-bone-hi);
