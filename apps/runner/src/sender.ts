@@ -7,6 +7,7 @@ import {
 import { type Address, type Hex, toHex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { predictAccount } from "./aa/simpleAccount.ts";
+import type { Budget } from "./budget.ts";
 import type { Network } from "./config.ts";
 
 export interface Signer {
@@ -69,6 +70,7 @@ export class Sender {
 	constructor(
 		private readonly net: Network,
 		private readonly concurrency: number,
+		readonly budget: Budget,
 	) {}
 
 	async signer(privateKey: Hex): Promise<Signer> {
@@ -93,10 +95,12 @@ export class Sender {
 	}
 
 	/**
-	 * The gateway's gas estimate gave openBout(25 agents) a callGasLimit of 240k against ~870k needed,
-	 * so the op landed and reverted out of gas. The SDK exposes no override, so this repeats
-	 * SmoothSendAvaxSubmitter.submitSponsoredUserOperation with callGasLimit raised to `callGas`
-	 * before the paymaster signs. It leans on the SDK's private buildDraft; re-check on SDK upgrades.
+	 * The gateway's callGasLimit is a flat 240k, not an estimate: too low for openBout(25 agents)
+	 * (~870k, which landed and reverted out of gas) and far too high for a commit (~25k), where
+	 * EntryPoint v0.7 charges 10% of the unused limit as a penalty. The SDK exposes no override, so
+	 * this repeats SmoothSendAvaxSubmitter.submitSponsoredUserOperation with callGasLimit set to
+	 * `callGas` before the paymaster signs. It leans on the SDK's private buildDraft; re-check on SDK
+	 * upgrades.
 	 */
 	private async submitWithCallGas(
 		signer: Signer,
@@ -113,10 +117,9 @@ export class Sender {
 			draft as never,
 			built.entryPoint,
 		);
-		const estimated = BigInt(gas.callGasLimit);
 		let op = SmoothSendAvaxSubmitter.applyGasEstimate(draft as never, {
 			...gas,
-			callGasLimit: toHex(estimated > callGas ? estimated : callGas),
+			callGasLimit: toHex(callGas),
 		});
 		const pm = await sub.paymasterSign({
 			mode: "developer-sponsored",
@@ -133,14 +136,17 @@ export class Sender {
 	}
 
 	/**
-	 * Sizes callGasLimit from a direct eth_estimateGas of the call from the smart account's address
-	 * (plus headroom for SimpleAccount.execute), instead of trusting the gateway's estimate. A call
-	 * that would revert is reported and not sent, so timing races don't cost a sponsored op.
+	 * Sizes callGasLimit from a direct eth_estimateGas of the call from the smart account's address.
+	 * That figure includes the 21k intrinsic cost the inner call never pays, which covers
+	 * SimpleAccount.execute; `extraGas` covers paths that can change between estimate and execution
+	 * (a reveal that turns out to score the pair). A call that would revert is reported and not sent,
+	 * so timing races don't cost a sponsored op.
 	 */
 	async send(
 		signer: Signer,
 		label: string,
 		call: { to: Address; data: Hex },
+		opts: { extraGas?: bigint } = {},
 	): Promise<SendResult> {
 		if (this.busy.has(signer.account)) {
 			throw new Error(
@@ -166,8 +172,7 @@ export class Sender {
 					(e as { shortMessage?: string }).shortMessage ?? String(e);
 				throw new WouldRevert(reason.replace(/\s+/g, " ").slice(0, 160));
 			}
-			// estimateGas includes the 21k intrinsic cost, which the inner call doesn't pay.
-			const callGas = (direct * 12n) / 10n + 30_000n;
+			const callGas = (direct * 11n) / 10n + 10_000n + (opts.extraGas ?? 0n);
 			const userOpHash = await this.submitWithCallGas(signer, call, callGas);
 			const receipt = await signer.client.submitter.waitForUserOperationReceipt(
 				userOpHash,
@@ -187,6 +192,11 @@ export class Sender {
 				};
 				if (out.success === false) this.stats.reverted++;
 				else this.stats.ok++;
+				this.budget.record(
+					label,
+					BigInt(receipt.actualGasUsed),
+					BigInt(receipt.actualGasCost),
+				);
 			}
 		} catch (e) {
 			const error = String((e as Error).message ?? e)

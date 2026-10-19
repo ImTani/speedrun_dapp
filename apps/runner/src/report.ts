@@ -1,7 +1,7 @@
+import { arenaAbi } from "@arena/chain";
 import { decodeConfig, StrategyId } from "@arena/strategies";
 import type { Address } from "viem";
 import { entryPoint07Abi, entryPoint07Address } from "viem/account-abstraction";
-import { arenaAbi } from "./abi.ts";
 import type { Runtime } from "./runtime.ts";
 
 // The public Avalanche RPC rejects eth_getLogs spans over 100 blocks.

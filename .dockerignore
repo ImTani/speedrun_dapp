@@ -1,0 +1,17 @@
+# Build context for apps/runner/Dockerfile (docker build -f apps/runner/Dockerfile .). Secrets are mounted at runtime.
+# Never upload secrets or private docs.
+.env
+.env.*
+.secrets
+.private
+**/.data
+# Not needed by the runner image
+**/node_modules
+**/.next
+.git
+.claude
+.worktrees
+apps/web/*
+!apps/web/package.json
+/contracts/*
+!/contracts/deployments

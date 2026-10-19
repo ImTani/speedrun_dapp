@@ -1,0 +1,120 @@
+/**
+ * Long-lived Arena service: registers player Fragments, indexes Arena events into Neon, and runs
+ * Gatherings back to back with house and player Fragments.
+ *
+ *   pnpm --filter @arena/runner service -- [--net fuji] [--house 25] [--k 5] [--matches 1] [--conc 4] [--gap-min 0] [--max-size 60]
+ *
+ * Docker (build from the repo root; secrets are mounted at runtime, never baked into the image):
+ *   docker build -f apps/runner/Dockerfile -t arena-runner .
+ *   docker run -d --restart unless-stopped --name arena-runner \
+ *     -v /path/to/.env:/app/.env:ro -v /path/to/.secrets:/app/.secrets arena-runner
+ */
+import { parseArgs } from "node:util";
+import { arenaAbi } from "@arena/chain";
+import { runBout } from "./bout.ts";
+import "./db.ts";
+import { fragmentsTick, syncHouse } from "./fragments.ts";
+import { indexTick } from "./indexer.ts";
+import { createRuntime } from "./runtime.ts";
+import { sleep } from "./tasks.ts";
+
+const { values } = parseArgs({
+	args: process.argv.slice(2).filter((a) => a !== "--"),
+	options: {
+		net: { type: "string", default: "fuji" },
+		house: { type: "string", default: "25" },
+		k: { type: "string", default: "5" },
+		matches: { type: "string", default: "1" },
+		conc: { type: "string", default: "4" },
+		"gap-min": { type: "string", default: "0" },
+		"max-size": { type: "string", default: "60" },
+	},
+});
+
+const rt = await createRuntime({
+	network: values.net,
+	houseSize: Number(values.house),
+	concurrency: Number(values.conc),
+});
+await syncHouse(rt);
+
+let stopping = false;
+const every = (name: string, ms: number, fn: () => Promise<void>) => {
+	let busy = false;
+	return setInterval(async () => {
+		if (busy || stopping) return;
+		busy = true;
+		try {
+			await fn();
+		} catch (e) {
+			console.error(
+				`${name}: ${String((e as Error).message ?? e).slice(0, 200)}`,
+			);
+		} finally {
+			busy = false;
+		}
+	}, ms);
+};
+await fragmentsTick(rt).catch((e) =>
+	console.error(`fragments: ${(e as Error).message}`),
+);
+const timers = [
+	every("indexer", 5_000, () => indexTick(rt)),
+	every("fragments", 10_000, () => fragmentsTick(rt)),
+];
+
+const shutdown = async () => {
+	if (stopping) process.exit(1);
+	stopping = true;
+	console.log("shutting down: no new work; waiting for in-flight ops");
+	for (const t of timers) clearInterval(t);
+	await rt.tasks.drain();
+	process.exit(0);
+};
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+
+const arena = rt.net.deployment.arena;
+const client = rt.net.publicClient;
+const gapMs = Number(values["gap-min"]) * 60_000;
+let lastClose = 0;
+while (!stopping) {
+	try {
+		const active = await client.readContract({
+			address: arena,
+			abi: arenaAbi,
+			functionName: "boutActive",
+		});
+		if (!active && Date.now() - lastClose < gapMs) {
+			await sleep(5_000);
+			continue;
+		}
+		const states = (await Promise.all(
+			rt.house.map((m) =>
+				client.readContract({
+					address: arena,
+					abi: arenaAbi,
+					functionName: "agents",
+					args: [m.agent.account],
+				}),
+			),
+		)) as unknown as [string, bigint, boolean, boolean][];
+		const eligible = states.filter((s) => s[2] && !s[3]).length;
+		const size = Math.min(eligible, Number(values["max-size"]));
+		console.log(
+			`gathering: ${active ? "resuming" : "opening"} (${size} Fragments)`,
+		);
+		await runBout(rt, {
+			size,
+			movesPerMatch: Number(values.k),
+			matches: Number(values.matches),
+		});
+		lastClose = Date.now();
+		console.log(rt.sender.budget.summary());
+	} catch (e) {
+		console.error(
+			`scheduler: ${String((e as Error).message ?? e).slice(0, 300)}; backing off 30s`,
+		);
+		await sleep(30_000);
+	}
+}

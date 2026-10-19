@@ -3,13 +3,16 @@
  *
  *   pnpm --filter @arena/runner start -- setup  [--net fuji] [--house 25]
  *   pnpm --filter @arena/runner start -- bout   [--net fuji] [--house 25] [--size 25] [--k 5] [--matches 1] [--conc 4]
+ *
+ * Mainnet (--net avalanche) also requires --budget-usd and --avax-usd: the runner keeps a ledger of
+ * every landed op's gas cost and won't start a Gathering or registrations the budget can't cover.
  *   pnpm --filter @arena/runner start -- report <boutId> [--net fuji]
  *   pnpm --filter @arena/runner start -- status [--net fuji]
  *
  * `bout` resumes the active bout if there is one, otherwise opens a new one, and exits when it closes.
  */
 import { parseArgs } from "node:util";
-import { arenaAbi } from "./abi.ts";
+import { arenaAbi } from "@arena/chain";
 import { runBout } from "./bout.ts";
 import { reportBout } from "./report.ts";
 import { createRuntime } from "./runtime.ts";
@@ -25,6 +28,8 @@ const { values, positionals } = parseArgs({
 		k: { type: "string", default: "5" },
 		matches: { type: "string", default: "1" },
 		conc: { type: "string", default: "4" },
+		"budget-usd": { type: "string" },
+		"avax-usd": { type: "string" },
 	},
 });
 const [cmd = "status", arg] = positionals;
@@ -34,6 +39,8 @@ const rt = await createRuntime({
 	network: values.net,
 	houseSize,
 	concurrency: Number(values.conc),
+	budgetUsd: values["budget-usd"] ? Number(values["budget-usd"]) : undefined,
+	avaxUsd: values["avax-usd"] ? Number(values["avax-usd"]) : undefined,
 });
 
 if (cmd === "setup") {

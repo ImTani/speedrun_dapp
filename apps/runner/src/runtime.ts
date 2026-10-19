@@ -1,5 +1,6 @@
 import type { Address } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { Budget } from "./budget.ts";
 import { loadNetwork, type Network } from "./config.ts";
 import { type HouseAgent, loadHouse } from "./house.ts";
 import { Sender, type Signer } from "./sender.ts";
@@ -24,9 +25,18 @@ export async function createRuntime(opts: {
 	network: string;
 	houseSize: number;
 	concurrency: number;
+	budgetUsd?: number | undefined;
+	avaxUsd?: number | undefined;
 }): Promise<Runtime> {
 	const net = loadNetwork(opts.network);
-	const sender = new Sender(net, opts.concurrency);
+	if (net.sdkNetwork === "mainnet" && (!opts.budgetUsd || !opts.avaxUsd)) {
+		throw new Error("mainnet needs --budget-usd and --avax-usd (spend guard)");
+	}
+	const budget = new Budget(opts.network, {
+		...(opts.budgetUsd === undefined ? {} : { budgetUsd: opts.budgetUsd }),
+		avaxUsd: opts.avaxUsd ?? 10,
+	});
+	const sender = new Sender(net, opts.concurrency, budget);
 	const operator = await sender.signer(net.roles.operatorOwner);
 	if (operator.account !== net.deployment.operator) {
 		throw new Error(

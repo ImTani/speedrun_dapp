@@ -1,0 +1,17 @@
+# Uploaded by `vercel deploy` from the repo root (project root directory: apps/web).
+# Never upload secrets or private docs.
+.env
+.env.*
+.secrets
+.private
+**/.data
+# Not needed by the web build
+**/node_modules
+**/.next
+.git
+.claude
+.worktrees
+apps/runner
+apps/web/.impeccable
+/contracts/*
+!/contracts/deployments

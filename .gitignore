@@ -54,3 +54,11 @@ apps/web/.impeccable/hook.cache.json
 apps/web/.impeccable/questions/
 *.stackdump
 contracts/broadcast/**/*.lock
+
+# Runner spend ledger (per network)
+apps/runner/.data/
+
+.vercel
+
+# TypeScript incremental build info
+*.tsbuildinfo

@@ -1,3 +1,4 @@
+import { arenaAbi } from "@arena/chain";
 import {
 	type AgentConfig,
 	decide,
@@ -7,7 +8,6 @@ import {
 	type Turn,
 } from "@arena/strategies";
 import { type Address, encodeFunctionData, type Hex } from "viem";
-import { arenaAbi } from "./abi.ts";
 import { commitmentFor, saltFor } from "./house.ts";
 import type { HouseMember, Runtime } from "./runtime.ts";
 import { sleep } from "./tasks.ts";
@@ -45,30 +45,18 @@ export async function runBout(
 		sender.send(operator, label, { to: arena, data });
 
 	const configs = new Map<Address, AgentConfig>();
-	const settled = new Map<string, Entry[]>(); // entries of finalized rounds never change
-	/** `final`: the round is finalized (or fully scored), so its entries can be cached. */
-	const readEntries = async (
-		boutId: bigint,
-		round: bigint,
-		n: number,
-		final: boolean,
-	) => {
-		const key = `${boutId}:${round}`;
-		const cached = settled.get(key);
-		if (cached) return cached;
+	const readEntries = async (boutId: bigint, round: bigint, n: number) => {
 		const rows = (await Promise.all(
 			Array.from({ length: n }, (_, i) =>
 				read("entries", [boutId, round, BigInt(i)]),
 			),
 		)) as [Hex, number, boolean, boolean][];
-		const entries = rows.map(([commitment, move, revealed, scored]) => ({
+		return rows.map(([commitment, move, revealed, scored]) => ({
 			commitment,
 			move,
 			revealed,
 			scored,
 		}));
-		if (final) settled.set(key, entries);
-		return entries;
 	};
 	const configOf = async (agent: Address) => {
 		let c = configs.get(agent);
@@ -88,20 +76,20 @@ export async function runBout(
 		idx: number,
 		partner: number,
 		k: bigint,
-		n: number,
 	) => {
 		const matchIndex = round / k;
-		const history: Turn[] = [];
-		for (let r = matchIndex * k; r < round; r++) {
-			const e = await readEntries(boutId, r, n, true);
-			const mine = e[idx] as Entry;
-			const theirs = e[partner] as Entry;
-			// A missed reveal reads as a defection to the other side.
-			history.push({
-				mine: mine.revealed ? (mine.move as Move) : Move.Defect,
-				theirs: theirs.revealed ? (theirs.move as Move) : Move.Defect,
-			});
-		}
+		const moveIndex = Number(round - matchIndex * k);
+		const [[myMoves, myMask], [theirMoves, theirMask]] = (await Promise.all([
+			read("matchHistory", [boutId, round, BigInt(idx)]),
+			read("matchHistory", [boutId, round, BigInt(partner)]),
+		])) as [[number, number], [number, number]];
+		// Bit j: move j of this match. A missed reveal reads as a defection to the other side.
+		const moveAt = (moves: number, mask: number, j: number): Move =>
+			(mask >> j) & 1 && !((moves >> j) & 1) ? Move.Cooperate : Move.Defect;
+		const history: Turn[] = Array.from({ length: moveIndex }, (_, j) => ({
+			mine: moveAt(myMoves, myMask, j),
+			theirs: moveAt(theirMoves, theirMask, j),
+		}));
 		const move = decide({
 			config: await configOf(m.agent.account),
 			history,
@@ -141,6 +129,17 @@ export async function runBout(
 			if (eligible.length < 2) {
 				throw new Error(
 					`only ${eligible.length} eligible house agents; run setup first`,
+				);
+			}
+			// Spend guard: a Gathering is paired·2·k·M moves, 2 + 2·k·M lifecycle ops, and openBout
+			// (which costs several ops' worth with many participants).
+			const rounds = opts.movesPerMatch * opts.matches;
+			const paired = eligible.length - (eligible.length % 2);
+			const ops =
+				paired * 2 * rounds + 2 + 2 * rounds + Math.ceil(eligible.length / 4);
+			if (!sender.budget.canAfford(ops)) {
+				throw new Error(
+					`budget: a ${eligible.length}-agent Gathering needs ~${ops} ops; ${sender.budget.summary()}`,
 				);
 			}
 			tasks.run(`open:${count + 1n}`, operator.account, () =>
@@ -205,7 +204,7 @@ export async function runBout(
 
 		const seed = (await read("matchSeed", [boutId, round / k])) as Hex;
 		const partner = pairings(seed, n);
-		const entries = await readEntries(boutId, round, n, false);
+		const entries = await readEntries(boutId, round, n);
 		const paired = n - (n % 2);
 		const commitOpen = now <= commitDeadline;
 		const revealOpen = now > commitDeadline || commits === paired;
@@ -227,7 +226,7 @@ export async function runBout(
 					`commit:${boutId}:${round}:${idx}`,
 					m.agent.account,
 					async () => {
-						const plan = await planMove(m, boutId, round, idx, p, k, n);
+						const plan = await planMove(m, boutId, round, idx, p, k);
 						return sender.send(m.agent, `commit  r${round} #${m.index}`, {
 							to: arena,
 							data: encodeFunctionData({
@@ -243,12 +242,14 @@ export async function runBout(
 					`reveal:${boutId}:${round}:${idx}`,
 					m.agent.account,
 					async () => {
-						const plan = await planMove(m, boutId, round, idx, p, k, n);
-						if (plan.commitment !== e.commitment) {
+						const plan = await planMove(m, boutId, round, idx, p, k);
+						// Arena stores the first 24 bytes of the commitment.
+						if (plan.commitment.slice(0, 50) !== e.commitment.slice(0, 50)) {
 							throw new Error(
 								`#${m.index} r${round}: recomputed commitment differs from chain; not revealing`,
 							);
 						}
+						// Headroom for the scoring path: the partner may reveal between estimate and send.
 						return sender.send(
 							m.agent,
 							`reveal  r${round} #${m.index} ${plan.move === Move.Cooperate ? "C" : "D"}`,
@@ -260,6 +261,7 @@ export async function runBout(
 									args: [boutId, round, BigInt(idx), plan.move, plan.salt],
 								}),
 							},
+							{ extraGas: 40_000n },
 						);
 					},
 				);
@@ -296,5 +298,6 @@ export async function runBout(
 		`bout ${boutId} closed in ${Math.round((Date.now() - started) / 1000)}s this session: sent ${s.sent}, ok ${s.ok}, reverted ${s.reverted}, failed ${s.failed}, dropped ${s.dropped}, skipped ${s.wouldRevert}`,
 	);
 	for (const [e, c] of sender.errors) console.log(`  ${c}x ${e}`);
+	console.log(sender.budget.summary());
 	return boutId;
 }

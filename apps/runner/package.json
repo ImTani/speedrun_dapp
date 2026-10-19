@@ -9,10 +9,13 @@
 		"m0": "tsx scripts/m0-spike.ts",
 		"roles": "tsx scripts/roles.ts",
 		"typecheck": "tsc --noEmit",
-		"test": "vitest run"
+		"test": "vitest run",
+		"service": "tsx src/service.ts"
 	},
 	"dependencies": {
+		"@arena/chain": "workspace:*",
 		"@arena/strategies": "workspace:*",
+		"@neondatabase/serverless": "1.2.0",
 		"@smoothsend/sdk": "2.3.8",
 		"react": "19.2.0",
 		"viem": "2.57.4"

@@ -1,7 +1,7 @@
+import { arenaAbi } from "@arena/chain";
 import { encodeConfig } from "@arena/strategies";
 import { encodeFunctionData } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { arenaAbi } from "./abi.ts";
 import type { Runtime } from "./runtime.ts";
 import { sleep } from "./tasks.ts";
 
@@ -17,6 +17,7 @@ export async function setupHouse(rt: Runtime) {
 	const arena = net.deployment.arena;
 	const registrar = privateKeyToAccount(net.roles.registrar);
 
+	let checked = false;
 	for (;;) {
 		const states = await Promise.all(
 			house.map((m) =>
@@ -28,6 +29,16 @@ export async function setupHouse(rt: Runtime) {
 				}),
 			),
 		);
+		if (!checked) {
+			// Spend guard: each Fragment still to set up is up to two account-deploying ops (~2× a move).
+			const pending = states.filter((st) => !st[2]).length;
+			if (!rt.sender.budget.canAfford(pending * 2 * 2)) {
+				throw new Error(
+					`budget: ${pending} Fragments to set up; ${rt.sender.budget.summary()}`,
+				);
+			}
+			checked = true;
+		}
 		let done = 0;
 		for (const [i, m] of house.entries()) {
 			const [owner, , confirmed] = states[i] as readonly [
@@ -97,4 +108,5 @@ export async function setupHouse(rt: Runtime) {
 	}
 	await tasks.drain();
 	console.log(`house ready: ${house.length} agents confirmed`);
+	console.log(rt.sender.budget.summary());
 }

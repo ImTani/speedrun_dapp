@@ -408,6 +408,153 @@ contract ArenaTest is Test {
         assertEq(p0, p1, "same opponent for every move of a match");
     }
 
+    // ───────────── reused storage ─────────────
+
+    function _playRound(uint256 boutId, uint256 round, address[] memory list, uint8 move) internal {
+        vm.prank(operator);
+        arena.startRound(boutId);
+        for (uint256 i; i < list.length; ++i) {
+            (, bool paired) = arena.partnerOf(boutId, round, i);
+            if (paired) _commit(boutId, round, list, i, move);
+        }
+        for (uint256 i; i < list.length; ++i) {
+            (, bool paired) = arena.partnerOf(boutId, round, i);
+            if (paired) _reveal(boutId, round, list, i, move);
+        }
+        vm.prank(operator);
+        arena.finalize(boutId, round);
+    }
+
+    function test_secondBout_reusesSlots_resetsBoutPoints() public {
+        address[] memory list = _agents(4);
+        uint256 b1 = _open(list, 1, 1);
+        _playRound(b1, 0, list, C); // 3 each
+        vm.prank(operator);
+        arena.closeBout(b1);
+
+        uint256 b2 = _open(list, 1, 1);
+        assertEq(_points(b2, 0), 0, "bout points start fresh");
+        _playRound(b2, 0, list, D); // 1 each: same (round 0) tag as bout 1, different bout
+        vm.prank(operator);
+        arena.closeBout(b2);
+
+        for (uint256 i; i < 4; ++i) {
+            assertEq(_points(b2, i), 1);
+            (,,,,, uint64 lifetime) = arena.agents(list[i]);
+            assertEq(lifetime, 4, "lifetime points carry across bouts");
+        }
+        assertEq(_points(b1, 0), 0, "older bouts are read from events, not storage");
+    }
+
+    function test_matchHistory_tracksMovesAndResetsPerMatch() public {
+        address[] memory list = _agents(2);
+        uint256 boutId = _open(list, 2, 2);
+        _playRound(boutId, 0, list, D);
+        _playRound(boutId, 1, list, C);
+        (uint16 moves, uint16 mask) = arena.matchHistory(boutId, 1, 0);
+        assertEq(mask, 0x3, "both moves of match 0 revealed");
+        assertEq(moves, 0x1, "move 0 was DEFECT, move 1 COOPERATE");
+
+        vm.roll(block.number + 3);
+        _playRound(boutId, 2, list, C); // first move of match 1
+        (moves, mask) = arena.matchHistory(boutId, 2, 0);
+        assertEq(mask, 0x1, "history restarts with the new match");
+        assertEq(moves, 0);
+    }
+
+    function test_missedRevealInHistory() public {
+        address[] memory list = _agents(2);
+        uint256 boutId = _open(list, 2, 1);
+        vm.prank(operator);
+        arena.startRound(boutId);
+        _commit(boutId, 0, list, 0, C);
+        _commit(boutId, 0, list, 1, C);
+        _reveal(boutId, 0, list, 0, C); // agent 1 withholds
+        vm.warp(block.timestamp + 121);
+        vm.prank(operator);
+        arena.finalize(boutId, 0);
+        (, uint16 mask1) = arena.matchHistory(boutId, 1, 1);
+        (, uint16 mask0) = arena.matchHistory(boutId, 1, 0);
+        assertEq(mask1, 0, "a withheld move is not in the history");
+        assertEq(mask0, 1);
+    }
+
+    function test_boutShapeLimits() public {
+        address[] memory list = _agents(2);
+        vm.prank(operator);
+        vm.expectRevert(Arena.BadBoutShape.selector);
+        arena.openBout(list, 17, 1);
+    }
+
+    function test_storedPairingMatchesPermutation() public {
+        for (uint256 n = 2; n <= 40; n += 19) {
+            // n = 2, 21 (odd), 40 (two pairing words)
+            if (arena.boutActive()) {
+                (, , , uint32 played,) = arena.boutInfo(arena.boutCount());
+                played; // previous bout closed below
+            }
+            address[] memory list = new address[](n);
+            for (uint256 i; i < n; ++i) {
+                list[i] = _newAgent(string.concat(vm.toString(n), "-", vm.toString(i)));
+            }
+            uint256 boutId = _open(list, 1, 1);
+            vm.prank(operator);
+            arena.startRound(boutId);
+            uint256[] memory perm = arena.permutation(arena.currentSeed(), n);
+            for (uint256 pos; pos < n; ++pos) {
+                (uint256 partner, bool paired) = arena.partnerOf(boutId, 0, perm[pos]);
+                if (pos == n - 1 && n % 2 == 1) {
+                    assertFalse(paired);
+                } else {
+                    assertTrue(paired);
+                    assertEq(partner, perm[pos ^ 1]);
+                }
+            }
+            vm.warp(block.timestamp + 121);
+            vm.prank(operator);
+            arena.finalize(boutId, 0);
+            vm.prank(operator);
+            arena.closeBout(boutId);
+        }
+    }
+
+    /// Steady-state cost of a move once an agent's slots exist (second bout onward).
+    function test_gas_steadyStateMoves() public {
+        address[] memory list = _agents(25);
+        uint256 b1 = _open(list, 1, 1);
+        _playRound(b1, 0, list, C);
+        vm.prank(operator);
+        arena.closeBout(b1);
+
+        uint256 b2 = _open(list, 1, 1);
+        vm.prank(operator);
+        arena.startRound(b2);
+        uint256 i;
+        while (true) {
+            (, bool paired) = arena.partnerOf(b2, 0, i);
+            if (paired) break;
+            ++i;
+        }
+        (uint256 p,) = arena.partnerOf(b2, 0, i);
+        bytes32 c = arena.commitmentFor(C, _salt(list[i], 0), list[i], b2, 0);
+        vm.prank(list[i]);
+        uint256 g = gasleft();
+        arena.commit(b2, 0, i, c);
+        emit log_named_uint("commit", g - gasleft());
+        for (uint256 j; j < 25; ++j) {
+            (, bool pj) = arena.partnerOf(b2, 0, j);
+            if (pj && j != i) _commit(b2, 0, list, j, C);
+        }
+        vm.prank(list[i]);
+        g = gasleft();
+        arena.reveal(b2, 0, i, C, _salt(list[i], 0));
+        emit log_named_uint("reveal (first of pair)", g - gasleft());
+        vm.prank(list[p]);
+        g = gasleft();
+        arena.reveal(b2, 0, p, C, _salt(list[p], 0));
+        emit log_named_uint("reveal (scores pair)", g - gasleft());
+    }
+
     // ───────────── cross-language vectors ─────────────
 
     /// Pinned output mirrored in packages/strategies/test/pairings.test.ts.
