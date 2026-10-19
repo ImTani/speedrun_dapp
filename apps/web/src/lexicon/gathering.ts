@@ -50,8 +50,6 @@ export const gathering = {
 		"Inquisitor",
 		"Madness",
 	],
-	/** Lead word on a name plate, before the Aspect: "wears MERCY". */
-	wearsLead: "wears",
 	/** Tag on the Claimant's own Fragment. */
 	yours: "Yours",
 	nameless: "A nameless Fragment",
@@ -119,6 +117,18 @@ export const gathering = {
 	tolled: (n: number) => `The bell tolls ${num(n)}.`,
 	closed: "The Gathering is ended.",
 	quiet: "No rites yet.",
+
+	// ---- the seals of this toll, pressed on the floor while the masked choose
+	sealsTitle: (n: number) => `Seals of Toll ${roman(n)}`,
+	sealsCount: (n: number, of: number) =>
+		n === 0
+			? "No mask has sealed yet."
+			: n >= of
+				? `All ${num(of)} masks have sealed.`
+				: `${num(n).charAt(0).toUpperCase()}${num(n).slice(1)} of ${num(of)} masks have sealed.`,
+	/** Spoken for one seal in the row. */
+	sealOf: (name: string, aspect: string, sealed: boolean) =>
+		`${name}, ${aspect}: ${sealed ? "sealed" : "not yet sealed"}`,
 
 	// ---- the Ledger of Light (standings sheet)
 	ledger: "Ledger of Light",

@@ -352,6 +352,21 @@
 	align-self: stretch;
 	max-width: 100%;
 }
+/* The engraved Aspect line under the name: a tiny gilt mask, then the Aspect in small capitals.
+   (The plate's text column is name, ornament, then this line.) */
+.plateStack .plate > span:last-child > span:nth-child(3) {
+	align-items: center;
+}
+.plateStack .plate > span:last-child > span:nth-child(3)::before {
+	content: "";
+	flex: none;
+	width: 1.25em;
+	height: 1.25em;
+	font-size: var(--fs-small);
+	background: linear-gradient(180deg, var(--c-gilt-hi), var(--c-gilt-d));
+	mask: var(--aspect-glyph) center / contain no-repeat;
+	filter: drop-shadow(0 1px 0 var(--c-soot));
+}
 .plateSlot[data-long="1"] {
 	--fs-h3: clamp(17px, 4.7vw, 20px);
 }
@@ -480,6 +495,88 @@
 		0 0 10px var(--c-soot);
 	text-wrap: balance;
 }
+/* ---------------------------------------------------------------- the seals of this toll
+   While the masked choose, a row of wax seals is pressed into the floor, one per Fragment. */
+.seals {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	width: min(100%, 34ch);
+}
+.sealRow {
+	list-style: none;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 7px 9px;
+	padding: 2px 0;
+}
+.seal {
+	position: relative;
+	display: grid;
+	place-items: center;
+	width: 32px;
+	height: 32px;
+}
+.glyph {
+	position: relative;
+	width: 20px;
+	height: 20px;
+	mask: var(--aspect-glyph) center / contain no-repeat;
+}
+/* An empty socket: a ring cut in the stone, the mask only scratched in. */
+.socket {
+	position: absolute;
+	inset: 2px;
+	border-radius: 50%;
+	background: radial-gradient(circle at 50% 40%, #1d140e, #0b0807 72%);
+	box-shadow:
+		inset 0 2px 3px #000c,
+		inset 0 0 0 1px #a8916a33,
+		0 1px 0 #ffffff0d;
+}
+.seal[data-sealed="false"] .glyph {
+	background: var(--c-bone-dd);
+	opacity: 0.55;
+}
+/* Pressed wax: an uneven blood disc with a raised rim, the mask stamped in it. */
+.wax {
+	position: absolute;
+	inset: 0;
+	border-radius: 52% 48% 50% 46% / 48% 53% 47% 52%;
+	background:
+		radial-gradient(circle at 36% 30%, #ff8a7a55 0%, transparent 34%),
+		radial-gradient(circle at 50% 50%, #b51f25 0%, #8e1218 52%, #4a0a0d 100%);
+	box-shadow:
+		inset 0 0 0 2.5px #5c0b0f,
+		inset 0 0 0 3.5px #d64a4a40,
+		inset 0 -2px 3px #0008,
+		0 2px 0 var(--c-soot),
+		0 3px 6px #000c,
+		0 0 10px #c7262c40;
+}
+.seal[data-mine="true"] .wax,
+.seal[data-mine="true"] .socket {
+	outline: 1.5px solid var(--c-gilt-l);
+	outline-offset: 1.5px;
+}
+.seal[data-sealed="true"] .glyph {
+	background: linear-gradient(180deg, #4a0a0d, #2a0507);
+	filter: drop-shadow(0 1px 0 #e0585055);
+}
+.sealCount {
+	font-family: var(--font-book);
+	font-style: italic;
+	font-size: var(--fs-small);
+	line-height: var(--lh-snug);
+	color: var(--c-bone);
+	text-shadow:
+		0 1px 0 var(--c-soot),
+		0 0 8px var(--c-soot),
+		0 0 16px #000;
+}
+
 .feed {
 	display: flex;
 	flex-direction: column;
@@ -873,15 +970,6 @@
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
 	color: var(--c-gilt-d);
-}
-.rowAspect em {
-	font-family: var(--font-book);
-	font-weight: 400;
-	font-style: italic;
-	letter-spacing: 0;
-	text-transform: none;
-	color: var(--c-bone-dd);
-	margin-right: 0.35em;
 }
 .rowLight {
 	display: flex;

@@ -229,13 +229,18 @@
 .roseSlide:active {
 	cursor: grabbing;
 }
-.rose {
+/* Darkens the hub of the rose so the mask reads against the lit glass. */
+.roseShade {
 	position: absolute;
-	inset: 0;
-	width: 100%;
-	height: 100%;
-	overflow: visible;
-	filter: drop-shadow(0 0 26px #e8c46a33) drop-shadow(0 10px 18px #000c);
+	inset: 16%;
+	border-radius: 50%;
+	pointer-events: none;
+	background: radial-gradient(
+		closest-side,
+		#0b0807b0 0%,
+		#0b080766 62%,
+		transparent 100%
+	);
 }
 .roseMask {
 	position: relative;

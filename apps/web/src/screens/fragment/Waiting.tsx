@@ -103,8 +103,7 @@ export function Waiting({
 			</div>
 			<Plate
 				name={fragment.name}
-				lead={L.hero.lead}
-				epithet={a.name}
+				epithet={L.hero.aspectLine(a.name, a.mask)}
 				size="md"
 				className={s.stagePlate ?? ""}
 			/>

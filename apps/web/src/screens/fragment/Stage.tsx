@@ -117,7 +117,6 @@ export function Stage({
 			<motion.div className={s.stageBody} {...enter(rise)}>
 				<Plate
 					name={fragment.name}
-					lead={L.hero.lead}
 					epithet={a.name}
 					emblem={<Mask aspect={aspect} size={44} glow />}
 					size="lg"

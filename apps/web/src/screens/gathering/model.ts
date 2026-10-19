@@ -1,5 +1,6 @@
 // Pure reading of the Gathering's rites: who stands in each window, what each duel meant, the feed.
 // Every word comes from the lexicon.
+import { L } from "@/lexicon";
 import { gathering as T } from "@/lexicon/gathering.ts";
 import type {
 	GatheringEvent,
@@ -55,6 +56,9 @@ export const num = (v: unknown) => Number(v ?? 0) || 0;
 export const low = (s: unknown) => String(s ?? "").toLowerCase();
 export const evKey = (e: GatheringEvent) => `${e.block}:${e.logIndex}:${e.tx}`;
 export const aspectName = (i: number) => T.aspects[i] ?? T.aspects[0];
+/** The Aspect's mask as a one-colour glyph (CSS mask-image), for engraved rubrics and seals. */
+export const aspectGlyph = (i: number) =>
+	`url(/masks/${(L.aspects[i] ?? L.aspects[0]).key}-ink.svg)`;
 
 export function fmtClock(sec: number) {
 	const s = Math.max(0, Math.floor(sec));

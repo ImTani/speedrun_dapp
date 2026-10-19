@@ -224,8 +224,7 @@ export function BindRitual({
 								>
 									<Plate
 										name={trimmed || "…"}
-										lead={L.hero.lead}
-										epithet={a.name}
+										epithet={L.hero.aspectLine(a.name, a.mask)}
 										emblem={<Mask aspect={aspect} size={46} glow />}
 										size="lg"
 									/>

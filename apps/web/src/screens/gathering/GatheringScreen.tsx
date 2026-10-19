@@ -48,9 +48,11 @@ import {
 	heldLight,
 	low,
 	makeLookup,
+	num,
 	type SideKey,
 	type Who,
 } from "./model.ts";
+import type { SealMark } from "./Seals.tsx";
 import type {
 	GatheringEvent,
 	GatheringResponse,
@@ -340,7 +342,26 @@ export function GatheringScreen() {
 	const g = data?.gathering ?? null;
 	const active = !!data?.active && !!g;
 	const rows = standings?.rows ?? [];
-	const feed = useMemo(() => feedOf(data?.events ?? [], who), [data, who]);
+	const sealing = active && g?.phase === "commit";
+	// The seals of the toll now being chosen: which Fragments have sealed their choice.
+	const seals = useMemo<SealMark[] | null>(() => {
+		if (!sealing || !g) return null;
+		const done = new Set(
+			(data?.events ?? [])
+				.filter((e) => e.name === "Committed" && num(e.round) === g.round)
+				.map((e) => low(e.agent)),
+		);
+		return g.participants.map((p) => ({
+			who: who(p.agent),
+			sealed: done.has(low(p.agent)),
+		}));
+	}, [sealing, g, data, who]);
+	// With the seals on the floor, keep the feed to its three latest rites.
+	const feed = useMemo(
+		() => feedOf(data?.events ?? [], who, seals ? 3 : 4),
+		[data, who, seals],
+	);
+	const sealToll = g ? Math.min(g.round + 1, g.rounds) : 0;
 	const toll = duel
 		? duel.toll
 		: g && active
@@ -419,12 +440,14 @@ export function GatheringScreen() {
 					/>
 				</motion.div>
 				<Lower
-					show={ready && !playing && !showVerdict}
+					show={ready && !showVerdict && (!playing || !!seals)}
 					top={lowerTop}
 					bottom={lowerBottom}
 					active={active}
 					ended={!!data?.gathering && !active}
 					feed={feed}
+					seals={seals}
+					toll={sealToll}
 				/>
 			</div>
 

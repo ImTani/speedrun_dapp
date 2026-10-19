@@ -24,7 +24,13 @@ import { easeIn, easeInOut, easeOut, spring } from "@/ui/motion";
 import { Count, Plate } from "@/ui/type";
 import css from "./gathering.module.css";
 import type { StageFit } from "./layout.ts";
-import { aspectName, type Duel, type SideKey, type Who } from "./model.ts";
+import {
+	aspectGlyph,
+	aspectName,
+	type Duel,
+	type SideKey,
+	type Who,
+} from "./model.ts";
 
 export type Beat =
 	| "idle"
@@ -365,7 +371,14 @@ export function FaceOff({
 							data-long={
 								who.name.length > 18 ? 2 : who.name.length > 12 ? 1 : 0
 							}
-							style={{ left: cx - w / 2, top: fit.y(geom.SC) - 8, width: w }}
+							style={
+								{
+									left: cx - w / 2,
+									top: fit.y(geom.SC) - 8,
+									width: w,
+									"--aspect-glyph": aspectGlyph(who.aspect),
+								} as CSSProperties
+							}
 						>
 							<div className={css.plateStack}>
 								<AnimatePresence initial={false}>
@@ -390,7 +403,6 @@ export function FaceOff({
 									>
 										<Plate
 											name={who.name}
-											lead={T.wearsLead}
 											epithet={aspectName(who.aspect)}
 											marked={who.mine}
 											size="sm"

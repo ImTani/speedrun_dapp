@@ -242,7 +242,8 @@ export const L = {
 	},
 
 	hero: {
-		lead: "wears",
+		/** The engraved line under a Fragment's name: its Aspect and the mask it bears. */
+		aspectLine: (aspect: string, mask: string) => `${aspect} · ${mask}`,
 		light: "Light",
 		duels: "Gatherings faced",
 		sigils: "Its Sigils",

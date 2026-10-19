@@ -14,7 +14,7 @@
  * breathing behind the glass), dark (nothing behind it), broken (cracked).
  * Change `swell` to make the light surge once (a reward beat).
  */
-import { animate, motion, useReducedMotion } from "motion/react";
+import { animate, motion, useReducedMotion, useSpring } from "motion/react";
 import {
 	type CSSProperties,
 	type ReactNode,
@@ -28,6 +28,7 @@ import { L } from "@/lexicon";
 import type { GlassApi } from "@/scene/glassgl.js";
 import { MASK } from "@/scene/masks.js";
 import { Mask } from "./Mask";
+import { spring } from "./motion";
 
 // Each Aspect's glass tint (the glass is the only saturated colour in the world).
 export const ASPECT_GLASS = [
@@ -511,4 +512,561 @@ function Surround() {
 			<path d="M-22 424 H322" stroke="#a8916a" strokeWidth="1" opacity=".5" />
 		</svg>
 	);
+}
+
+// ---------------------------------------------------------------- rose window
+
+/**
+ * RoseWindow: a round rose of the Aspect's glass, lit from behind by the same
+ * window shader (glassgl.js WINDOW_FRAG on the owner-locked preset): hammered
+ * relief, streaky cathedral glass, seeds, bevelled lead, bloom. One WebGL
+ * context for its whole life; changing `aspect` dims the light, swaps the
+ * panes and lets the light back in. `turn` (degrees) turns the wheel; the
+ * light behind it stays put. Without WebGL2 the finished SVG art stands in.
+ *
+ *   <RoseWindow aspect={2} turn={-30} />
+ */
+export function RoseWindow({
+	aspect,
+	turn = 0,
+	className,
+	style,
+}: {
+	aspect: number;
+	/** Rotation of the glass in degrees (springs to it). */
+	turn?: number;
+	className?: string;
+	style?: CSSProperties;
+}) {
+	const idx = aspect >= 0 && aspect < 7 ? aspect : 6;
+	const tint = (ASPECT_GLASS[idx] ?? ASPECT_GLASS[6])[0];
+	const reduce = useReducedMotion() ?? false;
+	const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
+	const boxRef = useRef<HTMLDivElement>(null);
+	const artRef = useRef<HTMLDivElement>(null);
+	const canvasRef = useRef<HTMLCanvasElement>(null);
+	const roseRef = useRef<RoseGL | null>(null);
+	const aspectRef = useRef(idx);
+	aspectRef.current = idx;
+	const rot = useSpring(turn, spring.settle);
+	const rotRef = useRef(rot);
+	rotRef.current = rot;
+	const [lit, setLit] = useState(false);
+	const [size, setSize] = useState(0);
+	const [gen, setGen] = useState(0);
+
+	useEffect(() => {
+		rot.set(turn);
+	}, [rot, turn]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: gen is the remount trigger
+	useEffect(() => {
+		let dead = false;
+		let rose: RoseGL | null = null;
+		const box = boxRef.current;
+		const canvas = canvasRef.current;
+		if (!box || !canvas) return;
+		const mountedW = box.clientWidth;
+		setSize(mountedW);
+		setLit(false);
+		(async () => {
+			if (mountedW < 40) return;
+			const { GL } = await import("@/scene/glassgl.js");
+			if (dead) return;
+			rose = await mountRose(
+				canvas,
+				GL as unknown as GLKit,
+				aspectRef.current,
+				() => rotRef.current.get(),
+				reduce,
+			).catch(() => null);
+			if (!rose) return;
+			if (dead) {
+				rose.destroy();
+				return;
+			}
+			roseRef.current = rose;
+			setLit(true);
+		})();
+		const ro = new ResizeObserver(() => {
+			if (Math.abs(box.clientWidth - mountedW) > 12) setGen((g) => g + 1);
+		});
+		ro.observe(box);
+		return () => {
+			dead = true;
+			ro.disconnect();
+			rose?.destroy();
+			roseRef.current = null;
+		};
+	}, [gen, reduce]);
+
+	// The panes follow the Aspect: SVG art always (the fallback), the shader's layers once lit.
+	useEffect(() => {
+		const artEl = artRef.current;
+		if (artEl && size > 0)
+			artEl.innerHTML = roseSVG(idx, "art", Math.round(size), `rw${uid}`);
+		if (lit) roseRef.current?.show(idx);
+	}, [idx, size, uid, lit]);
+
+	return (
+		<div
+			ref={boxRef}
+			className={className}
+			style={{
+				position: "relative",
+				width: "100%",
+				aspectRatio: "1",
+				isolation: "isolate",
+				...style,
+			}}
+		>
+			{/* Light spilling past the stone onto the wall. */}
+			<div
+				aria-hidden="true"
+				style={{
+					position: "absolute",
+					inset: "-16%",
+					zIndex: -1,
+					pointerEvents: "none",
+					background: `radial-gradient(closest-side, ${tint}55 0%, ${tint}1c 55%, transparent 100%)`,
+				}}
+			/>
+			<motion.div
+				aria-hidden="true"
+				style={{ position: "absolute", inset: 0, rotate: rot }}
+			>
+				<svg
+					aria-hidden="true"
+					viewBox="0 0 200 200"
+					style={{
+						position: "absolute",
+						inset: 0,
+						width: "100%",
+						height: "100%",
+					}}
+				>
+					<circle cx="100" cy="100" r={ROSE_R} fill="#0b0807" />
+				</svg>
+				<motion.div
+					ref={artRef}
+					initial={{ opacity: 0 }}
+					animate={{ opacity: size > 0 && !lit ? 1 : 0 }}
+					transition={{ duration: lit ? 0.6 : 0.9 }}
+					style={{ position: "absolute", inset: 0, lineHeight: 0 }}
+				/>
+				<motion.canvas
+					ref={canvasRef}
+					initial={{ opacity: 0 }}
+					animate={{ opacity: lit ? 1 : 0 }}
+					transition={{ duration: 0.9 }}
+					style={{
+						position: "absolute",
+						inset: 0,
+						width: "100%",
+						height: "100%",
+					}}
+				/>
+			</motion.div>
+			<RoseStone />
+		</div>
+	);
+}
+
+// The rose's own drawing space: 200 x 200, centre (100, 100), glass out to ROSE_R.
+const ROSE_C = 100;
+const ROSE_R = 93;
+const LEAD = "#0b0a10";
+/** A second colour per Aspect for the roundels and the jewelled band. */
+const ROSE_ACCENT = [
+	"#176a4f", // Mercy: green against the gold
+	"#d9951f", // Hunger: amber in the blood
+	"#a3172f", // Echo: ruby in the blue
+	"#b8924a", // Rancour: old gold
+	"#4e2a7a", // Appetite: violet
+	"#a3172f", // Inquisitor: ruby
+	"#3fa9b8", // Madness: verdigris
+] as const;
+
+function roseRng(seed: number) {
+	let a = seed >>> 0;
+	return () => {
+		a = (a + 0x6d2b79f5) >>> 0;
+		let t = a;
+		t = Math.imul(t ^ (t >>> 15), t | 1);
+		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+	};
+}
+function roseJitter(hex: string, r: () => number, amt: number) {
+	const n = Number.parseInt(hex.slice(1), 16);
+	const k = 1 + (r() - 0.5) * 2 * amt;
+	const c = [n >> 16, (n >> 8) & 255, n & 255].map((v) =>
+		Math.max(0, Math.min(255, Math.round(v * k))),
+	);
+	return `rgb(${c.join(",")})`;
+}
+const rp = (r: number, a: number) =>
+	`${(ROSE_C + r * Math.cos(a)).toFixed(2)} ${(ROSE_C + r * Math.sin(a)).toFixed(2)}`;
+function rosePiece(r0: number, r1: number, a0: number, a1: number) {
+	return r0 === 0
+		? `M${ROSE_C} ${ROSE_C} L${rp(r1, a0)} A${r1} ${r1} 0 0 1 ${rp(r1, a1)}Z`
+		: `M${rp(r0, a0)} L${rp(r1, a0)} A${r1} ${r1} 0 0 1 ${rp(r1, a1)} L${rp(r0, a1)} A${r0} ${r0} 0 0 0 ${rp(r0, a0)}Z`;
+}
+
+/**
+ * The rose's panes as an SVG string, in the same modes glass.js uses for the
+ * arched windows: "art" (finished, lit), "color" (panes + lead: the shader's
+ * albedo), "lead" (white lead on black: the came mask), "glow" (panes only).
+ */
+function roseSVG(
+	aspect: number,
+	mode: "art" | "color" | "lead" | "glow",
+	width: number,
+	id: string,
+) {
+	const [a, b, c] = ASPECT_GLASS[aspect] ?? ASPECT_GLASS[6];
+	const x = ROSE_ACCENT[aspect] ?? ROSE_ACCENT[6];
+	const r = roseRng(101 + aspect * 17);
+	const shapes: string[] = [];
+	const add = (d: string, fill: string) =>
+		shapes.push(`<path d="${d}" fill="${fill}"/>`);
+	const disc = (cx: number, cy: number, rr: number, fill: string) =>
+		shapes.push(
+			`<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${rr}" fill="${fill}"/>`,
+		);
+	const P = 12;
+	const step = (Math.PI * 2) / P;
+	const off = -Math.PI / 2 - step / 2; // a petal stands upright at the top
+	// Oculus: the hub behind the mask.
+	for (let i = 0; i < 6; i++)
+		add(
+			rosePiece(0, 22, off + i * step * 2, off + (i + 1) * step * 2),
+			roseJitter(i % 2 ? b : x, r, 0.06),
+		);
+	// Petals, each holding a roundel.
+	for (let i = 0; i < P; i++)
+		add(
+			rosePiece(22, 58, off + i * step, off + (i + 1) * step),
+			roseJitter(i % 2 ? c : a, r, 0.12),
+		);
+	for (let i = 0; i < P; i++) {
+		const t = off + (i + 0.5) * step;
+		disc(
+			ROSE_C + 42 * Math.cos(t),
+			ROSE_C + 42 * Math.sin(t),
+			7.5,
+			roseJitter(i % 2 ? x : b, r, 0.08),
+		);
+	}
+	// The jewelled band.
+	for (let i = 0; i < P * 2; i++)
+		add(
+			rosePiece(58, 65, off + (i * step) / 2, off + ((i + 1) * step) / 2),
+			roseJitter(i % 2 ? x : c, r, 0.1),
+		);
+	// Lancets, two to a petal, checkered petal by petal.
+	for (let i = 0; i < P * 2; i++) {
+		const k = Math.floor(i / 2);
+		add(
+			rosePiece(65, ROSE_R, off + (i * step) / 2, off + ((i + 1) * step) / 2),
+			roseJitter((i + k) % 2 ? c : a, r, 0.14),
+		);
+	}
+	// Roundels where the lancets meet.
+	for (let i = 0; i < P; i++) {
+		const t = off + i * step;
+		disc(
+			ROSE_C + 80 * Math.cos(t),
+			ROSE_C + 80 * Math.sin(t),
+			6.5,
+			roseJitter(i % 2 ? b : x, r, 0.1),
+		);
+	}
+	const all = shapes.join("");
+	const ring = `<circle cx="${ROSE_C}" cy="${ROSE_C}" r="${ROSE_R}" fill="none"`;
+	const clip = `<clipPath id="${id}c"><circle cx="${ROSE_C}" cy="${ROSE_C}" r="${ROSE_R}"/></clipPath>`;
+	let defs = clip;
+	let inner: string;
+	if (mode === "lead")
+		inner = `<rect width="200" height="200" fill="#000"/><g stroke="#fff" stroke-width="2.6" stroke-linejoin="round">${all.replace(/fill="[^"]*"/g, 'fill="#000"')}</g>${ring} stroke="#fff" stroke-width="8"/>`;
+	else if (mode === "glow") inner = `<g>${all}</g>`;
+	else if (mode === "color")
+		inner = `<g stroke="${LEAD}" stroke-width="2.6" stroke-linejoin="round">${all}</g>${ring} stroke="${LEAD}" stroke-width="8"/>`;
+	else {
+		defs += `<radialGradient id="${id}l" gradientUnits="userSpaceOnUse" cx="100" cy="88" r="110"><stop offset="0" stop-color="#fff" stop-opacity=".46"/><stop offset=".4" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><filter id="${id}n" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${aspect + 3}"/><feColorMatrix type="saturate" values="0"/></filter>`;
+		inner = `<g stroke="${LEAD}" stroke-width="2.6" stroke-linejoin="round">${all}</g><rect width="200" height="200" fill="url(#${id}l)" style="mix-blend-mode:screen"/><rect width="200" height="200" filter="url(#${id}n)" opacity=".18" style="mix-blend-mode:overlay"/>${ring} stroke="${LEAD}" stroke-width="8"/>`;
+	}
+	const dims =
+		mode === "art"
+			? `width="100%" height="100%"`
+			: `width="${width}" height="${width}"`;
+	return `<svg xmlns="http://www.w3.org/2000/svg" ${dims} viewBox="0 0 200 200"><defs>${defs}</defs><g clip-path="url(#${id}c)">${inner}</g></svg>`;
+}
+
+/** The stone the rose is set in: moulding, gilt hairline, twelve bosses. */
+function RoseStone() {
+	const bosses = Array.from({ length: 12 }, (_, i) => {
+		const t = (i / 12) * Math.PI * 2 - Math.PI / 2;
+		return [100 + 96.2 * Math.cos(t), 100 + 96.2 * Math.sin(t)] as const;
+	});
+	return (
+		<svg
+			aria-hidden="true"
+			viewBox="0 0 200 200"
+			style={{
+				position: "absolute",
+				inset: 0,
+				width: "100%",
+				height: "100%",
+				overflow: "visible",
+				pointerEvents: "none",
+				filter: "drop-shadow(0 8px 14px #000b)",
+			}}
+		>
+			<defs>
+				<linearGradient id="rw-stone" x1="0" y1="0" x2="1" y2="1">
+					<stop offset="0" stopColor="#6e5a44" />
+					<stop offset=".35" stopColor="#4a382a" />
+					<stop offset=".7" stopColor="#2e2219" />
+					<stop offset="1" stopColor="#140d0a" />
+				</linearGradient>
+			</defs>
+			{/* Moulding: an annulus from the glass edge out to the box edge (even-odd). */}
+			<path
+				fillRule="evenodd"
+				fill="url(#rw-stone)"
+				stroke="#0b0807"
+				strokeWidth="1.6"
+				d="M0.5 100 A99.5 99.5 0 1 0 199.5 100 A99.5 99.5 0 1 0 0.5 100 Z M7.5 100 A92.5 92.5 0 1 0 192.5 100 A92.5 92.5 0 1 0 7.5 100 Z"
+			/>
+			<circle
+				cx="100"
+				cy="100"
+				r="92.5"
+				fill="none"
+				stroke="#0b0807"
+				strokeWidth="3"
+			/>
+			<circle
+				cx="100"
+				cy="100"
+				r="94.8"
+				fill="none"
+				stroke="#c9a24f"
+				strokeWidth=".9"
+				opacity=".7"
+			/>
+			{bosses.map(([cx, cy]) => (
+				<circle
+					key={`${cx.toFixed(1)}-${cy.toFixed(1)}`}
+					cx={cx}
+					cy={cy}
+					r="2.2"
+					fill="#8a7152"
+					stroke="#0b0807"
+					strokeWidth="1"
+				/>
+			))}
+		</svg>
+	);
+}
+
+type GLKit = {
+	WINDOW_FRAG: string;
+	PRESETS: Record<string, Record<string, number>>;
+	raster(
+		svg: string,
+		w: number,
+		h: number,
+		blur?: number,
+	): Promise<HTMLCanvasElement>;
+};
+type RoseGL = { show(aspect: number): void; destroy(): void };
+
+const ROSE_VERT = `#version 300 es
+in vec2 aP; out vec2 vUv;
+void main(){ vUv = aP * .5 + .5; vUv.y = 1. - vUv.y; gl_Position = vec4(aP, 0., 1.); }`;
+const ROSE_UNIFORM = {
+	hot: "uHot",
+	amb: "uAmb",
+	moon: "uMoon",
+	leak: "uLeak",
+	rim: "uRim",
+	grime: "uGrime",
+	bloom: "uBloom",
+	bloomGlass: "uBloomGlass",
+	streak: "uStreak",
+	relief: "uRelief",
+	expo: "uExpo",
+} as const;
+
+/** Light the rose with the arched windows' shader, in one WebGL2 context. */
+async function mountRose(
+	canvas: HTMLCanvasElement,
+	GL: GLKit,
+	first: number,
+	angle: () => number,
+	reduce: boolean,
+): Promise<RoseGL | null> {
+	const dpr = Math.min(window.devicePixelRatio || 1, 2);
+	const W = Math.round(canvas.clientWidth * dpr);
+	if (W < 40) return null;
+	canvas.width = W;
+	canvas.height = W;
+	const gl = canvas.getContext("webgl2", {
+		premultipliedAlpha: true,
+		antialias: false,
+	});
+	if (!gl) return null;
+	const params: Record<string, number> = { ...(GL.PRESETS.locked ?? {}) };
+	const layers = (asp: number) =>
+		Promise.all([
+			GL.raster(roseSVG(asp, "color", W, "rc"), W, W),
+			GL.raster(roseSVG(asp, "lead", W, "rl"), W, W),
+			GL.raster(roseSVG(asp, "lead", W, "rb"), W, W, 2.2 * dpr),
+			GL.raster(roseSVG(asp, "glow", W >> 2, "rg"), W >> 2, W >> 2, 1.8 * dpr),
+		]);
+	const firstLayers = await layers(first);
+
+	const sh = (type: number, src: string) => {
+		const s = gl.createShader(type);
+		if (!s) throw new Error("shader");
+		gl.shaderSource(s, src);
+		gl.compileShader(s);
+		if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+			throw new Error(gl.getShaderInfoLog(s) ?? "shader");
+		return s;
+	};
+	const prog = gl.createProgram();
+	gl.attachShader(prog, sh(gl.VERTEX_SHADER, ROSE_VERT));
+	gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, GL.WINDOW_FRAG));
+	gl.linkProgram(prog);
+	if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
+		throw new Error(gl.getProgramInfoLog(prog) ?? "link");
+	// biome-ignore lint/correctness/useHookAtTopLevel: WebGL call, not a React hook
+	gl.useProgram(prog);
+	gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+	gl.bufferData(
+		gl.ARRAY_BUFFER,
+		new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+		gl.STATIC_DRAW,
+	);
+	const aP = gl.getAttribLocation(prog, "aP");
+	gl.enableVertexAttribArray(aP);
+	gl.vertexAttribPointer(aP, 2, gl.FLOAT, false, 0, 0);
+	const U = (n: string) => gl.getUniformLocation(prog, n);
+	const tex = ["uCol", "uLead", "uLeadBlur", "uGlow"].map((n, i) => {
+		const t = gl.createTexture();
+		gl.activeTexture(gl.TEXTURE0 + i);
+		gl.bindTexture(gl.TEXTURE_2D, t);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		gl.uniform1i(U(n), i);
+		return t;
+	});
+	const upload = (src: HTMLCanvasElement[]) => {
+		gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+		src.forEach((c, i) => {
+			gl.activeTexture(gl.TEXTURE0 + i);
+			gl.bindTexture(gl.TEXTURE_2D, tex[i] ?? null);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+		});
+	};
+	upload(firstLayers);
+	const loc = {
+		res: U("uRes"),
+		l: U("uL"),
+		t: U("uT"),
+		swell: U("uSwell"),
+		dim: U("uDim"),
+		red: U("uRed"),
+		crack: U("uCrack"),
+		cloud: U("uCloud"),
+	};
+	const knobs = Object.entries(ROSE_UNIFORM).map(
+		([k, u]) => [k, U(u)] as const,
+	);
+
+	let current = first;
+	let token = 0;
+	let dim = reduce ? 0 : 0.6;
+	let dimTarget = 0;
+	let swellT = -9;
+	let running = !document.hidden;
+	let dead = false;
+	let raf = 0;
+	let last = 0;
+	const t0 = performance.now();
+
+	const draw = (now: number) => {
+		const t = (now - t0) / 1000;
+		// The light sits just above the hub (behind the mask) and wanders a little.
+		// It belongs to the sky, not the glass: it stays put while the wheel turns.
+		const wx = reduce ? 0 : Math.sin(t * 0.23) * 0.07;
+		const wy = (reduce ? 0 : Math.sin(t * 0.17) * 0.05) - 0.05;
+		const th = (-angle() * Math.PI) / 180;
+		const lx = wx * Math.cos(th) - wy * Math.sin(th);
+		const ly = wx * Math.sin(th) + wy * Math.cos(th);
+		dim += (dimTarget - dim) * (reduce ? 1 : 0.14);
+		const sw =
+			Math.max(0, 1 - (t - swellT) / 1.1) * Math.min(1, (t - swellT) * 6);
+		gl.viewport(0, 0, W, W);
+		gl.uniform2f(loc.res, W, W);
+		gl.uniform2f(loc.l, 0.5 + lx, 0.5 + ly);
+		gl.uniform1f(loc.t, t);
+		gl.uniform1f(loc.swell, sw * 0.6);
+		gl.uniform1f(loc.dim, dim);
+		gl.uniform1f(loc.red, 0);
+		gl.uniform1f(loc.crack, 0);
+		gl.uniform3f(loc.cloud, -9, 0, 0.08);
+		for (const [k, u] of knobs) gl.uniform1f(u, params[k] ?? 0);
+		gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+	};
+	// About 30 frames a second: the light drifts slowly; the phone stays cool.
+	const frame = (now: number) => {
+		if (!running || dead) return;
+		raf = requestAnimationFrame(frame);
+		if (now - last < 32) return;
+		last = now;
+		draw(now);
+	};
+	if (reduce) requestAnimationFrame(draw);
+	else if (running) raf = requestAnimationFrame(frame);
+	const onVis = () => {
+		cancelAnimationFrame(raf);
+		running = !document.hidden && !dead;
+		if (running && !reduce) raf = requestAnimationFrame(frame);
+	};
+	document.addEventListener("visibilitychange", onVis);
+
+	return {
+		show(next) {
+			if (dead || next === current) return;
+			current = next;
+			const my = ++token;
+			dimTarget = 0.92;
+			const started = performance.now();
+			layers(next)
+				.then((src) => {
+					const wait = Math.max(0, 150 - (performance.now() - started));
+					setTimeout(() => {
+						if (dead || my !== token) return;
+						upload(src);
+						dimTarget = 0;
+						swellT = (performance.now() - t0) / 1000;
+						if (reduce) requestAnimationFrame(draw);
+					}, wait);
+				})
+				.catch(() => {});
+		},
+		destroy() {
+			dead = true;
+			running = false;
+			cancelAnimationFrame(raf);
+			document.removeEventListener("visibilitychange", onVis);
+			gl.getExtension("WEBGL_lose_context")?.loseContext();
+		},
+	};
 }

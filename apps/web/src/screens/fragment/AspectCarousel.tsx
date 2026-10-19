@@ -3,13 +3,14 @@
 /**
  * Choose the Aspect: one mask at a time, big, on a lit rose of its own glass.
  * Swipe the rose (or tap the arrows, or a mask in the strip below) to try
- * another. Follows the motion.dev swipe gallery pattern: a keyed slide in
+ * another. The rose is one lit window (one WebGL context) that turns and
+ * changes its glass; only the masks slide. Follows the motion.dev swipe gallery pattern: a keyed slide in
  * AnimatePresence, drag="x" with zero constraints, paginate on swipe power.
  */
 import { AnimatePresence, motion, type PanInfo } from "motion/react";
-import { useId } from "react";
+import { useId, useState } from "react";
 import { L } from "@/lexicon";
-import { ASPECT_GLASS } from "@/ui/GlassWindow";
+import { RoseWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
 import { haptic, pressableSoft, spring } from "@/ui/motion";
 import { Rubric } from "@/ui/type";
@@ -56,6 +57,10 @@ export function AspectCarousel({
 		else if (power > SWIPE || offset.x > 90) go(-1);
 	};
 	const liveId = useId();
+	// The rose turns one petal per mask, the way the mask slides.
+	const [wheel, setWheel] = useState({ aspect, turn: 0 });
+	if (wheel.aspect !== aspect)
+		setWheel({ aspect, turn: wheel.turn - (dir || 1) * 30 });
 
 	return (
 		<div className={s.carousel}>
@@ -70,6 +75,12 @@ export function AspectCarousel({
 					<Chevron flip />
 				</motion.button>
 				<div className={s.roseBox}>
+					<RoseWindow
+						aspect={aspect}
+						turn={wheel.turn}
+						style={{ position: "absolute", inset: 0 }}
+					/>
+					<span className={s.roseShade} aria-hidden="true" />
 					<AnimatePresence initial={false} custom={dir} mode="popLayout">
 						<motion.div
 							key={aspect}
@@ -92,7 +103,6 @@ export function AspectCarousel({
 							style={{ touchAction: "pan-y" }}
 							aria-describedby={liveId}
 						>
-							<Rose aspect={aspect} />
 							<motion.span
 								className={s.roseMask}
 								initial={{ scale: 0.9, y: 8 }}
@@ -156,73 +166,6 @@ export function AspectCarousel({
 			</div>
 			<p className={s.swipeHint}>{L.bind.swipe}</p>
 		</div>
-	);
-}
-
-/** A small rose window in the Aspect's glass, lit from behind. */
-function Rose({ aspect }: { aspect: number }) {
-	const [a, b, c] = ASPECT_GLASS[aspect] ?? ASPECT_GLASS[6];
-	const id = useId().replace(/[^a-zA-Z0-9]/g, "");
-	const petals = 12;
-	const ring = Array.from({ length: petals }, (_, i) => {
-		const a0 = (i / petals) * Math.PI * 2 - Math.PI / 2;
-		const a1 = ((i + 1) / petals) * Math.PI * 2 - Math.PI / 2;
-		const p = (r: number, t: number) =>
-			`${(100 + Math.cos(t) * r).toFixed(1)} ${(100 + Math.sin(t) * r).toFixed(1)}`;
-		return {
-			outer: `M${p(62, a0)} L${p(94, a0)} A94 94 0 0 1 ${p(94, a1)} L${p(62, a1)} A62 62 0 0 0 ${p(62, a0)}Z`,
-			inner: `M100 100 L${p(62, a0)} A62 62 0 0 1 ${p(62, a1)}Z`,
-		};
-	});
-	return (
-		<svg viewBox="0 0 200 200" className={s.rose} aria-hidden="true">
-			<defs>
-				<radialGradient id={`${id}l`} cx="50%" cy="44%" r="55%">
-					<stop offset="0" stopColor="#fff6dc" stopOpacity=".75" />
-					<stop offset=".5" stopColor="#fff6dc" stopOpacity=".15" />
-					<stop offset="1" stopColor="#fff6dc" stopOpacity="0" />
-				</radialGradient>
-				<filter id={`${id}g`} x="-30%" y="-30%" width="160%" height="160%">
-					<feGaussianBlur stdDeviation="9" />
-				</filter>
-			</defs>
-			<g filter={`url(#${id}g)`} opacity=".7">
-				{ring.map((r, i) => (
-					<path key={r.outer} d={r.outer} fill={i % 2 ? b : a} />
-				))}
-			</g>
-			<circle cx="100" cy="100" r="98" fill="#0b0807" />
-			{ring.map((r, i) => (
-				<path
-					key={r.outer}
-					d={r.outer}
-					fill={i % 3 === 0 ? c : i % 2 ? b : a}
-					opacity=".9"
-				/>
-			))}
-			{ring.map((r, i) => (
-				<path key={r.inner} d={r.inner} fill={i % 2 ? a : c} opacity=".55" />
-			))}
-			<circle cx="100" cy="100" r="98" fill={`url(#${id}l)`} />
-			<g fill="none" stroke="#0b0807" strokeLinejoin="round">
-				{ring.map((r) => (
-					<path key={r.outer} d={r.outer} strokeWidth="3.5" />
-				))}
-				<circle cx="100" cy="100" r="62" strokeWidth="4" />
-				<circle cx="100" cy="100" r="96" strokeWidth="6" />
-			</g>
-			<circle
-				cx="100"
-				cy="100"
-				r="99"
-				fill="none"
-				stroke="#c9a24f"
-				strokeWidth="1.2"
-				opacity=".6"
-			/>
-			{/* Darken the centre so the mask reads against the glass. */}
-			<circle cx="100" cy="100" r="58" fill="#0b0807" opacity=".42" />
-		</svg>
 	);
 }
 

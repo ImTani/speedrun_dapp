@@ -182,7 +182,6 @@ export function LedgerSheet({
 													{r.name || T.nameless}
 												</span>
 												<span className={css.rowAspect}>
-													<em>{T.wearsLead}</em>
 													{aspectName(r.aspect)}
 												</span>
 											</span>
