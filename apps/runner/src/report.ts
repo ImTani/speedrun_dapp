@@ -48,6 +48,9 @@ export async function reportBout(rt: Runtime, boutId: bigint) {
 	const deployBlock = BigInt(rt.net.deployment.block);
 	let openBlock: bigint | undefined;
 	let closeBlock: bigint | undefined;
+	let openArgs:
+		| { agents?: readonly Address[]; movesPerMatch?: number; matches?: number }
+		| undefined;
 	for (
 		let to = latest;
 		to >= deployBlock && openBlock === undefined;
@@ -71,17 +74,16 @@ export async function reportBout(rt: Runtime, boutId: bigint) {
 		);
 		closeBlock ??= closed?.[0]?.blockNumber ?? undefined;
 		openBlock = opened?.[0]?.blockNumber ?? undefined;
+		openArgs = (opened?.[0] as { args?: typeof openArgs } | undefined)?.args;
 	}
 	if (openBlock === undefined)
 		throw new Error(`BoutOpened(${boutId}) not found`);
 	const end = closeBlock ?? latest;
 
-	const [participants, k, matches] = (await client.readContract({
-		address: arena,
-		abi: arenaAbi,
-		functionName: "boutInfo",
-		args: [boutId],
-	})) as readonly [readonly Address[], number, number, number, boolean];
+	// Arena's views only describe the latest bout, so the shape comes from BoutOpened.
+	const participants = openArgs?.agents ?? [];
+	const k = openArgs?.movesPerMatch ?? 0;
+	const matches = openArgs?.matches ?? 0;
 	const operator = rt.net.deployment.operator;
 	const senders = [operator, ...participants];
 
@@ -125,16 +127,28 @@ export async function reportBout(rt: Runtime, boutId: bigint) {
 	const totalGas = ops.reduce((t, o) => t + o.gas, 0n);
 	const totalCost = ops.reduce((t, o) => t + o.cost, 0n);
 
-	const points = await Promise.all(
-		participants.map((_, i) =>
-			client.readContract({
-				address: arena,
-				abi: arenaAbi,
-				functionName: "boutPoints",
-				args: [boutId, BigInt(i)],
-			}),
-		),
+	// Points from PairScored, since storage only keeps the latest bout's totals.
+	const scored = await chunked(openBlock, end, (f, t) =>
+		client.getContractEvents({
+			address: arena,
+			abi: arenaAbi,
+			eventName: "PairScored",
+			args: { boutId },
+			fromBlock: f,
+			toBlock: t,
+		}),
 	);
+	const byAgent = new Map<string, number>();
+	for (const e of scored) {
+		const a = e.args;
+		for (const [who, pts] of [
+			[a.agentA, a.pointsA],
+			[a.agentB, a.pointsB],
+		] as const) {
+			if (who) byAgent.set(who, (byAgent.get(who) ?? 0) + Number(pts ?? 0));
+		}
+	}
+	const points = participants.map((a) => byAgent.get(a) ?? 0);
 	const configs = await Promise.all(
 		participants.map((a) =>
 			client.readContract({
