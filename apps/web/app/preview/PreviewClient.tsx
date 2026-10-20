@@ -23,6 +23,7 @@ import {
 } from "@/client/mockData";
 import { GameStateProvider } from "@/client/state";
 import { levelThreshold } from "@/game/economy";
+import { CookieNotice, NOTICE_KEY } from "@/legal";
 import { L } from "@/lexicon";
 import { FragmentScreen } from "@/screens/fragment/FragmentScreen";
 import { GatheringScreen } from "@/screens/gathering/GatheringScreen";
@@ -226,6 +227,7 @@ export function PreviewClient(p: {
 	frame: Opt;
 	op: Opt;
 	delay: Opt;
+	notice: Opt;
 }) {
 	if (!p.screen) return <Index />;
 
@@ -283,8 +285,21 @@ export function PreviewClient(p: {
 					</MockGameState>
 				</MockApiProvider>
 			</Seeded>
+			{p.notice === "1" && p.frame !== "bare" ? <NoticeAgain /> : null}
 		</MotionRoot>
 	);
+}
+
+/** `notice=1`: the storage notice over the shell, as /play docks it (shown again even if dismissed). */
+function NoticeAgain() {
+	const [ready, setReady] = useState(false);
+	useEffect(() => {
+		try {
+			localStorage.removeItem(NOTICE_KEY);
+		} catch {}
+		setReady(true);
+	}, []);
+	return ready ? <CookieNotice /> : null;
 }
 
 /** The game screens get /play's frame (locked document, keyboard tracking); the index scrolls. */

@@ -92,6 +92,10 @@
 	--pad-r: max(var(--gutter), var(--safe-r));
 	--tap: 44px;
 	--tabbar-h: calc(64px + var(--safe-b));
+	/* the Gathering's round boss stands this far above the ledge (src/ui/TabBar.module.css) */
+	--tabbar-boss: 22px;
+	/* the docked notices start here: clear of the ledge and its boss */
+	--dock-b: calc(var(--tabbar-h) + var(--tabbar-boss) + 8px);
 	--column: 560px; /* reading column on tablets/desktop; background stays full-bleed */
 
 	/* ---- Motion (CSS side; motion/react presets live in src/ui/motion) ---- */

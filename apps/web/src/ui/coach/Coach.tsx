@@ -4,7 +4,8 @@
  * A coach mark: dims the screen around one real element, rings it, and sets one short line
  * beside it. It advances when the player does the thing (taps the target, or a screen sends
  * coachAct(id) for swipes and typing), never on a "next" button. The veil passes touches
- * through, so it never traps anyone; Skip (or Escape) dismisses. Follows the target as the
+ * through, so it never traps anyone; Skip (or Escape) dismisses. Skip rides with the line, on
+ * the side away from the opening, so it never sits over the screen's own corner controls. Follows the target as the
  * layout moves; reduced motion drops the pulse and the glide. Doing the thing rings a soft
  * two-note chime (unless the caller strikes its own sound: chime={false}).
  */
@@ -19,8 +20,10 @@ import { onCoachAct } from "./signal";
 import { useAnchor } from "./useAnchor";
 
 const PAD = 8;
-/** Room the line needs below the target before it flips above. */
-const LINE_ROOM = 84;
+/** Room the line and its Skip need below the target before they flip above. */
+const LINE_ROOM = 136;
+/** Keep the line and Skip this far inside the top and bottom of the screen. */
+const EDGE = 8;
 
 export function Coach({
 	target,
@@ -129,7 +132,12 @@ export function Coach({
 	const lineX = hole
 		? Math.min(Math.max(hole.x + hole.width / 2, 16 + half), vw - 16 - half)
 		: vw / 2;
-	const lineY = hole ? (below ? hole.y + hole.height + 14 : hole.y - 14) : 0;
+	// Never off screen: a target too tall for either side lets the line overlap its edge instead.
+	const lineY = hole
+		? below
+			? Math.min(hole.y + hole.height + 14, vh - LINE_ROOM - EDGE)
+			: Math.max(hole.y - 14, LINE_ROOM + EDGE)
+		: 0;
 	const glide = reduce ? { duration: 0 } : spring.snappy;
 
 	return createPortal(
@@ -153,34 +161,35 @@ export function Coach({
 					>
 						{reduce ? null : <span className={s.pulse} />}
 					</motion.span>
-					<motion.p
+					<motion.div
 						className={s.line}
 						data-below={below || undefined}
-						role="status"
 						initial={false}
 						animate={{ left: lineX, top: lineY }}
 						transition={glide}
 					>
-						<motion.span
-							className={s.lineInner}
-							initial={reduce ? false : { opacity: 0, y: below ? -6 : 6 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ ...spring.settle, delay: 0.1 }}
+						<p role="status">
+							<motion.span
+								className={s.lineInner}
+								initial={reduce ? false : { opacity: 0, y: below ? -6 : 6 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{ ...spring.settle, delay: 0.1 }}
+							>
+								{text}
+							</motion.span>
+						</p>
+						<button
+							type="button"
+							className={s.skip}
+							onClick={() => {
+								play("tap");
+								buzz(HAPTIC.tab);
+								finish(true);
+							}}
 						>
-							{text}
-						</motion.span>
-					</motion.p>
-					<button
-						type="button"
-						className={s.skip}
-						onClick={() => {
-							play("tap");
-							buzz(HAPTIC.tab);
-							finish(true);
-						}}
-					>
-						{T.skip}
-					</button>
+							{T.skip}
+						</button>
+					</motion.div>
 				</motion.div>
 			) : null}
 		</AnimatePresence>,

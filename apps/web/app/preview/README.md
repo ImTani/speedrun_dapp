@@ -12,7 +12,7 @@ Headless only (Playwright), e.g. `page.setViewportSize({ width: 390, height: 844
 ## URL shape
 
 ```
-/preview?screen=<screen>&state=<state>[&aspect=0..6][&frame=bare][&me=<me state>][&gathering=<gathering state>][&spire=<spire state>][&outcome=win|lose][&op=fail|error][&delay=<ms>]
+/preview?screen=<screen>&state=<state>[&aspect=0..6][&frame=bare][&me=<me state>][&gathering=<gathering state>][&spire=<spire state>][&outcome=win|lose][&op=fail|error][&delay=<ms>][&notice=1]
 ```
 
 | Param       | Meaning                                                                                                   | Default     |
@@ -27,6 +27,7 @@ Headless only (Playwright), e.g. `page.setViewportSize({ width: 390, height: 844
 | `outcome`   | Spire only: force every climb to `win` or `lose` (otherwise the real duel decides)                       | real duel   |
 | `op`        | how sealing / re-carving ends: resolves true (`ok`), false (`fail`), or throws (`error`)                 | `ok`        |
 | `delay`     | ms the seal / re-carve takes before it resolves                                                           | `2500`      |
+| `notice`    | `1` docks the storage notice above the tab bar, as /play does (shown even if dismissed before)           | off         |
 
 In the shell frame the tab bar works, so one URL can visit every tab on the same fixture world.
 

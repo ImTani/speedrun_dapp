@@ -275,7 +275,8 @@
 	position: fixed;
 	left: max(12px, var(--safe-l));
 	right: max(12px, var(--safe-r));
-	bottom: calc(var(--tabbar-h) + 10px);
+	/* clear of the ledge and the Gathering's raised boss (app/globals.css) */
+	bottom: var(--dock-b);
 	z-index: var(--z-toast);
 	max-width: var(--column);
 	margin: 0 auto;

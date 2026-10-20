@@ -1,10 +1,12 @@
-/* The toast dock floats just above the tab bar, centred, never taking touches. */
+/* The toast dock floats just above the tab bar and its raised boss, centred, never taking
+   touches. While the storage notice is docked there too, it rides above it (--notice-h is set
+   by src/legal/CookieNotice.tsx), so the two never stack on each other. */
 
 .dock {
 	position: fixed;
 	left: 0;
 	right: 0;
-	bottom: calc(var(--tabbar-h) + 14px);
+	bottom: calc(var(--dock-b) + var(--notice-h, 0px));
 	/* Above the coach veil (z-toast + 5), so a toast during a coach mark is not dimmed. */
 	z-index: calc(var(--z-toast) + 10);
 	display: flex;

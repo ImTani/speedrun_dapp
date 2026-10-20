@@ -30,6 +30,7 @@ export default async function PreviewPage({
 			frame={one(q.frame)}
 			op={one(q.op)}
 			delay={one(q.delay)}
+			notice={one(q.notice)}
 		/>
 	);
 }

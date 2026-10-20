@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { legal } from "@/lexicon/legal.ts";
 import { NOTICE_KEY } from "./config.ts";
 import s from "./legal.module.css";
@@ -24,16 +24,38 @@ function seen(): boolean {
 /**
  * One-line storage notice, shown until dismissed (remembered in localStorage). Non-blocking:
  * no focus trap, no overlay, never takes focus. Renders nothing on the server and once dismissed.
+ * Docked above the tab bar it publishes its height as `--notice-h` on <html>, so toasts
+ * (src/ui/coach/toast.module.css) ride above it instead of on top of it.
  */
 export function CookieNotice({
 	aboveTabBar = true,
 	top = false,
 }: CookieNoticeProps) {
 	const [open, setOpen] = useState(false);
+	const ref = useRef<HTMLElement>(null);
+	const docked = aboveTabBar && !top;
 
 	useEffect(() => {
 		if (!seen()) setOpen(true);
 	}, []);
+
+	useEffect(() => {
+		const el = ref.current;
+		if (!open || !docked || !el) return;
+		const root = document.documentElement;
+		const set = () =>
+			root.style.setProperty(
+				"--notice-h",
+				`${Math.ceil(el.offsetHeight) + 8}px`,
+			);
+		set();
+		const ro = new ResizeObserver(set);
+		ro.observe(el);
+		return () => {
+			ro.disconnect();
+			root.style.removeProperty("--notice-h");
+		};
+	}, [open, docked]);
 
 	if (!open) return null;
 
@@ -46,6 +68,7 @@ export function CookieNotice({
 
 	return (
 		<aside
+			ref={ref}
 			aria-label={legal.notice.label}
 			className={`${s.notice} ${top ? s.noticeTop : aboveTabBar ? "" : s.noticeLow}`}
 		>

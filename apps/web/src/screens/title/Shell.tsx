@@ -10,10 +10,21 @@
  * the Fragment tab ships with the first paint; the other ways (and the onboarding
  * guide) load on demand, and the open ones are fetched quietly once the page idles.
  * Must sit inside <GameStateProvider>.
+ *
+ * Each way taken is a history entry (`?tab=spire`, pushed natively so the shell never remounts):
+ * Back walks back through the ways, and Back on the first one leaves as usual. Closed ways are
+ * never written. Sheets (useBackToClose) stack their own entry on top, so Back closes them first.
+ * Tapping the way you stand on glides it to the top; each way's scroll is kept while away.
  */
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
-import { type ComponentType, useEffect, useRef, useState } from "react";
+import {
+	type ComponentType,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { HAPTIC, useSfx } from "@/audio";
 import { UNLOCKS, type UnlockId, useGameState } from "@/client/state";
 import { FxLayer } from "@/fx";
@@ -103,6 +114,28 @@ const COACHED: ReadonlySet<UnlockId> = new Set([
 	"vestry",
 ]);
 
+const isTab = (v: unknown): v is Tab => TAB_ORDER.some((t) => t === v);
+
+/** The way a history entry stands for: its own mark, else its `?tab=`, else the Fragment. */
+function tabOfEntry(): Tab {
+	const st = window.history.state as { __tab?: unknown } | null;
+	if (isTab(st?.__tab)) return st.__tab;
+	const q = new URLSearchParams(window.location.search).get("tab");
+	return isTab(q) ? q : "fragment";
+}
+
+/** Write the way into history: `?tab=` (the Fragment, the first way, needs none). */
+function writeTab(t: Tab, how: "push" | "replace") {
+	const u = new URL(window.location.href);
+	if (t === "fragment") u.searchParams.delete("tab");
+	else u.searchParams.set("tab", t);
+	// No Next.js keys here: its patched pushState copies them over and syncs the router.
+	const data = { __tab: t };
+	const url = `${u.pathname}${u.search}${u.hash}`;
+	if (how === "push") window.history.pushState(data, "", url);
+	else window.history.replaceState(data, "", url);
+}
+
 const needOf = (id: UnlockId) => {
 	const def = UNLOCKS.find((u) => u.id === id);
 	// "Vestry · Scry once to open": the toast names what it opens and what to do.
@@ -111,21 +144,94 @@ const needOf = (id: UnlockId) => {
 
 export function GameShell({ initialTab = "fragment" }: { initialTab?: Tab }) {
 	const [[tab, dir], setNav] = useState<[Tab, number]>([initialTab, 1]);
-	const go = (t: Tab) =>
-		setNav(([cur]) =>
-			t === cur
-				? [cur, 0]
-				: [t, Math.sign(TAB_ORDER.indexOf(t) - TAB_ORDER.indexOf(cur))],
-		);
 	const { state } = useGameState();
 	const [toast, say] = useToast();
 	const sfx = useSfx(["unlock"]);
+	const reduce = useReducedMotion() ?? false;
 	useTapSounds();
 	const tabNow = useRef(tab);
 	tabNow.current = tab;
 	const unlocks = state?.unlocks ?? null;
 	const fresh = state?.fresh;
 	const done = state?.onboarding.done ?? true;
+
+	// Each way's scroller, and where each was left (the ways unmount when left).
+	const ways = useRef<Partial<Record<Tab, HTMLDivElement>>>({});
+	const kept = useRef<Partial<Record<Tab, number>>>({});
+
+	/** Move to another way; history is written by the caller (or was, for Back). */
+	const move = useCallback((t: Tab, how: "push" | "replace" | "pop") => {
+		const cur = tabNow.current;
+		if (t === cur) return;
+		const el = ways.current[cur];
+		if (el) kept.current[cur] = el.scrollTop;
+		// A sheet's entry on top (one that leaves the ledge in reach): the way replaces it, so
+		// Back never lands on a sheet that is no longer there.
+		const onSheet = !!(window.history.state as { __sheet?: string } | null)
+			?.__sheet;
+		if (how !== "pop") writeTab(t, how === "push" && onSheet ? "replace" : how);
+		tabNow.current = t;
+		setNav([t, Math.sign(TAB_ORDER.indexOf(t) - TAB_ORDER.indexOf(cur))]);
+	}, []);
+
+	const go = (t: Tab) => {
+		if (t !== tabNow.current) return move(t, "push");
+		// The way you stand on: back to its top.
+		ways.current[t]?.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+	};
+
+	// This entry stands for the way opened on (a deep link's `?tab=` included); Back and Forward
+	// move between the ways. A sheet's entry carries the same way, so closing one changes nothing.
+	useEffect(() => {
+		const st = (window.history.state ?? {}) as Record<string, unknown>;
+		if (st.__tab !== tabNow.current)
+			window.history.replaceState({ ...st, __tab: tabNow.current }, "");
+		const onPop = () => move(tabOfEntry(), "pop");
+		window.addEventListener("popstate", onPop);
+		return () => window.removeEventListener("popstate", onPop);
+	}, [move]);
+
+	// Mounting a way: put it back where it was left. Its content may still be loading, so wait
+	// (briefly) until it is tall enough, and give up the moment the player scrolls it themselves.
+	// One stable ref per way (a fresh one each render would re-run this on every render).
+	const refs = useRef(
+		new Map<Tab, (el: HTMLDivElement | null) => () => void>(),
+	);
+	const wayRef = (t: Tab) => {
+		let r = refs.current.get(t);
+		if (!r) {
+			r = (el) => {
+				if (!el) return () => {};
+				ways.current[t] = el;
+				const want = kept.current[t] ?? 0;
+				let raf = 0;
+				const stop = () => {
+					cancelAnimationFrame(raf);
+					el.removeEventListener("pointerdown", stop);
+					el.removeEventListener("wheel", stop);
+				};
+				if (want > 0) {
+					let frames = 0;
+					const step = () => {
+						if (el.scrollHeight - el.clientHeight >= want || frames++ > 90) {
+							el.scrollTop = want;
+							return stop();
+						}
+						raf = requestAnimationFrame(step);
+					};
+					el.addEventListener("pointerdown", stop, { passive: true });
+					el.addEventListener("wheel", stop, { passive: true });
+					step();
+				}
+				return () => {
+					stop();
+					if (ways.current[t] === el) delete ways.current[t];
+				};
+			};
+			refs.current.set(t, r);
+		}
+		return r;
+	};
 
 	// Closed ways (none shown until the state is known, so returning players never see locks flash).
 	const locked: Partial<Record<Tab, boolean>> = {};
@@ -136,10 +242,11 @@ export function GameShell({ initialTab = "fragment" }: { initialTab?: Tab }) {
 	}
 
 	// Opened while away from it (or a closed way from a notification link): back to the Fragment.
+	// Replaced, not pushed: a closed way never stays in history.
 	useEffect(() => {
 		if (unlocks && tab !== "fragment" && !unlocks[tab])
-			setNav(["fragment", -1]);
-	}, [unlocks, tab]);
+			move("fragment", "replace");
+	}, [unlocks, tab, move]);
 
 	// The unlock moment: name what just opened, once per sitting. While onboarding runs only
 	// the Gathering is announced; the rest are met through their coach marks afterwards.
@@ -200,6 +307,7 @@ export function GameShell({ initialTab = "fragment" }: { initialTab?: Tab }) {
 				<AnimatePresence initial={false} custom={dir}>
 					<motion.div
 						key={tab}
+						ref={wayRef(tab)}
 						className={s.way}
 						custom={dir}
 						variants={swap}

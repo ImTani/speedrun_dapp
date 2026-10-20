@@ -7,8 +7,13 @@
  * changes its glass; only the masks slide. Follows the motion.dev swipe gallery pattern: a keyed slide in
  * AnimatePresence, drag="x" with zero constraints, paginate on swipe power.
  */
-import { AnimatePresence, motion, type PanInfo } from "motion/react";
-import { useId, useState } from "react";
+import {
+	AnimatePresence,
+	motion,
+	type PanInfo,
+	useReducedMotion,
+} from "motion/react";
+import { useEffect, useId, useRef, useState } from "react";
 import { buzz } from "@/audio";
 import { L } from "@/lexicon";
 import { coachAct } from "@/ui/coach/signal";
@@ -60,6 +65,23 @@ export function AspectCarousel({
 		else if (power > SWIPE || offset.x > 90) go(-1);
 	};
 	const liveId = useId();
+	// Narrow phones scroll the chip strip: keep the chosen chip in view as the rose turns.
+	const strip = useRef<HTMLDivElement>(null);
+	const reduce = useReducedMotion() ?? false;
+	useEffect(() => {
+		const el = strip.current;
+		const chip = el?.children[aspect];
+		if (!el || !chip || el.scrollWidth <= el.clientWidth) return;
+		const box = el.getBoundingClientRect();
+		const c = chip.getBoundingClientRect();
+		const by =
+			c.left < box.left + 8
+				? c.left - box.left - 8
+				: c.right > box.right - 8
+					? c.right - box.right + 8
+					: 0;
+		if (by) el.scrollBy({ left: by, behavior: reduce ? "auto" : "smooth" });
+	}, [aspect, reduce]);
 	// The rose turns one petal per mask, the way the mask slides.
 	const [wheel, setWheel] = useState({ aspect, turn: 0 });
 	if (wheel.aspect !== aspect)
@@ -146,7 +168,7 @@ export function AspectCarousel({
 				</AnimatePresence>
 			</div>
 
-			<div className={s.strip}>
+			<div className={s.strip} ref={strip}>
 				{L.aspects.map((x, i) => (
 					<motion.button
 						key={x.key}
