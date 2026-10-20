@@ -4,7 +4,8 @@ A god devoured itself. What is left of it is ink, stone, old gold and dried bloo
 behind by stained glass. **The glass is the only saturated colour in the world.**
 
 Every image here was rendered from the game's own code-drawn art (the mask set, the
-stained-glass shader, the ink nave, the title lettering) or captured from the running app.
+stained-glass shader, the ink nave, the illuminated lettering, the atmosphere's light) or
+captured from the running app.
 None of it was made by an AI image generator. Rebuild steps are at the end of this sheet.
 
 ## Files
@@ -39,10 +40,23 @@ Echo is the mask on the share card and on the landing hero, so the logo matches 
 
 ![Stacked wordmark](wordmark-stacked-dark@2x.png)
 
-This is the title-screen lettering. **Apostasy** is set in Grenze Gotisch 900, gilded (bone-hi to
-gilt-l to gilt to gilt-d, top to bottom), cut into a thick soot outline with a cast shadow.
-**SEDE VACANTE** is set in Cinzel 700, blood-l, tracked +0.3em, between two blood rules with
-diamond terminals. In the stacked lockup the rubric's cap height is 0.185 of the name size.
+This is the illuminated wordmark (variant **B3**, `WORDMARK_VARIANT` in
+`apps/web/src/ui/wordmark/config.ts`), the same lettering as the title screen, the landing hero
+and the share card. It is inline SVG with SVG-filter relief (`src/ui/wordmark/Defs.tsx`), laid out
+from glyph tables so it renders the same at 28 px and at 300 px.
+
+- **Apostasy:** the lowercase "postasy" is set in **UnifrakturMaguntia** (400), a classic Fraktur
+  with broad strokes. The capital **A** is **UnifrakturCook** (700), whose A has a closed apex and
+  a crossbar (Maguntia's own A reads as a "U").
+- **Gold leaf:** one diagonal sweep of leaf across the capital and the lowercase (`#f6dc94`,
+  `#e2bd68`, `#f3d88f`, `#c99a45`, `#e9c977`), slightly uneven, with a soft burnish and a few
+  pin-holes where the bole shows through.
+- **Keyline and glow:** a thin dark umber keyline (`#1a0f08`, a gilder's line, no red), a soft
+  ink shadow beneath, and a warm ember glow behind the letters (`#ff7a45`, `#ffae5c`). The name
+  never carries red.
+- **SEDE VACANTE:** Cinzel 700 in quiet gilt (`#c9ad72`), tracked +0.3em, between two gilt rules
+  (`#b8975a`) with lozenge terminals and a dot at each outer end. In the horizontal lockup a
+  single rule leads into it from the name.
 
 ### Key art and mask set
 
@@ -60,7 +74,7 @@ diamond terminals. In the stacked lockup the rubric's cap height is 0.185 of the
 
 | File | Size | Caption (alt text in brackets) |
 | --- | --- | --- |
-| `cover-840x300.png` | 840 x 300 | Cover: Echo and Inquisitor Fragments face off in lit windows, the name between them. Nothing important sits in the outer 60 px. |
+| `cover-840x300.png` | 840 x 300 | Cover: Echo and Inquisitor Fragments face off in lit windows, the name between them, with the atmosphere's light (glass halos, coloured shafts on the floor). Nothing important sits in the outer 60 px. |
 | `cover-1680x600@2x.png` | 1680 x 600 | The same at 2x |
 | `screenshots/01-gathering.png` | 1080 x 1920 | "Your Fragment fights while you're away" (A Gathering verdict: Old Marrow devours Gallow) |
 | `screenshots/02-collect.png` | 1080 x 1920 | "Collect what it earned" (A full Vigil with Collect, the Sigils and the Marks shelf) |
@@ -68,6 +82,26 @@ diamond terminals. In the stacked lockup the rubric's cap height is 0.185 of the
 | `screenshots/04-spire.png` | 1080 x 1920 | "Climb the Spire" (The Spire's five floors with two cleared and floor III open) |
 | `screenshots/05-reliquary.png` | 1080 x 1920 | "Scry for cosmetics" (A Relic revealed in the Reliquary: the Pyre tint) |
 | `screenshots/raw/*.png` | 780 x 1688 | The unframed phone captures (390 x 844 at 2x) |
+
+## Light and atmosphere
+
+The scenes are lit by a post-processing layer, the **atmosphere** (`apps/web/src/scene/atmosphere.ts`,
+shipped preset **Balanced**). It sits over the scene and under every word, and builds its light
+from the scene's own light sources rather than painting over them:
+
+- **Glass:** each lit window throws a soft halo on the stone around it (never over the glass), a
+  faint coloured rim on its arch, and its colour onto the floor below.
+- **Candles:** a hot core and a wide warm halo, a gentle flicker (no strobing), warm pools on the
+  wall and floor, and a few embers rising.
+- **Ember eyes and gilt:** a small hot bloom on the mask eyes; sparse slow glints on gilded studs.
+- **Shafts and dust:** god rays from the glass, kept subtle (they never dominate), with dust
+  drifting through them.
+- **Grade:** warm gilt highlights over cool umber shadows, darkness gathered in the vault, a
+  vignette and a fine film grain.
+
+The key art, the cover and the in-game screenshots are captured with it on and warmed up. When
+you place the brand over game footage, let the light come from the glass and the candles: don't
+add lens flares or extra glow.
 
 ## Palette
 
@@ -90,11 +124,11 @@ Ember is for the eyes and heat.
 | `--c-bone-hi` | `#f3e6c8` | Bright bone: headings, highlights |
 | `--c-blood-dd` | `#3a0709` | Deep blood: shadows under red |
 | `--c-blood` | `#8e1218` | Blood: main buttons |
-| `--c-blood-l` | `#c7262c` | Light blood: the SEDE VACANTE rubric, Devour |
+| `--c-blood-l` | `#c7262c` | Light blood: Devour, danger |
 | `--c-ember-d` | `#7a1c0e` | Dark ember: the outer glow of the eyes |
 | `--c-ember` | `#ff6a4a` | Ember: the eyes, heat, Full |
 | `--c-ember-hi` | `#ffb27a` | Bright ember: the core of the eyes |
-| `--c-gilt-d` | `#9a7a35` | Dark gilt: the foot of the gilded name |
+| `--c-gilt-d` | `#9a7a35` | Dark gilt: shaded gilt, the foot of gilt gradients |
 | `--c-gilt` | `#c9a24f` | Gilt: frames, rules, the stone hairline |
 | `--c-gilt-l` | `#e3c27c` | Light gilt: links, rubrics, names |
 | `--c-gilt-hi` | `#f5dfa0` | Bright gilt: shine |
@@ -114,18 +148,21 @@ as light through glass, never as flat fills for UI.
 
 ## Type
 
-All five faces are under the SIL Open Font License 1.1 and are served from our own origin through
+All seven faces are under the SIL Open Font License 1.1 and are served from our own origin through
 `next/font` (`apps/web/app/fonts.ts`).
 
 | Face | Role | Where it is used |
 | --- | --- | --- |
-| **Grenze Gotisch** (900 for the name, 700 for headings) | Display | The name, screen titles, Fragment names, button labels. Blackletter on Roman bones: it stays readable when set large. |
+| **UnifrakturMaguntia** (400) | The name | "postasy" in the wordmark only. Never for headings or text. |
+| **UnifrakturCook** (700) | The name's initial | The capital A of the wordmark only. |
+| **Grenze Gotisch** (700 to 900) | Display | Screen titles, Fragment names, button labels. Blackletter on Roman bones: it stays readable when set large. |
 | **Grenze** (roman, 700) | Readable display | Gathering verdicts, name plates, the listing captions. Use it when a heading must read at a glance. |
-| **Cinzel** (700) | Rubrics and numbers | Small-caps labels tracked +0.16 to 0.3em, Light counts, SEDE VACANTE. Always uppercase. |
+| **Cinzel** (700) | Rubrics and numbers | Small-caps labels tracked +0.16 to 0.3em, Light counts, the wordmark's SEDE VACANTE. Always uppercase. |
 | **Alegreya** (400 to 700, italic) | Text | Running text, hints, the feed, consent lines (13 to 18 px on a phone). |
 | **IM Fell English** (400, italic) | Book | Epithets and italic subtext, where letterpress grit fits. |
 
-Rules: never set Grenze Gotisch in all caps, and never use it for running text. Cinzel is only
+Rules: never set Grenze Gotisch or the Unifraktur faces in all caps, and never use them for running
+text. The Unifraktur faces belong to the wordmark alone. Cinzel is only
 for short labels. Set text on soot or umber, and put a 1 to 2 px soot shadow under light text that
 sits on art.
 
@@ -136,7 +173,7 @@ sits on art.
 - **Minimum size:** logo **32 px** on screen (16 px favicon only as `logo.svg`); the mask must
   still read. For the shader PNGs, use 64 px or larger.
   Stacked wordmark **200 px** wide (the rubric falls below 9 px under that); horizontal wordmark
-  **320 px** wide. Below these sizes, set "Apostasy" alone in Grenze Gotisch.
+  **320 px** wide. Below these sizes, set "Apostasy" as plain text in Grenze Gotisch.
 - **Backgrounds:** use void, soot or the game's own dark art. On light or busy backgrounds, use
   `logo-512.png` / `logo-1024.png` (with their ink plate) or the dark wordmark plates, not the
   transparent files.
@@ -149,8 +186,10 @@ sits on art.
 **Don't**
 - Recolour the glass, the gilt or the ember eyes, or swap in another mask.
 - Stretch, skew, rotate, outline, bevel or add glow effects to the mark or the lettering.
-- Set the name in another face, or rebuild the lettering without the soot cut and the gilt.
-- Put the transparent files on light backgrounds (the halo and soot cut are made for the dark).
+- Set the name in another face, or rebuild the lettering without the gold leaf, the umber keyline
+  and the ember glow. Never colour the name red.
+- Put the transparent files on light backgrounds (the ember glow and the keyline are made for the
+  dark).
 - Make new art for the brand with AI image tools. Every visual comes from the game's code or
   real captures of it.
 
@@ -161,9 +200,10 @@ sits on art.
   recombined, recoloured and shaded them in code. The icon authors do not endorse this game.
   The full table is in `apps/web/public/ATTRIBUTION.md`.
 - **Fonts:** Grenze Gotisch and Grenze (Omnibus-Type), Cinzel (Natanael Gama), Alegreya
-  (Huerta Tipográfica), IM Fell English (Igino Marini), all SIL OFL 1.1.
+  (Huerta Tipográfica), IM Fell English (Igino Marini), UnifrakturMaguntia and UnifrakturCook
+  (j. 'mach' wust), all SIL OFL 1.1.
 - **Everything else** (the rose and arched windows, the glass shader, the ink nave, the
-  lettering treatment) is the game's own code-drawn art.
+  illuminated lettering treatment, the atmosphere's light) is the game's own code-drawn art.
 
 Suggested credit line: *Masks adapted from game-icons.net icons by Lorc and Delapouite
 (CC BY 3.0).*
@@ -178,11 +218,18 @@ The assets come from dev-only pages in the web app: `/_brand` (folder
 pnpm --filter @arena/web exec next dev -p 3200
 # one headless Chromium for every capture (needs Playwright on NODE_PATH)
 NODE_PATH=<dir>/node_modules node submission/brand/tools/capture-server.cjs 3299
+#   (if that Playwright expects another Chromium revision than the one installed, set
+#   CHROMIUM_PATH to the installed build's chrome.exe)
 # all assets, or one group: logo wordmark cover key masks shots frames icons
+# (APP=http://localhost:<port> if the dev server is not on 3200)
 bash submission/brand/tools/render-all.sh [group]
 node submission/brand/tools/verify.cjs     # sizes and byte limits
 curl -s localhost:3299/quit                # close the browser
 ```
+
+The cover and key art are captured with motion on and a 3.5 s wait, so the atmosphere is
+warmed up (dust, embers, grain) when the shot is taken. It pauses off screen, so the page must
+fill the viewport.
 
 Copy `icons/icon-192.png`, `icons/icon-512.png` and `icons/icon-maskable-512.png` into
 `apps/web/public/`, and `logo.svg` / `logo-maskable.svg` over `public/icon.svg` /

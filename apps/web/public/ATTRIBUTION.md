@@ -74,14 +74,18 @@ In-app credit: the Colophon, which opens from the title screen and from the Vest
 
 ## Fonts
 
-All three faces are licensed under the [SIL Open Font License 1.1](https://openfontlicense.org).
+All seven faces are licensed under the [SIL Open Font License 1.1](https://openfontlicense.org).
 They are served through `next/font/google`, which self-hosts them from our own origin (`app/fonts.ts`).
 
-| Face | Designer | Source | Licence |
-| --- | --- | --- | --- |
-| Grenze Gotisch | Renata Polastri (Omnibus-Type) | [Google Fonts](https://fonts.google.com/specimen/Grenze+Gotisch) | OFL 1.1 |
-| IM Fell English | Igino Marini | [Google Fonts](https://fonts.google.com/specimen/IM+Fell+English) | OFL 1.1 |
-| Cinzel | Natanael Gama | [Google Fonts](https://fonts.google.com/specimen/Cinzel) | OFL 1.1 |
+| Face | Designer | Used for | Source | Licence |
+| --- | --- | --- | --- | --- |
+| UnifrakturMaguntia | J. 'Mach' Wust | Wordmark lowercase | [Google Fonts](https://fonts.google.com/specimen/UnifrakturMaguntia) | OFL 1.1 |
+| UnifrakturCook | J. 'Mach' Wust | Wordmark capital A | [Google Fonts](https://fonts.google.com/specimen/UnifrakturCook) | OFL 1.1 |
+| Grenze Gotisch | Renata Polastri (Omnibus-Type) | Large display titles | [Google Fonts](https://fonts.google.com/specimen/Grenze+Gotisch) | OFL 1.1 |
+| Grenze | Renata Polastri (Omnibus-Type) | Verdicts, headers, names | [Google Fonts](https://fonts.google.com/specimen/Grenze) | OFL 1.1 |
+| Alegreya | Juan Pablo del Peral (Huerta Tipográfica) | Body text and sublines | [Google Fonts](https://fonts.google.com/specimen/Alegreya) | OFL 1.1 |
+| Cinzel | Natanael Gama | Small labels and numerals | [Google Fonts](https://fonts.google.com/specimen/Cinzel) | OFL 1.1 |
+| IM Fell English | Igino Marini | Book face | [Google Fonts](https://fonts.google.com/specimen/IM+Fell+English) | OFL 1.1 |
 
 ## Sound
 

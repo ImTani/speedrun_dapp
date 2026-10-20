@@ -3,13 +3,14 @@
 # Chromium) from the dev-only pages at /_brand and /preview. Needs `next dev -p 3200` running
 # in apps/web and the capture server on 3299. Run from anywhere: bash render-all.sh [only]
 # where `only` is one of: logo wordmark cover key masks shots frames icons (default: all).
+# APP=http://localhost:<port> points it at a dev server on another port.
 set -euo pipefail
 
 HERE=$(cd "$(dirname "$0")" && pwd)
 SUB=$(cd "$HERE/../.." && pwd)
 BRAND=$(cygpath -m "$SUB/brand" 2>/dev/null || echo "$SUB/brand")
 LIST=$(cygpath -m "$SUB/listing" 2>/dev/null || echo "$SUB/listing")
-APP=http://localhost:3200
+APP=${APP:-http://localhost:3200}
 CAP=http://localhost:3299/shot
 ONLY=${1:-all}
 mkdir -p "$SUB/brand" "$SUB/listing/screenshots/raw"
@@ -60,13 +61,13 @@ if want wordmark; then
 fi
 
 if want cover; then
-	job "$(j url="$APP/_brand?a=cover" out="$LIST/cover-840x300.png" w=840 h=300 dsf=1 ready='[data-ready]' wait=2000)"
-	job "$(j url="$APP/_brand?a=cover" out="$LIST/cover-1680x600@2x.png" w=840 h=300 dsf=2 ready='[data-ready]' wait=2000)"
+	job "$(j url="$APP/_brand?a=cover" out="$LIST/cover-840x300.png" w=840 h=300 dsf=1 reduce=false ready='[data-ready]' wait=3500)"
+	job "$(j url="$APP/_brand?a=cover" out="$LIST/cover-1680x600@2x.png" w=840 h=300 dsf=2 reduce=false ready='[data-ready]' wait=3500)"
 fi
 
 if want key; then
-	job "$(j url="$APP/_brand?a=key" out="$BRAND/keyart-1920x1080.png" w=1920 h=1080 dsf=1 ready='[data-ready]' wait=3000)"
-	job "$(j url="$APP/_brand?a=key&mark=0" out="$BRAND/keyart-clean-1920x1080.png" w=1920 h=1080 dsf=1 ready='[data-ready]' wait=3000)"
+	job "$(j url="$APP/_brand?a=key" out="$BRAND/keyart-1920x1080.png" w=1920 h=1080 dsf=1 reduce=false ready='[data-ready]' wait=3500)"
+	job "$(j url="$APP/_brand?a=key&mark=0" out="$BRAND/keyart-clean-1920x1080.png" w=1920 h=1080 dsf=1 reduce=false ready='[data-ready]' wait=3500)"
 fi
 
 if want masks; then

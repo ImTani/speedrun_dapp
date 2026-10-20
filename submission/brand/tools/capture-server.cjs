@@ -16,8 +16,12 @@ const { chromium } = require("playwright");
 const PORT = Number(process.argv[2] || 3299);
 
 (async () => {
+	// CHROMIUM_PATH: a full Chromium build's chrome.exe, when the Playwright on NODE_PATH expects
+	// a different revision than the one installed under PLAYWRIGHT_BROWSERS_PATH.
+	const exe = process.env.CHROMIUM_PATH;
 	const browser = await chromium.launch({
-		channel: "chromium", // the full Chromium in new headless mode, not headless-shell
+		// the full Chromium in new headless mode, not headless-shell
+		...(exe ? { executablePath: exe } : { channel: "chromium" }),
 		headless: true,
 		args: ["--use-angle=d3d11", "--enable-gpu", "--ignore-gpu-blocklist"],
 	});
