@@ -23,19 +23,6 @@
 	margin-inline: auto;
 	min-height: var(--tap);
 }
-.skip {
-	min-width: 64px;
-	min-height: var(--tap);
-	padding: 0 12px;
-	background: none;
-	border: 0;
-	font-family: var(--font-num);
-	font-weight: 700;
-	font-size: var(--fs-small);
-	letter-spacing: 0.1em;
-	text-transform: uppercase;
-	color: var(--c-bone);
-}
 
 .body {
 	flex: 1;

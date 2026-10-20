@@ -47,12 +47,14 @@ export const spire = {
 	nextIn: (ms: number) => `+1 in ${wait(ms)}`,
 	full: "Full",
 
-	climb: (floor: number) => `Climb floor ${roman(floor)}`,
-	climbAgain: (floor: number) => `Climb floor ${roman(floor)} again`,
+	/** The button: the action and the floor. "Climb IV" */
+	climb: (floor: number) => `Climb ${roman(floor)}`,
+	/** The button with no climbs left (the wait goes in the note under it). */
+	climbBare: "Climb",
 	climbing: "Climbing…",
 	noClimbs: "No climbs left",
-	/** "No climbs left · +1 in 2h 14m" */
-	noClimbsUntil: (ms: number) => `No climbs left · +1 in ${wait(ms)}`,
+	/** The note under a disabled Climb: "Next climb in 2h 14m" */
+	nextClimb: (ms: number) => `Next climb in ${wait(ms)}`,
 	pick: "Choose a floor",
 
 	duel: {

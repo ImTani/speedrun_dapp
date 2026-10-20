@@ -56,10 +56,13 @@ export function itemName(id: string | null | undefined): string {
 export const reliquary = {
 	name: "Reliquary",
 	ash: "Ash",
-	/** "Scry · 100 Ash" */
-	scry: (cost: number) => `Scry · ${cost} Ash`,
+	/** The button: the action and the price (the purse says Ash). "Scry · 100" */
+	scry: (cost: number) => `Scry · ${cost}`,
 	scrying: "Scrying…",
-	again: (cost: number) => `Again · ${cost} Ash`,
+	/** "Again · 100" */
+	again: (cost: number) => `Again · ${cost}`,
+	/** The note under a Scry the purse can't cover: "You have 40 Ash" */
+	have: (ash: number) => `You have ${ash} Ash`,
 	/** "Relic guaranteed within 12" */
 	pity: (left: number) =>
 		left <= 1 ? "Next one is a Relic" : `Relic guaranteed within ${left}`,
@@ -77,7 +80,8 @@ export const reliquary = {
 	fresh: "New",
 	/** "Owned · +40 Ash back" */
 	duplicate: (refund: number) => `Already owned · +${refund} Ash back`,
-	wear: "Wear it",
+	wear: "Wear",
+	/** Already worn: a quiet state, not a button. */
 	worn: "Worn",
 
 	recent: "Recent",

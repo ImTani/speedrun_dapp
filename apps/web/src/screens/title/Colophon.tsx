@@ -15,8 +15,9 @@ import { SOUND_CREDITS, SoundSettingsList } from "@/audio";
 import { DeleteAccount, LegalLinks } from "@/legal";
 import { audio } from "@/lexicon/audio";
 import { shell } from "@/lexicon/shell";
+import { cx, link, SecondaryButton } from "@/ui/controls";
 import { ATTRIBUTION_PATH, MASK_CREDITS } from "@/ui/masks/credits";
-import { pressable, scrim, sheet } from "@/ui/motion/presets";
+import { scrim, sheet } from "@/ui/motion/presets";
 import { useBackToClose } from "@/ui/useBackToClose";
 import s from "./title.module.css";
 
@@ -105,7 +106,7 @@ export function Colophon({
 								</section>
 							))}
 							<a
-								className={s.leafRoll}
+								className={cx(link.nav, s.leafRoll)}
 								href={ATTRIBUTION_PATH}
 								target="_blank"
 								rel="noopener"
@@ -121,15 +122,13 @@ export function Colophon({
 									<DeleteAccount {...(onDeleted ? { onDeleted } : {})} />
 								</div>
 							) : null}
-							<motion.button
+							<SecondaryButton
 								ref={closeRef}
-								type="button"
 								className={s.leafClose}
 								onClick={onClose}
-								{...pressable}
 							>
 								{C.close}
-							</motion.button>
+							</SecondaryButton>
 						</div>
 					</motion.section>
 				</div>

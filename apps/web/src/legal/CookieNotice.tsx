@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { legal } from "@/lexicon/legal.ts";
+import { link, TextButton } from "@/ui/controls";
 import { NOTICE_KEY } from "./config.ts";
 import s from "./legal.module.css";
 
@@ -73,11 +74,14 @@ export function CookieNotice({
 			className={`${s.notice} ${top ? s.noticeTop : aboveTabBar ? "" : s.noticeLow}`}
 		>
 			<p className={s.noticeText}>
-				{legal.notice.text} <Link href="/cookies">{legal.notice.link}</Link>
+				{legal.notice.text}{" "}
+				<Link href="/cookies" className={link.inline}>
+					{legal.notice.link}
+				</Link>
 			</p>
-			<button type="button" className={s.noticeDismiss} onClick={dismiss}>
+			<TextButton className={s.noticeDismiss} onClick={dismiss}>
 				{legal.notice.dismiss}
-			</button>
+			</TextButton>
 		</aside>
 	);
 }

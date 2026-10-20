@@ -1,0 +1,270 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: rules are grouped by part (face, glyph, label) then by state. */
+/* =====================================================================
+   SecondaryButton / DangerButton: the wax family's subordinate bars.
+   Layers, back to front: .shape (.face, then .fill for loading) <
+   .glyph < .label. The focus ring is drawn around .shape (ring.module.css);
+   the drop shadow and the disabled desaturation ride in --shape-fx so the
+   ring is drawn from the bare silhouette.
+   ===================================================================== */
+
+/* Layout defaults at zero specificity: a call site's layout class (width, margins) wins. */
+:where(.btn) {
+	display: grid;
+	width: 100%;
+	margin: 0;
+}
+.btn {
+	--g: 24px; /* glyph size */
+	--gl: 12px; /* glyph inset from the leading end */
+	--gx: calc(var(--gl) + var(--g) / 2); /* glyph centre, in the face's box */
+	position: relative;
+	isolation: isolate;
+	place-items: center;
+	min-height: var(--ctl-h-md);
+	padding: 8px 16px 9px calc(var(--gl) + var(--g) + 10px);
+	border: 0;
+	border-radius: 0;
+	background: none;
+	color: var(--ctl-label-2);
+	font: inherit;
+	text-decoration: none;
+	cursor: pointer;
+	user-select: none;
+	-webkit-tap-highlight-color: transparent;
+	touch-action: manipulation;
+}
+.btn:not([data-glyph]) {
+	padding-inline: 18px;
+}
+.btn[data-size="lg"] {
+	--g: 28px;
+	--gl: 14px;
+	min-height: var(--ctl-h-lg);
+	padding-block: 11px 12px;
+	padding-inline-end: 20px;
+}
+.btn[data-inline] {
+	display: inline-grid;
+	width: auto;
+	min-width: 8em;
+}
+.btn:disabled {
+	opacity: 1; /* globals dim every disabled button; the bar desaturates instead */
+	cursor: default;
+}
+
+/* ---- the bar ---- */
+.shape {
+	--shape-fx: var(--ctl-drop);
+	position: absolute;
+	inset: 3px 1px;
+	z-index: 0;
+	pointer-events: none;
+}
+.face,
+.fill {
+	position: absolute;
+	inset: 0;
+	border-radius: var(--ctl-wax-r);
+}
+.face {
+	filter: var(--ctl-edge-fx, none);
+	transform-origin: 50% 100%;
+	transition:
+		transform var(--dur-1) var(--ease-out),
+		filter var(--dur-2) var(--ease-out);
+}
+/* the soft gloss along the top, as on the primary wax */
+.face::after {
+	content: "";
+	position: absolute;
+	left: 18%;
+	right: 8%;
+	top: 12%;
+	height: 13%;
+	border-radius: 99px;
+	background: linear-gradient(180deg, #fff1d61c, #fff1d600);
+	transition: opacity var(--dur-1) var(--ease-out);
+}
+.btn[data-tone="secondary"] .face {
+	background:
+		radial-gradient(70% 70% at 28% 8%, #6b543c66, #6b543c00 70%),
+		linear-gradient(180deg, #3e2f24 0%, #2c2017 42%, #1c140f 84%, #140e0b 100%);
+	box-shadow:
+		inset 0 -3px 5px #050403b8,
+		inset 0 1.5px 0 #e3c27c2a,
+		inset 0 0 0 1px #0b0807b0;
+}
+.btn[data-tone="danger"] {
+	color: var(--ctl-label-danger);
+}
+.btn[data-tone="danger"] .face {
+	background:
+		radial-gradient(70% 70% at 28% 8%, #8a8f9433, #8a8f9400 70%),
+		linear-gradient(180deg, #3a3634 0%, #262220 42%, #181513 84%, #100e0d 100%);
+	box-shadow:
+		inset 0 -3px 5px #050403c0,
+		inset 0 1.5px 0 #ffffff1c,
+		inset 0 0 0 1px #0b0807c0;
+}
+
+/* ---- loading: light spreads out from under the glyph ---- */
+.fill {
+	overflow: hidden;
+	opacity: 0;
+	transition: opacity var(--dur-2) var(--ease-out);
+}
+.fill::before,
+.fill::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	mix-blend-mode: screen;
+}
+.fill::before {
+	transform-origin: var(--gx) 50%;
+	transform: scaleX(var(--p, 0));
+	background:
+		linear-gradient(180deg, #f5dfa000 0%, #f5dfa014 60%, #f5dfa030 100%),
+		linear-gradient(
+			90deg,
+			#f5dfa000 0%,
+			#f5dfa01c 70%,
+			#f5dfa044 96%,
+			#fff3cc88 100%
+		);
+	transition: transform 0.4s var(--ease-out);
+}
+.fill::after {
+	background: radial-gradient(
+		circle calc(var(--g) * 1.6) at var(--gx) 50%,
+		#f5dfa05a,
+		#f5dfa018 55%,
+		#f5dfa000
+	);
+}
+.btn[data-tone="danger"] .fill::before {
+	background:
+		linear-gradient(180deg, #ff6a4a00 0%, #ff6a4a14 60%, #ff6a4a30 100%),
+		linear-gradient(
+			90deg,
+			#ff6a4a00 0%,
+			#ff6a4a1c 70%,
+			#ffb27a44 96%,
+			#ffd9a088 100%
+		);
+}
+.btn[data-tone="danger"] .fill::after {
+	background: radial-gradient(
+		circle calc(var(--g) * 1.6) at var(--gx) 50%,
+		#ff6a4a5a,
+		#ff6a4a18 55%,
+		#ff6a4a00
+	);
+}
+.btn[data-busy] .fill {
+	opacity: 1;
+}
+.btn[data-indeterminate] .fill::before {
+	animation: pour 1.9s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes pour {
+	0% {
+		transform: scaleX(0);
+		opacity: 1;
+	}
+	80% {
+		transform: scaleX(1);
+		opacity: 1;
+	}
+	100% {
+		transform: scaleX(1);
+		opacity: 0;
+	}
+}
+
+/* ---- the glyph at the leading end ---- */
+.glyph {
+	position: absolute;
+	left: calc(var(--gl) + 1px);
+	top: 50%;
+	z-index: 1;
+	width: var(--g);
+	height: var(--g);
+	margin-top: calc(var(--g) / -2);
+	color: var(--c-gilt-l);
+	pointer-events: none;
+	filter: drop-shadow(0 1px 0 #050403);
+	transition:
+		transform var(--dur-1) var(--ease-out),
+		filter var(--dur-2) var(--ease-out);
+}
+.glyph > svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+.btn[data-busy] .glyph {
+	filter: drop-shadow(0 1px 0 #050403) drop-shadow(0 0 5px #f5dfa0aa);
+}
+.btn[data-tone="danger"][data-busy] .glyph {
+	filter: drop-shadow(0 1px 0 #050403) drop-shadow(0 0 5px #ff6a4aaa);
+}
+
+/* ---- the label ---- */
+.label {
+	position: relative;
+	z-index: 2;
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-lead);
+	line-height: 1.05;
+	letter-spacing: 0.03em;
+	text-align: center;
+	text-wrap: balance;
+	text-shadow:
+		0 1px 0 #050403,
+		0 0 2px #050403;
+	transition: transform var(--dur-1) var(--ease-out);
+}
+
+/* ---- states ---- */
+@media (hover: hover) {
+	.btn:hover:not(:disabled) .face {
+		filter: var(--ctl-edge-fx,) brightness(1.14);
+	}
+}
+.btn:active:not(:disabled) .shape,
+.btn[data-pressed] .shape {
+	--shape-fx: var(--ctl-drop-in);
+}
+.btn:active:not(:disabled) .face,
+.btn[data-pressed] .face {
+	transform: scaleY(0.94) scaleX(1.006);
+	filter: var(--ctl-edge-fx,) brightness(0.92);
+}
+.btn:active:not(:disabled) .face::after,
+.btn[data-pressed] .face::after {
+	opacity: 0.3;
+}
+.btn:active:not(:disabled) :is(.label, .glyph),
+.btn[data-pressed] :is(.label, .glyph) {
+	transform: translateY(1px);
+}
+.btn:disabled:not([data-busy]) .shape {
+	--shape-fx: var(--ctl-off) drop-shadow(0 1px 0 var(--c-void));
+}
+.btn:disabled:not([data-busy]) .glyph {
+	filter: var(--ctl-off);
+}
+.btn:disabled:not([data-busy]) .label {
+	color: var(--ctl-label-off);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.btn[data-indeterminate] .fill::before {
+		animation: none;
+		transform: scaleX(1);
+		opacity: 0.55;
+	}
+}

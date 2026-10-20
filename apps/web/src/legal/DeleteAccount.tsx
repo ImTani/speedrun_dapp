@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useApi } from "@/client/api.ts";
 import { legal } from "@/lexicon/legal.ts";
+import { DangerButton, link, TextButton } from "@/ui/controls";
 import {
 	clearLocalGameData,
 	deleteAccount,
@@ -21,7 +22,8 @@ export interface DeleteAccountProps {
 }
 
 /**
- * Two-step account deletion: "Delete my account", then "Yes, delete it". On success it clears this
+ * Two-step account deletion: "Delete my account", then "Yes, delete it" (DangerButtons; the second
+ * sits beside the TextButton way back, which takes focus). On success it clears this
  * device's game storage, unsubscribes push, signs out of Privy, then calls onDeleted.
  */
 export function DeleteAccount({ onDeleted, className }: DeleteAccountProps) {
@@ -66,23 +68,22 @@ export function DeleteAccount({ onDeleted, className }: DeleteAccountProps) {
 				<>
 					<p>{t.confirmLead}</p>
 					<div className={s.deleteActions}>
-						<button
+						<TextButton
 							ref={keepRef}
-							type="button"
-							className={s.btn}
 							onClick={() => setPhase("idle")}
 							disabled={phase === "working"}
 						>
 							{t.cancel}
-						</button>
-						<button
-							type="button"
-							className={`${s.btn} ${s.btnDanger}`}
+						</TextButton>
+						<DangerButton
+							inline
+							className={s.deleteGo}
 							onClick={run}
 							disabled={phase === "working"}
+							loading={phase === "working"}
 						>
 							{phase === "working" ? t.working : t.confirm}
-						</button>
+						</DangerButton>
 					</div>
 				</>
 			) : phase === "done" ? (
@@ -94,16 +95,14 @@ export function DeleteAccount({ onDeleted, className }: DeleteAccountProps) {
 					<p>{t.lead}</p>
 					<p className={s.deleteSmall}>
 						{t.kept}{" "}
-						<Link href="/privacy#your-rights">{legal.links.privacy}</Link>
+						<Link href="/privacy#your-rights" className={link.inline}>
+							{legal.links.privacy}
+						</Link>
 					</p>
 					<div className={s.deleteActions}>
-						<button
-							type="button"
-							className={`${s.btn} ${s.btnDanger}`}
-							onClick={() => setPhase("confirm")}
-						>
+						<DangerButton inline onClick={() => setPhase("confirm")}>
 							{t.start}
-						</button>
+						</DangerButton>
 					</div>
 					{phase === "error" ? (
 						<p className={`${s.deleteStatus} ${s.deleteError}`} role="alert">

@@ -1,0 +1,70 @@
+/* TextInput: the field wrapper, the well (frame.module.css with data-well) and the input. */
+:where(.field) {
+	display: block;
+	width: 100%;
+	margin: 0;
+}
+.field {
+	--k: 9px;
+}
+/* a sunk well: no drop shadow, only a lit lower lip */
+.field .well {
+	--shape-fx: drop-shadow(0 1px 0 #ffffff12);
+	filter: var(--shape-fx);
+}
+/* focus: the shared ring around the well (inputs are always focus-visible when focused) */
+.field:focus-within .well,
+.field[data-focused] .well {
+	filter: var(--ctl-ring-fx) var(--shape-fx,);
+}
+.field:focus-within .well > :first-child,
+.field[data-focused] .well > :first-child {
+	background: linear-gradient(180deg, #9a7a35, #5a4632);
+}
+.field[data-disabled] .well {
+	filter: var(--ctl-off);
+}
+.input {
+	display: block;
+	width: 100%;
+	min-height: var(--ctl-h-lg);
+	padding: 10px 16px;
+	border: 0;
+	border-radius: 0;
+	outline: none;
+	background: none;
+	color: var(--ctl-label);
+	caret-color: var(--c-gilt-l);
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-h3);
+	line-height: 1.1;
+	letter-spacing: 0.02em;
+	text-align: center;
+	text-shadow: 0 1px 0 var(--c-soot);
+	-webkit-user-select: text;
+	user-select: text;
+}
+.input:focus-visible {
+	outline: none;
+}
+.input::placeholder {
+	color: var(--c-bone-dd);
+	font-weight: 500;
+	opacity: 1;
+}
+.input:disabled {
+	opacity: 1;
+	color: var(--ctl-label-off);
+}
+.field[data-size="md"] .input {
+	min-height: var(--ctl-h-md);
+	padding: 8px 14px;
+	font-size: var(--fs-body);
+	text-align: start;
+}
+@media (forced-colors: active) {
+	.input:focus-visible {
+		outline: 2px solid CanvasText;
+	}
+}

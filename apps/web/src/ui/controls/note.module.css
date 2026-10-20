@@ -1,0 +1,21 @@
+/* ControlNote: one small caption line under a control. */
+.note {
+	margin: 6px 0 0;
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	font-weight: 500;
+	line-height: 1.3;
+	color: var(--ctl-note);
+	text-align: center;
+	text-wrap: balance;
+	text-shadow: 0 1px 0 var(--c-soot);
+}
+.note[data-align="start"] {
+	text-align: start;
+}
+.note[data-tone="warn"] {
+	color: #ff977d;
+}
+.note[data-tone="gilt"] {
+	color: var(--c-gilt-l);
+}

@@ -1,0 +1,152 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: grouped by part, then shape, then state. */
+/* =====================================================================
+   The frame language shared by Chip, SelectableCard and TextInput: a rim
+   and a face, both cut to the same silhouette (chamfered by default, or
+   round, or arched), so the selected rim and the focus ring follow the
+   corners instead of squaring them off.
+
+   `.host` goes on the control (it may lay out its own children: the frame
+   sits behind them at z-index -1 inside the host's isolated stack);
+   `.frame` > `.rim` + `.face` is the silhouette and carries the ring.
+   ===================================================================== */
+:where(.host) {
+	--k: var(--ctl-cut); /* chamfer */
+	--w: 1.5px; /* rim width */
+	--arch: 34px; /* arch rise */
+}
+.host {
+	position: relative;
+	isolation: isolate;
+}
+.host:disabled {
+	opacity: 1;
+	cursor: default;
+}
+.frame {
+	--shape-fx: var(--ctl-drop);
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+}
+.rim,
+.face {
+	position: absolute;
+	transition:
+		background var(--dur-2) var(--ease-out),
+		box-shadow var(--dur-1) var(--ease-out),
+		filter var(--dur-2) var(--ease-out);
+}
+.rim {
+	inset: 0;
+	background: linear-gradient(180deg, #6b543c, #3a2c22);
+}
+.face {
+	inset: var(--w);
+	background:
+		radial-gradient(90% 120% at 30% 0%, #3a2c2255, #3a2c2200 70%),
+		linear-gradient(180deg, #241a14 0%, #17100c 100%);
+	box-shadow:
+		inset 0 1px 0 #ffffff10,
+		inset 0 -2px 4px #00000090;
+}
+
+/* ---- silhouettes ---- */
+.host[data-shape="cut"] .rim {
+	clip-path: polygon(
+		0 var(--k),
+		var(--k) 0,
+		calc(100% - var(--k)) 0,
+		100% var(--k),
+		100% calc(100% - var(--k)),
+		calc(100% - var(--k)) 100%,
+		var(--k) 100%,
+		0 calc(100% - var(--k))
+	);
+}
+/* the face's corner keeps the rim an even width along the diagonal: k - w(2 - sqrt 2) */
+.host[data-shape="cut"] .face {
+	--k2: max(0px, calc(var(--k) - var(--w) * 0.586));
+	clip-path: polygon(
+		0 var(--k2),
+		var(--k2) 0,
+		calc(100% - var(--k2)) 0,
+		100% var(--k2),
+		100% calc(100% - var(--k2)),
+		calc(100% - var(--k2)) 100%,
+		var(--k2) 100%,
+		0 calc(100% - var(--k2))
+	);
+}
+.host[data-shape="round"] :is(.rim, .face) {
+	border-radius: 999px;
+}
+.host[data-shape="arch"] .rim {
+	border-radius: 50% 50% 6px 6px / var(--arch) var(--arch) 6px 6px;
+}
+.host[data-shape="arch"] .face {
+	border-radius:
+		50% 50% 5px 5px / calc(var(--arch) - var(--w)) calc(var(--arch) - var(--w))
+		5px 5px;
+}
+
+/* ---- tones ---- */
+.host[data-tone="blood"] .rim {
+	background: linear-gradient(180deg, #c7262c, #6a0d12);
+}
+.host[data-tone="blood"] .face {
+	background:
+		radial-gradient(120% 140% at 0% 50%, #3a070966 0%, #3a070900 60%),
+		linear-gradient(180deg, #261714, #140c0a);
+}
+/* a sunk well (the text input) */
+.host[data-well] .face {
+	background: linear-gradient(180deg, #050403 0%, #0b0807 100%);
+	box-shadow:
+		inset 0 2px 6px #000000d0,
+		inset 0 -1px 0 #ffffff0c;
+}
+
+/* ---- states ---- */
+@media (hover: hover) {
+	.host:hover:not(:disabled) .face {
+		filter: brightness(1.15);
+	}
+}
+.host:active:not(:disabled) .frame,
+.host[data-pressed] .frame {
+	--shape-fx: var(--ctl-drop-in);
+}
+.host:active:not(:disabled) .face,
+.host[data-pressed] .face {
+	box-shadow:
+		inset 0 3px 7px #000000c0,
+		inset 0 0 0 1px #00000040;
+}
+/* selected: the gilt rim and a low glow, around the real corners */
+.host[data-selected] {
+	--w: 2px;
+}
+.host[data-selected] .rim {
+	background: linear-gradient(
+		180deg,
+		var(--c-gilt-hi) 0%,
+		var(--c-gilt) 45%,
+		var(--c-gilt-d) 100%
+	);
+}
+.host[data-selected] .face {
+	background:
+		radial-gradient(90% 120% at 30% 0%, #5a463266, #5a463200 70%),
+		linear-gradient(180deg, #2c2017 0%, #1a120d 100%);
+}
+.host[data-selected] .frame {
+	--shape-fx: var(--ctl-drop) drop-shadow(0 0 7px #e3c27c59);
+}
+/* disabled: the frame desaturates and the content mutes (the reason goes in a ControlNote) */
+.host:disabled .frame {
+	--shape-fx: var(--ctl-off) drop-shadow(0 1px 0 var(--c-void));
+}
+.host:disabled > :not(.frame) {
+	filter: grayscale(0.75) brightness(0.78);
+}

@@ -9,6 +9,7 @@ import {
 	type Ref,
 	useCallback,
 	useEffect,
+	useId,
 	useMemo,
 	useRef,
 	useState,
@@ -24,6 +25,7 @@ import { FX, fx } from "@/fx";
 import { itemById, type Rarity, type ScryResult } from "@/game/reliquary";
 import { itemName, reliquary as T } from "@/lexicon/reliquary";
 import { PrimaryButton } from "@/ui/button";
+import { ControlNote, SecondaryButton } from "@/ui/controls";
 import { hitStop, IMPACT, impact, useShake } from "@/ui/motion";
 import { Count, Rubric } from "@/ui/type";
 import { DressedMask, ItemSwatch, useFragmentLook } from "./ItemSwatch";
@@ -221,6 +223,9 @@ export function ReliquaryScreen() {
 
 	const short = state ? state.ash < state.cost : false;
 	const busy = card.state === "scrying";
+	const noteId = useId();
+	// The purse can't cover it: the button disables and the note says what you hold.
+	const blocked = short && !busy;
 
 	return (
 		<section className={s.screen}>
@@ -263,6 +268,7 @@ export function ReliquaryScreen() {
 					data-sfx="off"
 					disabled={!state || busy || short}
 					loading={busy}
+					aria-describedby={state ? noteId : undefined}
 					onClick={doScry}
 				>
 					{busy
@@ -272,9 +278,9 @@ export function ReliquaryScreen() {
 							: T.scry(state?.cost ?? 100)}
 				</PrimaryButton>
 				{state ? (
-					<p className={s.note}>
-						{short ? T.errors.notEnoughAsh : T.pity(state.pityLeft)}
-					</p>
+					<ControlNote id={noteId} tone={blocked ? "warn" : "muted"}>
+						{blocked ? T.have(state.ash) : T.pity(state.pityLeft)}
+					</ControlNote>
 				) : null}
 				<p className={s.fine}>{T.rates}</p>
 			</div>
@@ -387,14 +393,18 @@ function Front({
 			<p className={s.frontStatus} data-dup={result.duplicate ? "1" : "0"}>
 				{result.duplicate ? T.duplicate(result.refund) : T.fresh}
 			</p>
-			<button
-				type="button"
-				className={s.wear}
-				disabled={isWorn || wearing}
-				onClick={() => onWear(it.id)}
-			>
-				{isWorn ? T.worn : T.wear}
-			</button>
+			{isWorn ? (
+				<p className={s.worn}>{T.worn}</p>
+			) : (
+				<SecondaryButton
+					inline
+					className={s.wear}
+					loading={wearing}
+					onClick={() => onWear(it.id)}
+				>
+					{T.wear}
+				</SecondaryButton>
+			)}
 		</div>
 	);
 }

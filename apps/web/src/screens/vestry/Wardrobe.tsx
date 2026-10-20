@@ -4,7 +4,7 @@
  * Wardrobe: choose the finish, tint and title the player's Fragment wears.
  * A tap wears the item at once; the preview follows.
  */
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 import { buzz, HAPTIC, play } from "@/audio";
 import type { Api } from "@/client/api";
 import { type InventoryState, inventory } from "@/client/inventory";
@@ -16,6 +16,7 @@ import {
 } from "@/game/reliquary";
 import { itemName, titleText } from "@/lexicon/reliquary";
 import { vestry as T } from "@/lexicon/vestry";
+import { Chip } from "@/ui/controls";
 import { Rubric } from "@/ui/type";
 import { DressedMask, ItemSwatch } from "../reliquary/ItemSwatch";
 import s from "./vestry.module.css";
@@ -86,28 +87,40 @@ export function Wardrobe({
 							? T.wardrobe.noTitle
 							: T.wardrobe.none;
 				return (
-					<fieldset key={slot} className={s.slot} disabled={saving !== null}>
+					// Not `disabled` while saving: `choose` already ignores taps until the save
+					// lands, and a disabled set would flash grey on every pick.
+					<fieldset
+						key={slot}
+						className={s.slot}
+						aria-busy={saving === slot || undefined}
+					>
 						<legend className={s.slotName}>{T.wardrobe[slot]}</legend>
 						<div className={s.chips}>
 							<Chip
-								on={eq[slot] === null}
-								onPick={() => choose(slot, null)}
-								label={none}
+								className={s.chip}
+								selected={eq[slot] === null}
+								sfx="off"
+								haptic={false}
+								onClick={() => choose(slot, null)}
 							>
 								{slot === "title" ? null : (
 									<DressedMask aspect={aspect} equipped={{}} size={28} />
 								)}
+								<span>{none}</span>
 							</Chip>
 							{owned.map((id) => (
 								<Chip
 									key={id}
-									on={eq[slot] === id}
-									onPick={() => choose(slot, id)}
-									label={itemName(id)}
+									className={s.chip}
+									selected={eq[slot] === id}
+									sfx="off"
+									haptic={false}
+									onClick={() => choose(slot, id)}
 								>
 									{slot === "title" ? null : (
 										<ItemSwatch id={id} aspect={aspect} size={28} />
 									)}
+									<span>{itemName(id)}</span>
 								</Chip>
 							))}
 						</div>
@@ -115,31 +128,5 @@ export function Wardrobe({
 				);
 			})}
 		</section>
-	);
-}
-
-function Chip({
-	on,
-	onPick,
-	label,
-	children,
-}: {
-	on: boolean;
-	onPick: () => void;
-	label: string;
-	children: ReactNode;
-}) {
-	return (
-		<button
-			type="button"
-			className={s.chip}
-			data-on={on ? "1" : "0"}
-			data-sfx="off"
-			aria-pressed={on}
-			onClick={onPick}
-		>
-			{children}
-			<span>{label}</span>
-		</button>
 	);
 }

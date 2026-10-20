@@ -23,7 +23,10 @@ import {
  *    (buzz honours the Vibration switch; `haptic={false}` to leave it to the caller)
  *  - `burst`: a small spray of embers on press, for the big moments (Bind, Scry, Climb)
  *  - `loading`: no spinner; light fills the face left to right (`progress` 0..1, or a
- *    slow indeterminate pass); wax melts its seal instead
+ *    slow indeterminate pass). On wax the light spreads out from under the seal (z-order:
+ *    wax < light < seal < label) and the seal softens
+ *  - focus: wax draws the shared ring (@/ui/controls) around its real silhouette, the
+ *    uneven bar and the seal disc together, under the seal; the other looks keep .focus
  *  - `hero`: one slow gilt sheen sweep every few seconds, only while on screen and the
  *    tab is visible, never under reduced motion. One hero per screen.
  *  - `pressed` / `focused` force those states (for the comparison sheet only).
@@ -41,6 +44,7 @@ import {
 } from "react";
 import { buzz, HAPTIC } from "@/audio/haptics";
 import { fx } from "@/fx";
+import { useControlDefs } from "@/ui/controls/defs";
 import { spring } from "@/ui/motion/presets";
 import s from "./button.module.css";
 import type { ButtonLook } from "./config";
@@ -179,6 +183,7 @@ export function PrimaryButton({
 	const look = forced ?? chosen;
 	const sheenRef = useSheen(!!hero && look !== "current");
 	const setRef = useMergedRef<HTMLButtonElement>(sheenRef, ref);
+	useControlDefs();
 
 	if (look === "current") {
 		return (
@@ -257,6 +262,7 @@ export function PrimaryLink({
 	const look = forced ?? chosen;
 	const sheenRef = useSheen(!!p.hero && look !== "current");
 	const setRef = useMergedRef<HTMLAnchorElement>(sheenRef, ref);
+	useControlDefs();
 
 	if (look === "current") {
 		return (
@@ -287,6 +293,13 @@ export function PrimaryLink({
 
 /** Everything behind the label. Purely decorative. */
 function Decor({ look }: { look: Exclude<ButtonLook, "current"> }) {
+	// wax stacks its own light, sheen and seal, and its ring follows its silhouette
+	if (look === "wax")
+		return (
+			<span className={s.body} aria-hidden="true">
+				<Wax />
+			</span>
+		);
 	// enamel and glass are cut polygons, so their light and focus ring follow the cut
 	const cut = look === "enamel" || look === "glass";
 	return (
@@ -295,7 +308,6 @@ function Decor({ look }: { look: Exclude<ButtonLook, "current"> }) {
 				{look === "enamel" ? <Enamel /> : null}
 				{look === "glass" ? <Glass /> : null}
 				{look === "arch" ? <Arch /> : null}
-				{look === "wax" ? <Wax /> : null}
 				<span className={cx(s.fill, cut && s.cut)} />
 				<span className={cx(s.sheen, cut && s.cut)} />
 			</span>
@@ -418,7 +430,12 @@ function Fleuron({ side }: { side: "start" | "end" }) {
 	);
 }
 
-/** A bar of sealing wax (edge roughened once by a static displacement) and its seal. */
+/**
+ * A bar of sealing wax (edge roughened once by a static displacement) and its seal.
+ * Back to front: the wax, the loading light, the hero sheen, then the seal, so the light
+ * reads as spreading out from under the seal. The whole group is the silhouette the focus
+ * ring follows (the shared #ctl-ring filter, drawn under the group, so under the seal too).
+ */
 function Wax() {
 	const id = useId().replace(/[^a-zA-Z0-9]/g, "");
 	return (
@@ -448,10 +465,14 @@ function Wax() {
 					/>
 				</filter>
 			</svg>
-			<span className={s.face} style={{ filter: `url(#${id}e)` }}>
-				<span className={s.gloss} />
+			<span className={s.waxShape}>
+				<span className={s.face} style={{ filter: `url(#${id}e)` }}>
+					<span className={s.gloss} />
+				</span>
+				<span className={s.fill} />
+				<span className={s.sheen} />
+				<Seal id={id} />
 			</span>
-			<Seal id={id} />
 		</>
 	);
 }

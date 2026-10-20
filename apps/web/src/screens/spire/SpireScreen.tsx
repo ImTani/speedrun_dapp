@@ -5,7 +5,7 @@
  * climb itself. A climb plays its five turns quickly, then shows the outcome and what it paid.
  */
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { ApiError, useApi } from "@/client/api";
 import { useVisibleNow } from "@/client/poll";
 import {
@@ -18,6 +18,7 @@ import {
 import { ATTEMPTS_MAX } from "@/game/spire";
 import { spire as T } from "@/lexicon/spire";
 import { PrimaryButton } from "@/ui/button";
+import { ControlNote, SecondaryButton } from "@/ui/controls";
 import { ClimbView } from "./ClimbView";
 import s from "./spire.module.css";
 import { Tower } from "./Tower";
@@ -52,6 +53,7 @@ export function SpireScreen() {
 	const [err, setErr] = useState<string | null>(null);
 	const [picked, setPicked] = useState<number | null>(null);
 	const [view, setView] = useState<View>({ kind: "tower" });
+	const noteId = useId();
 	// Ticks only while the page is seen; catches up (and refetches if a climb came back) on return.
 	const now = useVisibleNow(20_000);
 
@@ -112,9 +114,9 @@ export function SpireScreen() {
 						{err ?? T.loading}
 					</p>
 					{err ? (
-						<button type="button" className="btn btn-ghost" onClick={load}>
+						<SecondaryButton inline className={s.retry} onClick={load}>
 							{T.errors.retry}
-						</button>
+						</SecondaryButton>
 					) : null}
 				</div>
 			</section>
@@ -222,16 +224,18 @@ export function SpireScreen() {
 											legacy={`btn btn-blood ${s.climbBtn}`}
 											disabled={left < 1 || view.kind === "asking"}
 											loading={view.kind === "asking"}
+											aria-describedby={left < 1 ? noteId : undefined}
 											onClick={climb}
 										>
 											{view.kind === "asking"
 												? T.climbing
 												: left < 1
-													? T.noClimbsUntil(wait)
-													: target.status === "cleared"
-														? T.climbAgain(target.floor)
-														: T.climb(target.floor)}
+													? T.climbBare
+													: T.climb(target.floor)}
 										</PrimaryButton>
+										{left < 1 && view.kind !== "asking" ? (
+											<ControlNote id={noteId}>{T.nextClimb(wait)}</ControlNote>
+										) : null}
 									</>
 								) : (
 									<p className={s.note}>{T.pick}</p>

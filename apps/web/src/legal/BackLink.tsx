@@ -1,6 +1,7 @@
 "use client";
 
 import { legal } from "@/lexicon/legal.ts";
+import link from "@/ui/controls/link.module.css";
 import s from "./legal.module.css";
 
 /** Where Back goes when there is nothing of ours to go back to (opened from a link or a new tab). */
@@ -32,7 +33,7 @@ export function BackLink() {
 	return (
 		<a
 			href={FALLBACK}
-			className={s.back}
+			className={`${link.nav} ${s.back}`}
 			onClick={(e) => {
 				if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)
 					return;

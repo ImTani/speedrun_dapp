@@ -6,7 +6,10 @@
 
    Layers, back to front: .body (the look's own pieces, then .fill for
    loading and .sheen for the hero) under .label; .focus sits outside the
-   body so the drop shadow never doubles the ring. Everything is static CSS
+   body so the drop shadow never doubles the ring. Wax is the exception: its
+   body holds one group (.waxShape: wax < light < sheen < seal) and its focus
+   ring is the shared silhouette ring (@/ui/controls) drawn under that group,
+   so neither the light nor the ring ever covers the seal. Everything is static CSS
    and inline SVG; the only loops are the hero sheen (gated by data-sheen,
    set only on screen) and the indeterminate loading pour.
    ===================================================================== */
@@ -179,12 +182,14 @@
 	transform: scaleX(var(--p, 0));
 	background:
 		linear-gradient(180deg, #ffb27a00 0%, #ffb27a1c 55%, #ffb27a40 100%),
+		/* The front fades out instead of ending in a hard bright edge: light spreading, not a band. */
 		linear-gradient(
 			90deg,
 			#ff6a4a00 0%,
-			#ffb27a24 72%,
-			#ffd9a050 97%,
-			#ffe6b099 100%
+			#ffb27a24 60%,
+			#ffd9a048 82%,
+			#ffe6b04a 90%,
+			#ffe6b000 100%
 		);
 	mix-blend-mode: screen;
 	transition: transform 0.4s var(--ease-out);
@@ -679,9 +684,18 @@
 	--seal: 48px;
 	padding-inline: 44px 14px;
 }
+.btn[data-look="wax"] .waxShape {
+	filter: none;
+}
+/* focus: the shared ring around the bar and the seal together (src/ui/controls/defs.ts) */
+.btn[data-look="wax"]:focus-visible .waxShape,
+.btn[data-look="wax"][data-focused] .waxShape {
+	filter: var(--ctl-ring-fx);
+}
 .btn[data-look="wax"] .face,
 .btn[data-look="wax"] .fill,
 .btn[data-look="wax"] .sheen {
+	position: absolute;
 	inset: 4px 2px 4px 14px;
 	border-radius: 14px 11px 12px 9px / 12px 14px 10px 13px;
 }
@@ -745,21 +759,32 @@
 	transform: scale(0.95) translateY(1px);
 	transition-duration: var(--dur-1);
 }
-/* loading: the seal softens and slumps */
+/* loading: light spreads out from under the seal (the fill grows from the seal's centre,
+   which sits at seal/2 - 21px inside the wax), and the seal softens and glows */
+.btn[data-look="wax"] .fill::before {
+	transform-origin: calc(var(--seal) / 2 - 21px) 50%;
+}
+.btn[data-look="wax"] .fill::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: radial-gradient(
+		circle calc(var(--seal) * 1.05) at calc(var(--seal) / 2 - 21px) 50%,
+		#ffd9a066 0%,
+		#ffb27a2a 55%,
+		#ffb27a00 100%
+	);
+	mix-blend-mode: screen;
+}
 .btn[data-look="wax"][data-busy] .seal {
-	transform: scaleY(0.86) scaleX(1.06) translateY(4px);
-	filter: brightness(1.3) saturate(1.15);
+	transform: scaleY(0.93) scaleX(1.03) translateY(2px);
+	filter: brightness(1.25) saturate(1.1) drop-shadow(0 0 5px #ffb27a80);
 }
 .btn[data-look="wax"][data-busy] .rose {
-	opacity: 0.45;
+	opacity: 0.55;
 }
 .btn[data-look="wax"] .rose {
 	transition: opacity 0.5s var(--ease-out);
-}
-.btn[data-look="wax"] .focus {
-	inset: -1px -3px -1px 9px;
-	border: 2px solid var(--c-bone-hi);
-	border-radius: 17px 14px 15px 12px / 15px 17px 13px 16px;
 }
 
 /* ---- reduced motion: no pour, no sheen; loading shows as a steady glow ---- */
@@ -774,5 +799,13 @@
 	}
 	.btn[data-look="wax"][data-busy] .seal {
 		transform: none;
+	}
+}
+
+/* Windows high contrast drops filters (the wax ring is one): a plain outline there. */
+@media (forced-colors: active) {
+	.btn:focus-visible {
+		outline: 2px solid CanvasText;
+		outline-offset: 3px;
 	}
 }

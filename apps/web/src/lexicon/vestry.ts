@@ -6,13 +6,17 @@ export const vestry = {
 	lead: "Looks for your Fragment. Never changes how it plays.",
 	/** "You have 3.50 USDC" */
 	balance: (usdc: number) => `You have ${usdc.toFixed(2)} USDC`,
+	/** "1.00 USDC short" (note under a pack the player can't afford yet) */
+	short: (usdc: number) => `${usdc.toFixed(2)} USDC short`,
 	/** "1 USDC" */
 	price: (usdc: number) => `${usdc} USDC`,
+	/** The button: the action and the price. Can't cover it: disabled, `balance` under it. */
 	buy: (usdc: number) => `Buy · ${usdc} USDC`,
-	/** Price the account can't cover: "5 USDC · not enough" */
-	short: (usdc: number) => `${usdc} USDC · not enough`,
 	buying: "Paying…",
-	granting: "Paid. Adding to your wardrobe…",
+	granting: "Adding…",
+	/** The note under the button while the pack is added. */
+	paid: "Paid. Adding to your wardrobe.",
+	/** A pack already bought: a quiet state, not a button. */
 	owned: "Owned",
 	bought: "Added to your wardrobe.",
 	contains: "Contains",

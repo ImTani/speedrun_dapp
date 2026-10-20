@@ -20,21 +20,12 @@
 	margin: 0 auto;
 }
 
+/* "← Back": a link.nav */
 .back {
-	display: inline-flex;
-	align-items: center;
 	gap: 0.4em;
-	min-height: var(--tap);
 	padding-right: 12px;
-	color: var(--c-gilt-l);
 	font-family: var(--font-text);
 	font-size: var(--fs-small);
-	text-decoration: none;
-}
-.back:hover,
-.back:focus-visible {
-	text-decoration: underline;
-	text-underline-offset: 3px;
 }
 
 .draft {
@@ -93,15 +84,6 @@
 	color: var(--c-bone-hi);
 	font-weight: 700;
 }
-.prose a {
-	color: var(--c-gilt-l);
-	text-decoration: underline;
-	text-underline-offset: 3px;
-	text-decoration-thickness: 1px;
-}
-.prose a:hover {
-	color: var(--c-gilt-hi);
-}
 .prose h3 {
 	margin: 1.2em 0 0.4em;
 	font-family: var(--font-roman);
@@ -146,18 +128,10 @@
 .tocList li {
 	break-inside: avoid;
 }
+/* each entry is a link.nav, laid out as a row (number, title) */
 .tocList a {
 	display: flex;
 	gap: 0.6em;
-	min-height: var(--tap);
-	align-items: center;
-	color: var(--c-gilt-l);
-	text-decoration: none;
-}
-.tocList a:hover,
-.tocList a:focus-visible {
-	text-decoration: underline;
-	text-underline-offset: 3px;
 }
 .tocNum {
 	min-width: 1.6em;
@@ -238,9 +212,6 @@
 .footer :where(p + nav) {
 	margin-top: 10px;
 }
-.footer a {
-	color: var(--c-gilt-l);
-}
 
 /* ---- Legal links (title screen, colophon, footers) ---- */
 .links {
@@ -253,18 +224,9 @@
 	font-size: var(--fs-small);
 	color: #c2ae88;
 }
+/* each is a link.nav */
 .links a {
-	display: inline-flex;
-	align-items: center;
-	min-height: var(--tap);
 	padding: 0 6px;
-	color: var(--c-gilt-l);
-	text-decoration: none;
-}
-.links a:hover,
-.links a:focus-visible {
-	text-decoration: underline;
-	text-underline-offset: 3px;
 }
 .linksLeft {
 	justify-content: flex-start;
@@ -308,27 +270,16 @@
 	flex: 1;
 	min-width: 0;
 }
+/* the policy link is a link.inline */
 .noticeText a {
-	color: var(--c-gilt-l);
-	text-decoration: underline;
-	text-underline-offset: 3px;
 	white-space: nowrap;
 	/* a finger-sized hit area without moving the line */
 	padding: 13px 0;
 	margin: -13px 0;
 }
+/* "Got it" is a TextButton */
 .noticeDismiss {
 	flex: none;
-	min-width: var(--tap);
-	min-height: var(--tap);
-	padding: 0 12px;
-	border: 1px solid var(--c-umber-l);
-	color: var(--c-bone-hi);
-	font-family: var(--font-text);
-	font-size: var(--fs-small);
-}
-.noticeDismiss:hover {
-	border-color: var(--c-gilt);
 }
 
 /* ---- Account deletion ---- */
@@ -354,27 +305,13 @@
 .deleteActions {
 	display: flex;
 	flex-wrap: wrap;
+	align-items: center;
 	gap: 10px;
 	margin-top: 14px;
 }
-.btn {
-	min-height: var(--tap);
-	padding: 0 16px;
-	border: 1px solid var(--c-umber-l);
-	color: var(--c-bone-hi);
-	font-family: var(--font-text);
-	font-size: var(--fs-body);
-}
-.btn:hover {
-	border-color: var(--c-gilt);
-}
-.btnDanger {
-	border-color: var(--c-blood-l);
-	background: var(--c-blood);
-	color: var(--c-bone-hi);
-}
-.btnDanger:hover {
-	border-color: var(--c-ember-hi);
+/* the confirm takes the rest of the row beside "Keep my account" */
+.deleteGo {
+	flex: 1 1 auto;
 }
 .deleteStatus {
 	margin-top: 10px;
@@ -388,8 +325,4 @@
 	html:has(.page) {
 		scroll-behavior: smooth;
 	}
-}
-.delete a {
-	color: var(--c-gilt-l);
-	text-underline-offset: 3px;
 }

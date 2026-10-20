@@ -14,6 +14,7 @@ import { buzz, HAPTIC, useSfx } from "@/audio";
 import { LegalLinks } from "@/legal";
 import { shell } from "@/lexicon/shell";
 import { PrimaryButton } from "@/ui/button";
+import { link, TextButton } from "@/ui/controls";
 import { useShake } from "@/ui/motion/impact";
 import { easeIn, easeOut, spring } from "@/ui/motion/presets";
 import { Wordmark } from "@/ui/wordmark";
@@ -141,8 +142,15 @@ export function TitleScreen({
 					animate={{ opacity: struck ? 1 : 0 }}
 					transition={{ duration: 0.6, delay: 0.7 }}
 				>
-					{T.consent.lead} <Link href="/terms">{T.consent.terms}</Link>{" "}
-					{T.consent.and} <Link href="/privacy">{T.consent.privacy}</Link>.
+					{T.consent.lead}{" "}
+					<Link href="/terms" className={link.inline}>
+						{T.consent.terms}
+					</Link>{" "}
+					{T.consent.and}{" "}
+					<Link href="/privacy" className={link.inline}>
+						{T.consent.privacy}
+					</Link>
+					.
 				</motion.p>
 
 				<motion.div
@@ -155,13 +163,13 @@ export function TitleScreen({
 					<span className={s.footDot} aria-hidden="true">
 						·
 					</span>
-					<button
-						type="button"
+					<TextButton
 						className={s.colophonLink}
+						aria-haspopup="dialog"
 						onClick={() => setColophon(true)}
 					>
 						{shell.colophon.open}
-					</button>
+					</TextButton>
 				</motion.div>
 			</div>
 

@@ -1,4 +1,5 @@
 import { legal } from "@/lexicon/legal.ts";
+import link from "@/ui/controls/link.module.css";
 import { BackLink } from "./BackLink.tsx";
 import {
 	CONTACT_EMAIL,
@@ -55,7 +56,7 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
 					<ol className={s.tocList}>
 						{doc.sections.map((sec, i) => (
 							<li key={sec.id}>
-								<a href={`#${sec.id}`}>
+								<a href={`#${sec.id}`} className={link.nav}>
 									<span className={s.tocNum}>{i + 1}.</span>
 									<span>{sec.title}</span>
 								</a>
@@ -84,7 +85,9 @@ export function LegalPage({ doc }: { doc: LegalDoc }) {
 				<footer className={s.footer}>
 					<p>
 						{legal.page.contact} {OPERATOR_NAME} ·{" "}
-						<a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+						<a href={`mailto:${CONTACT_EMAIL}`} className={link.inline}>
+							{CONTACT_EMAIL}
+						</a>
 					</p>
 					<LegalLinks align="left" />
 				</footer>

@@ -13,7 +13,7 @@ import {
 	type StrategyId,
 } from "@arena/strategies";
 import { AnimatePresence, motion } from "motion/react";
-import { type RefObject, useRef, useState } from "react";
+import { type RefObject, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { buzz, HAPTIC, play } from "@/audio";
 import { fx } from "@/fx";
@@ -21,8 +21,9 @@ import { L } from "@/lexicon";
 import { useKeepAboveKeyboard } from "@/ui/appFrame";
 import { PrimaryButton } from "@/ui/button";
 import { coachAct } from "@/ui/coach/signal";
+import { IconButton, SecondaryButton, TextInput } from "@/ui/controls";
 import { Mask } from "@/ui/Mask";
-import { IMPACT, impact, pressable, spring, useShake } from "@/ui/motion";
+import { IMPACT, impact, spring, useShake } from "@/ui/motion";
 import { Plate, Rubric, Slam } from "@/ui/type";
 import { AspectCarousel } from "./AspectCarousel";
 import s from "./fragment.module.css";
@@ -75,7 +76,6 @@ export function BindRitual({
 	const goto = (n: Step) => {
 		setDir(n > step ? 1 : -1);
 		setStep(n);
-		buzz(10);
 	};
 
 	const bind = async () => {
@@ -129,25 +129,15 @@ export function BindRitual({
 				: null}
 			<header className={s.ritualHead}>
 				{step > 0 ? (
-					<motion.button
-						type="button"
+					<IconButton
+						icon="back"
+						label={L.bind.back}
+						size="sm"
 						className={s.back}
+						haptic={10}
 						onClick={() => goto((step - 1) as Step)}
-						aria-label={L.bind.back}
 						disabled={!!pour}
-						{...pressable}
-					>
-						<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-							<path
-								d="M16 3 L6 12 L16 21"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="3"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-							/>
-						</svg>
-					</motion.button>
+					/>
 				) : (
 					<span className={s.backSpacer} />
 				)}
@@ -244,34 +234,19 @@ export function BindRitual({
 										if (v.trim()) coachAct("name");
 									}}
 								/>
-								<motion.button
-									type="button"
-									className={s.divine}
+								<SecondaryButton
+									inline
+									icon={<Star />}
 									disabled={!!pour}
+									haptic={12}
 									onClick={() => {
 										setName(divineName(name));
 										coachAct("name");
 										setDivined((n) => n + 1);
-										buzz(12);
 									}}
-									{...pressable}
 								>
-									<svg
-										viewBox="0 0 24 24"
-										width="22"
-										height="22"
-										aria-hidden="true"
-									>
-										<path
-											d="M12 2 L14 9 L21 9 L15.5 13.5 L17.5 21 L12 16.5 L6.5 21 L8.5 13.5 L3 9 L10 9Z"
-											fill="currentColor"
-											stroke="#0b0807"
-											strokeWidth="1.4"
-											strokeLinejoin="round"
-										/>
-									</svg>
 									{L.bind.divine}
-								</motion.button>
+								</SecondaryButton>
 								<span className={s.waxWaits} aria-hidden="true">
 									<WaxSeal aspect={aspect} state="cold" size={84} />
 								</span>
@@ -333,14 +308,18 @@ function NameField({
 }) {
 	const input = useRef<HTMLInputElement>(null);
 	useKeepAboveKeyboard(input, action);
+	const fieldId = useId();
 	const n = name.length;
 	const showCount = n >= NAME_COUNT_FROM;
 	return (
-		<label className={s.nameField} data-coach="name">
-			<span className="sr-only">{L.bind.nameLabel}</span>
-			<input
+		<div className={s.nameField} data-coach="name">
+			<label htmlFor={fieldId} className="sr-only">
+				{L.bind.nameLabel}
+			</label>
+			<TextInput
+				id={fieldId}
 				ref={input}
-				type="text"
+				size="lg"
 				value={name}
 				maxLength={NAME_MAX}
 				placeholder={L.bind.namePlaceholder}
@@ -370,7 +349,7 @@ function NameField({
 					<span className="sr-only">{L.bind.nameCountLabel(NAME_MAX - n)}</span>
 				</span>
 			) : null}
-		</label>
+		</div>
 	);
 }
 
@@ -450,5 +429,20 @@ function PourOverlay({
 				) : null}
 			</div>
 		</motion.div>
+	);
+}
+
+/** The divining star: the Suggest-a-name glyph (in place of the secondary's gilt seal). */
+function Star() {
+	return (
+		<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+			<path
+				d="M12 2 L14 9 L21 9 L15.5 13.5 L17.5 21 L12 16.5 L6.5 21 L8.5 13.5 L3 9 L10 9Z"
+				fill="currentColor"
+				stroke="#0b0807"
+				strokeWidth="1.4"
+				strokeLinejoin="round"
+			/>
+		</svg>
 	);
 }

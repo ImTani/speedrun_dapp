@@ -66,8 +66,22 @@
 	color: var(--c-bone-d);
 	-webkit-tap-highlight-color: transparent;
 }
+/* Focus, in the control family's ring (gilt past a soot gap): a rounded box for the carved
+   ways (they have no silhouette of their own), the boss's own disc for the Gathering (at the end of the file). */
 .tab:focus-visible {
+	outline: 2px solid var(--ctl-ring);
 	outline-offset: -4px;
+	border-radius: 12px;
+	box-shadow: inset 0 0 0 4px var(--c-soot);
+}
+.tab[data-center]:focus-visible {
+	outline: none;
+	box-shadow: none;
+}
+@media (forced-colors: active) {
+	.tab[data-center]:focus-visible {
+		outline: 2px solid CanvasText;
+	}
 }
 
 .well {
@@ -217,4 +231,17 @@
 }
 .tab[data-lit] .label {
 	color: var(--c-gilt-l);
+}
+
+/* The boss's focus: the ring goes round its disc, outside its carved soot-umber-soot rim. */
+.tab[data-center]:focus-visible .well,
+.tab[data-center][data-on]:focus-visible .well {
+	box-shadow:
+		0 0 0 3px var(--c-soot),
+		0 0 0 4.5px #6b5139,
+		0 0 0 6px var(--c-soot),
+		0 0 0 8px var(--ctl-ring),
+		inset 0 2px 0 #ffffff26,
+		inset 0 -4px 8px #000a,
+		0 8px 16px #000c;
 }

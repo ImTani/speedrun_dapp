@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Fragment } from "react";
 import { legal } from "@/lexicon/legal.ts";
+// The CSS module directly (not the @/ui/controls barrel): this renders in server components too.
+import link from "@/ui/controls/link.module.css";
 import s from "./legal.module.css";
 
 const ITEMS = [
@@ -25,7 +27,9 @@ export function LegalLinks({ align = "center", className }: LegalLinksProps) {
 			{ITEMS.map((item, i) => (
 				<Fragment key={item.href}>
 					{i > 0 ? <span aria-hidden="true">·</span> : null}
-					<Link href={item.href}>{item.label}</Link>
+					<Link href={item.href} className={link.nav}>
+						{item.label}
+					</Link>
 				</Fragment>
 			))}
 		</nav>

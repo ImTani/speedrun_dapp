@@ -12,6 +12,7 @@ import { roman } from "@/lexicon/gathering";
 import { spire as T } from "@/lexicon/spire";
 import { promoteMoment } from "@/screens/title/Moments";
 import { PrimaryButton } from "@/ui/button";
+import { TextButton } from "@/ui/controls";
 import { Mask } from "@/ui/Mask";
 import { easeOut, IMPACT, impact, spring, useShake } from "@/ui/motion";
 import { Count, Slam } from "@/ui/type";
@@ -343,13 +344,9 @@ export function ClimbView({
 						{T.duel.continue}
 					</PrimaryButton>
 				) : (
-					<button
-						type="button"
-						className={s.skip}
-						onClick={() => setShown(turns.length)}
-					>
+					<TextButton className={s.skip} onClick={() => setShown(turns.length)}>
 						{T.duel.skip}
-					</button>
+					</TextButton>
 				)}
 			</div>
 		</div>

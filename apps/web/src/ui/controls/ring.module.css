@@ -1,0 +1,24 @@
+/* =====================================================================
+   The shared focus ring (see ./defs.ts). Put `.host` on the control and
+   `.shape` on the layer that is its silhouette. The shape's own effects
+   (drop shadow, glow, the disabled desaturation) go in --shape-fx, never in
+   `filter` directly: the ring has to come first in the filter list, so it
+   is drawn from the bare shape and the shadow falls under both.
+   ===================================================================== */
+.shape {
+	filter: var(--shape-fx, none);
+}
+.host:focus-visible .shape,
+.host[data-focused] .shape {
+	filter: var(--ctl-ring-fx) var(--shape-fx,);
+}
+.host:focus-visible {
+	outline: none;
+}
+/* Windows high contrast drops filters: fall back to a plain outline there. */
+@media (forced-colors: active) {
+	.host:focus-visible {
+		outline: 2px solid CanvasText;
+		outline-offset: 3px;
+	}
+}

@@ -106,28 +106,11 @@
 	gap: 6px;
 	padding-top: 10px;
 }
+/* the back IconButton (sm: a 36px token in the 44px cell) and the empty cell opposite */
 .back,
 .backSpacer {
 	width: var(--tap);
 	height: var(--tap);
-}
-.back {
-	display: grid;
-	place-items: center;
-	color: var(--c-bone);
-	background: #1f1612;
-	border: 2px solid var(--c-soot);
-	box-shadow: inset 0 0 0 1px var(--c-umber);
-	clip-path: polygon(
-		0 6px,
-		6px 0,
-		calc(100% - 6px) 0,
-		100% 6px,
-		100% calc(100% - 6px),
-		calc(100% - 6px) 100%,
-		6px 100%,
-		0 calc(100% - 6px)
-	);
 }
 .steps {
 	display: flex;
@@ -197,17 +180,13 @@
 }
 .stageRow {
 	display: grid;
-	grid-template-columns: var(--tap) 1fr var(--tap);
+	grid-template-columns: 46px 1fr 46px;
 	align-items: center;
 	width: 100%;
 }
+/* the prev / next IconButtons (md: 46px stone tokens) */
 .arrow {
-	width: var(--tap);
-	height: calc(var(--tap) + 12px);
-	display: grid;
-	place-items: center;
-	color: var(--c-gilt-l);
-	filter: drop-shadow(0 2px 0 var(--c-soot));
+	justify-self: center;
 }
 .roseBox {
 	position: relative;
@@ -288,24 +267,11 @@
 	width: 100%;
 	margin-top: 4px;
 }
-.chip {
+/* the mask Chips: seven across, so they lose the chip's side padding and min width */
+.strip > .maskChip {
+	min-width: 0;
 	min-height: 48px;
-	display: grid;
-	place-items: center;
-	background: #0b080799;
-	border: 2px solid var(--c-soot);
-	box-shadow: inset 0 0 0 1px var(--c-umber-d);
-	opacity: 0.62;
-	transition:
-		opacity var(--dur-2),
-		box-shadow var(--dur-2);
-}
-.chip[data-on="1"] {
-	opacity: 1;
-	background: #e8c46a1a;
-	box-shadow:
-		inset 0 0 0 1px var(--c-gilt),
-		0 0 14px #e8c46a44;
+	padding: 4px 0;
 }
 /* Narrow phones: seven chips across would be under a finger's width. The strip bleeds to the
    screen edges and scrolls sideways, snapping chip by chip, each at least --tap wide.
@@ -335,7 +301,7 @@
 	.strip::-webkit-scrollbar {
 		display: none;
 	}
-	.chip {
+	.strip > .maskChip {
 		scroll-snap-align: start;
 	}
 }
@@ -509,54 +475,33 @@
 	grid-template-columns: repeat(3, 1fr);
 	gap: 8px;
 }
-.gesture {
-	min-height: 72px;
+/* each tile is a Chip (kind radio, lg, in .gesture); the body stacks the glyph over the name */
+.gestureBody {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
 	gap: 4px;
-	padding: 8px 4px;
-	background: linear-gradient(#2a1d14, #120c0a);
-	border: 2px solid var(--c-soot);
-	box-shadow: inset 0 0 0 1px var(--c-umber);
-	color: var(--c-bone-dd);
-	transition:
-		color var(--dur-2),
-		box-shadow var(--dur-2),
-		background var(--dur-2);
-}
-.gesture[data-on="1"][data-kind="kindle"] {
-	color: var(--c-gilt-l);
-	background: linear-gradient(#4a3518, #1a120a);
-	box-shadow:
-		inset 0 0 0 1px var(--c-gilt),
-		0 0 16px #e3c27c44;
-}
-.gesture[data-on="1"][data-kind="devour"] {
-	color: var(--c-blood-l);
-	background: linear-gradient(#4a0c10, #1a0607);
-	box-shadow:
-		inset 0 0 0 1px var(--c-blood-l),
-		0 0 16px #c7262c55;
-}
-.gesture[data-on="1"][data-kind="fate"] {
-	color: var(--c-bone-hi);
-	background: linear-gradient(#3a2c22, #140e0b);
-	box-shadow:
-		inset 0 0 0 1px var(--c-bone-d),
-		0 0 14px #d8c6a033;
-}
-.gesture:disabled {
-	opacity: 0.55;
+	min-height: 60px;
+	padding: 2px 0;
 }
 .gestureGlyph {
 	width: 30px;
 	height: 30px;
 	filter: drop-shadow(0 2px 0 var(--c-soot));
 }
+/* the chosen gesture's glyph takes its own colour: gilt flame, blood maw, bone die */
+.gesture[aria-checked="true"][data-kind="kindle"] .gestureGlyph {
+	color: var(--c-gilt-l);
+}
+.gesture[aria-checked="true"][data-kind="devour"] .gestureGlyph {
+	color: var(--c-blood-l);
+}
+.gesture[aria-checked="true"][data-kind="fate"] .gestureGlyph {
+	color: var(--c-bone-hi);
+}
 .gestureName {
-	font-family: var(--font-display);
+	font-family: var(--font-roman);
 	font-weight: 700;
 	font-size: var(--fs-lead);
 	line-height: 1;
@@ -578,35 +523,6 @@
 .nameField {
 	width: 100%;
 }
-.nameField input {
-	width: 100%;
-	min-height: 56px;
-	padding: 10px 14px;
-	font-family: var(--font-display);
-	font-weight: 700;
-	font-size: max(16px, var(--fs-h3));
-	text-align: center;
-	color: var(--c-bone-hi);
-	background: linear-gradient(#050403, #120c0a);
-	border: 2px solid var(--c-soot);
-	box-shadow:
-		inset 0 2px 6px #000,
-		inset 0 0 0 1px var(--c-umber);
-	border-radius: 0;
-	-webkit-appearance: none;
-	appearance: none;
-}
-.nameField input::placeholder {
-	color: var(--c-bone-dd);
-	font-weight: 400;
-}
-.nameField input:focus {
-	outline: none;
-	box-shadow:
-		inset 0 2px 6px #000,
-		inset 0 0 0 1px var(--c-gilt),
-		0 0 14px #e3c27c33;
-}
 .nameCount {
 	display: block;
 	margin-top: 6px;
@@ -619,22 +535,6 @@
 }
 .nameCount[data-full] {
 	color: var(--c-gilt-l);
-}
-.divine {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	min-height: var(--tap);
-	padding: 8px 18px;
-	font-family: var(--font-display);
-	font-weight: 700;
-	font-size: var(--fs-lead);
-	color: var(--c-gilt-l);
-	background: #1f1612;
-	border: 2px solid var(--c-soot);
-	box-shadow:
-		inset 0 0 0 1px var(--c-gilt-d),
-		0 0 12px #e3c27c22;
 }
 
 /* ---------------------------------------------------------------- pour overlay */
@@ -943,9 +843,6 @@
 	line-height: 1.1;
 	color: var(--c-bone-hi);
 }
-.chisel {
-	font-size: var(--fs-lead);
-}
 .locked {
 	display: flex;
 	align-items: center;
@@ -996,11 +893,7 @@
 	padding: 8px var(--pad-r) var(--safe-b) var(--pad-l);
 }
 .sheetGrip {
-	align-self: center;
-	width: 44px;
-	height: 5px;
-	margin-bottom: 10px;
-	background: var(--c-umber-l);
+	margin-bottom: 4px;
 }
 .sheetHead {
 	display: flex;
@@ -1015,14 +908,16 @@
 	overscroll-behavior: contain;
 	padding-bottom: 4px;
 }
+/* Cancel (a TextButton, its own width) and Save (the wax, the rest of the row) */
 .sheetFoot {
 	display: flex;
+	align-items: center;
 	gap: 10px;
 	padding: 12px 0 14px;
 }
-.sheetFoot > * {
+.sheetSave {
 	flex: 1;
-	font-size: var(--fs-lead);
+	min-width: 0;
 }
 .sigilSummary > .hint {
 	text-align: center;
@@ -1062,9 +957,4 @@
 	.reveal[data-fresh]::after {
 		animation-duration: 0.8s;
 	}
-}
-
-/* clip-path cuts an outside outline: the keyboard focus ring is drawn inside the slab. */
-.back:focus-visible {
-	outline-offset: -6px;
 }

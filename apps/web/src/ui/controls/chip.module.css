@@ -1,0 +1,40 @@
+/* Chip layout; the silhouette and its states come from frame.module.css. */
+:where(.chip) {
+	display: inline-flex;
+	margin: 0;
+}
+.chip {
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	flex: none;
+	min-width: 44px;
+	min-height: 44px;
+	padding: 4px 12px;
+	border: 0;
+	background: none;
+	color: var(--c-bone);
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-body);
+	line-height: 1.05;
+	letter-spacing: 0.02em;
+	text-shadow: 0 1px 0 var(--c-soot);
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+	touch-action: manipulation;
+}
+.chip[data-size="lg"] {
+	min-width: 56px;
+	min-height: 56px;
+	padding: 6px;
+}
+.chip[data-shape="round"] {
+	padding-inline: 10px;
+}
+.chip[data-selected] {
+	color: var(--c-bone-hi);
+}
+.chip:disabled {
+	color: var(--ctl-label-off);
+}

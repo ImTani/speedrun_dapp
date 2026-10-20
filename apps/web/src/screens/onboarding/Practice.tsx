@@ -24,6 +24,7 @@ import { FX, fx, PALETTES } from "@/fx";
 import { remnantAt, remnantConfig } from "@/game/spire";
 import { onboarding as T } from "@/lexicon/onboarding";
 import { PrimaryButton } from "@/ui/button";
+import { TextButton } from "@/ui/controls";
 import { Mask } from "@/ui/Mask";
 import { IMPACT, impact, spring, useShake } from "@/ui/motion";
 import { Count, Rubric } from "@/ui/type";
@@ -207,9 +208,7 @@ export function Practice({
 				<Rubric tone="dim" size="xs">
 					{T.practice.heading}
 				</Rubric>
-				<button type="button" className={s.skip} onClick={onDone}>
-					{T.skip}
-				</button>
+				<TextButton onClick={onDone}>{T.skip}</TextButton>
 			</div>
 
 			<div className={s.body} ref={shaker.ref}>

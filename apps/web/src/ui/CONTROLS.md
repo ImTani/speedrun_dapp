@@ -137,3 +137,180 @@ vestry `.buy`, hud `.claim`, spire `.climbBtn`, landing `.play`) now only draws 
 | Swipe the Ledger plaque up to open | src/screens/gathering/Ledger.tsx:43 | 1 |
 | Tap the nave to skip the duel playback | src/screens/gathering/GatheringScreen.tsx:578 | 1 |
 | Tap the active tab to scroll to the top | src/screens/title/Shell.tsx:177 (`go`) | 1 |
+
+---
+
+# System
+
+One family for every control. The components live in `src/ui/controls` (import everything from
+`@/ui/controls`). The primary call to action stays `PrimaryButton` / `PrimaryLink` in
+`src/ui/button` (wax). The review sheet is `/_brand/controls`: every component in every state, with
+the real pressed and focus looks held by props. `/_brand/controls?before=1` shows the controls the
+way the screens draw them today.
+
+## The rules every control follows
+
+- **Readability first.** Labels are at least 4.5:1. Button labels use Grenze roman, text actions
+  and tiny labels use Cinzel small caps, and rows and notes use Alegreya. Grenze Gotisch
+  (blackletter) never goes on a control.
+- **Label = the action plus at most one number.** `Climb XIV`, `Scry · 100`, `Buy · 5 USDC`,
+  `Collect`. Status and reasons go in a `ControlNote` under the control (`Next climb in 3h 20m`,
+  `You have 4.00 USDC`), wired with `aria-describedby`. Strings live in `src/lexicon/*.ts`.
+- **44px minimum target.** Bars are 48 or 56 tall. Icon tokens and text actions pad out to 44.
+- **Press:** every control uses `usePress()`. It gives a spring scale while held and a light haptic
+  through `buzz`, which honours the Vibration switch (pass `haptic={false}` if the handler buzzes
+  its own). The tap sound comes from the shell's global listener; `sfx` sets `data-sfx`, and
+  `"off"` is for handlers that play their own cue.
+- **Focus:** the same ring on every control: 2px of gilt (`--ctl-ring`) past a 2px soot gap. The
+  shared SVG filter `#ctl-ring` (`src/ui/controls/defs.ts`) draws it from the control's real
+  silhouette, applied as `filter: var(--ctl-ring-fx) var(--shape-fx,)`. It follows the wax bar and
+  its seal, chamfers, coins, pills and arches. It is never a rectangle around a shaped control.
+  Windows high contrast falls back to a plain outline. Text actions, links and inputs have no
+  silhouette, so they get a rounded outline in the same colour.
+- **Disabled:** the body desaturates (`--ctl-off`) and the label mutes (`--ctl-label-off`, still
+  about 4.9:1). Opacity alone is not enough. The reason goes in a `ControlNote` outside the control.
+- **Loading** (bars only): light spreads out from under the seal at the leading end, either by
+  `progress` (0..1) or as an indeterminate pass. There are no spinners.
+- **Cheap:** CSS and inline SVG only, and no per-control WebGL. Nothing animates continuously
+  except the one hero sheen and an indeterminate loading pass. Shadows and glows go in
+  `--shape-fx`, so the ring is computed from the bare shape.
+
+## Which one
+
+| Need | Use | Not |
+| --- | --- | --- |
+| The one main action on a screen | `PrimaryButton` (lg; `hero` on at most one per screen) | two primaries side by side |
+| Main action in a card, row or sheet foot | `PrimaryButton size="md"` | |
+| A second real action (Retune, Try again, Wear it, Suggest a name) | `SecondaryButton` | a second `PrimaryButton` |
+| Backing out, skipping, small asides (Skip, Cancel, Credits, Got it, Keep my account) | `TextButton` | `SecondaryButton` |
+| Destroying something (Delete my account, Yes, delete it) | `DangerButton`, always next to a `TextButton` way back | a red `PrimaryButton` |
+| An icon with no words (gear, speaker, back, close, arrows, hourglass) | `IconButton` with a `label` | a bare glyph |
+| An on/off setting | `Switch` (a row; `bare` only when the label is elsewhere) | a chip or a checkbox |
+| Choosing one of a few tokens (masks, gestures, swatches, Marks) | `Chip` (`kind="radio"` in a `radiogroup` for one-of) | a card |
+| A card that is itself the action (Spire floor, Ledger plaque, a Mark tile) | `SelectableCard` | a button inside a static card |
+| Typing a name | `TextInput` | a raw `<input>` |
+| A reason, cost or status for a control | `ControlNote` | more words in the label |
+| A link in a sentence / standing alone | `link.inline` / `link.nav` | per-screen link classes |
+| The top of a bottom sheet | `Grip` | per-sheet bars |
+
+## API
+
+Every button-like component takes the usual `<motion.button>` props: `onClick`, `disabled`,
+`aria-*`, and `className` (for layout only). They also share `haptic?: number | number[] | false`
+and `sfx?: Cue | "off"`. `pressed?` and `focused?` hold a look and are for the review sheet only.
+
+### PrimaryButton / PrimaryLink (`@/ui/button`)
+
+`size?: "lg" | "md"` (56 / 48), `inline?`, `hero?` (the slow sheen), `burst?` (embers on press),
+`loading?`, `progress?: number` (0..1). Wax layers, back to front: wax body < loading light < hero
+sheen < seal < label. The focus ring goes around the bar and the seal together, under the seal.
+The loading light starts from the seal's centre, so it reads as light leaving the seal.
+
+### SecondaryButton
+
+`size?: "md" | "lg"` (48 default / 56), `inline?`, `icon?: ReactNode | null` (replaces the gilt seal
+glyph; `null` for none), `loading?`, `progress?`. It is dark umber wax with the primary's uneven edge
+(`#ctl-edge`), a small gilt seal inside the leading end and a gilt Grenze label (9:1).
+
+### DangerButton
+
+Same props as `SecondaryButton`. A dark iron bar, a broken red seal and a red label
+(`--ctl-label-danger`, 5.2:1).
+
+### TextButton
+
+No extra props. Gilt Cinzel small caps, an invisible 44px target, underlined on hover.
+
+### IconButton
+
+- `icon: GlyphName | ReactNode`: one of `gear`, `speaker`, `speakerOff`, `back`, `prev`, `next`,
+  `close`, `hourglass`, or your own `currentColor` SVG.
+- `label: string`: required, it is the accessible name.
+- `size?: "md" | "sm"`: a 46px token, or a 36px token in a 44px target.
+- Pass `aria-pressed` for a toggle (the speaker). `false` dims the glyph.
+
+### Switch
+
+`checked: boolean`, `onChange?: (next) => void`, `label: ReactNode`, `hint?`, `icon?`, `bare?`
+(only the switch; `label` must then be a string). It has `role="switch"`. The whole row is the
+target, and the ring follows the groove.
+
+### Chip
+
+`selected?`, `kind?: "toggle" | "radio"` (`aria-pressed`, or `role="radio"` + `aria-checked`),
+`shape?: "cut" | "round"`, `size?: "md" | "lg"` (44 / 56). The content is yours: text, a `Mask`
+or a swatch.
+
+### SelectableCard
+
+`selected?`, `kind?`, `shape?: "cut" | "round" | "arch"`, `tone?: "blood"` (the boss floor). Leave
+`selected` undefined for a plain tappable card such as the Ledger plaque. Lay out the content with
+`className` (grid or flex). The frame is drawn behind it and never takes a grid cell. A locked card
+is `disabled`: the frame desaturates and the content mutes.
+
+### TextInput
+
+Every `<input>` prop, plus `size?: "lg" | "md"` (56 centred h3 / 48 body) and `className` for the
+wrapper. A sunk chamfered well, Grenze roman, a gilt caret. On focus the ring goes around the well
+and the rim turns gilt.
+
+### ControlNote
+
+`children`, `id?` (for `aria-describedby`), `tone?: "muted" | "warn" | "gilt"`,
+`align?: "center" | "start"`. One line of small Alegreya under the control.
+
+### link (CSS module)
+
+`link.inline`: gilt, always underlined (a 55% line, full on hover). `link.nav`: gilt, underlined only
+on hover and focus, 44px tall.
+
+### Grip
+
+Takes any `<span>` prop. It is decorative by default; pass `onPointerDown` and it becomes a 44px
+drag target.
+
+### Hooks and utilities
+
+- `usePress({ onClick, haptic, sfx, scale, disabled, pressed })` returns the props to spread on a
+  `motion.*` element for the shared press.
+- `useControlDefs()` / `ensureControlDefs()` mount `#ctl-ring` and `#ctl-edge` once and set
+  `--ctl-ring-fx` / `--ctl-edge-fx` on `:root`. Every control calls it. Call it yourself if you
+  hand-build a shaped control and use those tokens.
+- To give a hand-built control the ring: put the shape on one layer and keep its shadows in
+  `--shape-fx`. On focus, set `filter: var(--ctl-ring-fx) var(--shape-fx,)` on that layer, or use
+  `.host` / `.shape` from `ring.module.css`.
+
+## Tokens (app/globals.css, "Controls")
+
+- Sizes: `--ctl-h-lg` (56), `--ctl-h-md` (48).
+- Shape: `--ctl-ring`, `--ctl-wax-r` (the uneven bar radii), `--ctl-cut` (the chip chamfer; cards
+  use 10px).
+- Labels: `--ctl-label`, `--ctl-label-2`, `--ctl-label-danger`, `--ctl-label-off`, `--ctl-note`.
+- Effects: `--ctl-drop` / `--ctl-drop-in` (the rest and pressed shadow), `--ctl-off` (the disabled
+  filter), `--ctl-stone` and `--ctl-rim` (the stone token).
+
+`--ctl-ring-fx` and `--ctl-edge-fx` are set at runtime by `defs.ts`, which keeps `url()` out of the
+bundled CSS.
+
+## Migration map (old -> system)
+
+| Old (sections above) | New |
+| --- | --- |
+| §2 `.btn.btn-ghost`, fragment `.divine`, reliquary `.wear`, title `.leafClose` | `SecondaryButton` (`.divine` keeps its star via `icon`) |
+| §2 legal `.btn`, legal `.noticeDismiss`; §3 every `.skip`, title `.colophonLink` | `TextButton` |
+| §4 legal `.btnDanger` | `DangerButton` (+ `TextButton` "Keep my account") |
+| §5 `.gear`, audio `.toggle`, fragment `.back` / `.arrow`, gathering `.sheetClose` / `.skip` | `IconButton` |
+| §7 fragment `.chip` / `.gesture`, vestry `.chip`; §11 hud `.medal` | `Chip` |
+| §8 audio `.switch`, hud `.switch` | `Switch` |
+| §9 fragment `.nameField input` | `TextInput size="lg"` |
+| §10 every link class | `link.inline` / `link.nav` |
+| §11 spire `.floor`, gathering `.ledgerBtn` | `SelectableCard` |
+| §12 gathering `.grabber`, fragment `.sheetGrip` | `Grip` |
+| Labels with reasons ("5 USDC · not enough") | label `Buy · 5 USDC` + `ControlNote` "You have 4.00 USDC" |
+
+Outside the family: the tab ledge (§6, which has its own carved language), the sigil rail (§8, a
+game instrument), the wax seal in Waiting (§11, the art itself) and the scrims (§12).
+
+Dead control CSS removed: `.chip` and `.chip b` in `globals.css` (nothing referenced them).
+`.btn`, `.btn-blood`, `.btn-ghost` and `.row .btn` stay, because screens still use them; they go
+once those screens move to the system.

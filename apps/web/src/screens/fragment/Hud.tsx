@@ -13,8 +13,10 @@ import {
 	useReducedMotion,
 } from "motion/react";
 import {
+	type ReactNode,
 	useCallback,
 	useEffect,
+	useId,
 	useLayoutEffect,
 	useRef,
 	useState,
@@ -43,7 +45,16 @@ import { hud } from "@/lexicon/hud";
 import { marks as M } from "@/lexicon/marks";
 import { promoteMoment } from "@/screens/title/Moments";
 import { PrimaryButton } from "@/ui/button";
-import { easeOut, pressable, spring } from "@/ui/motion";
+import {
+	ControlNote,
+	cx,
+	link,
+	Switch,
+	useControlDefs,
+	usePress,
+} from "@/ui/controls";
+import ring from "@/ui/controls/ring.module.css";
+import { easeOut, spring } from "@/ui/motion";
 import { Count, Rubric } from "@/ui/type";
 import h from "./hud.module.css";
 
@@ -362,6 +373,7 @@ export function VigilCard({
 	const empty = v.ash <= 0 && v.resonance <= 0;
 	const sfx = useSfx(["collect"]);
 	const btn = useRef<HTMLButtonElement>(null);
+	const waitId = useId();
 
 	useEffect(() => {
 		if (!burst) return;
@@ -408,7 +420,7 @@ export function VigilCard({
 				value={v.capHours > 0 ? v.hours / v.capHours : 0}
 				label={economy.vigil.name}
 			/>
-			<p className={h.waiting}>
+			<p className={h.waiting} id={waitId}>
 				{empty ? economy.vigil.empty : hud.waiting(v.ash, v.resonance)}
 			</p>
 			{v.full ? <p className={h.note}>{hud.fullHint}</p> : null}
@@ -421,6 +433,7 @@ export function VigilCard({
 					disabled={busy || empty}
 					loading={busy}
 					onClick={collect}
+					aria-describedby={waitId}
 					data-coach="collect"
 				>
 					{busy ? economy.vigil.claiming : economy.vigil.claim}
@@ -508,24 +521,17 @@ export function MarksShelf({ res }: { res: MarksResponse }) {
 						const name = tierName(mark, tier);
 						return (
 							<li key={mark.kind}>
-								<motion.button
-									type="button"
-									className={h.medal}
-									data-sealed={sealed || undefined}
-									data-on={open === mark.kind || undefined}
-									data-new={fresh.has(mark.kind) || undefined}
-									aria-label={`${name}, ${sealed ? M.state.sealed : M.sealingSoon}`}
-									aria-expanded={open === mark.kind}
+								<Medal
+									sealed={sealed}
+									on={open === mark.kind}
+									fresh={fresh.has(mark.kind)}
+									label={`${name}, ${sealed ? M.state.sealed : M.sealingSoon}`}
 									onClick={() =>
 										setOpen((o) => (o === mark.kind ? null : mark.kind))
 									}
-									whileTap={{ scale: 0.9 }}
-									transition={spring.press}
 								>
-									<span className={h.medalFace} aria-hidden="true">
-										{glyphOf(tier)}
-									</span>
-								</motion.button>
+									{glyphOf(tier)}
+								</Medal>
 								<span className={h.medalName} aria-hidden="true">
 									{name}
 								</span>
@@ -553,7 +559,7 @@ export function MarksShelf({ res }: { res: MarksResponse }) {
 								href={sealUrl(picked.tier.tx)}
 								target="_blank"
 								rel="noreferrer"
-								className={h.sealLink}
+								className={link.nav}
 							>
 								{hud.sealedLink}
 							</a>
@@ -562,6 +568,47 @@ export function MarksShelf({ res }: { res: MarksResponse }) {
 				) : null}
 			</AnimatePresence>
 		</section>
+	);
+}
+
+/**
+ * One Mark on the shelf: a 46px coin (sealed: gilt; earned, not yet sealed: a dashed rim).
+ * Hand-built in the control family's terms: the shared press, and the focus ring drawn
+ * around the coin itself (ring.module.css), never a box.
+ */
+function Medal({
+	sealed,
+	on,
+	fresh,
+	label,
+	onClick,
+	children,
+}: {
+	sealed: boolean;
+	on: boolean;
+	fresh: boolean;
+	label: string;
+	onClick: () => void;
+	children: ReactNode;
+}) {
+	useControlDefs();
+	const press = usePress({ onClick, scale: 0.9 });
+	return (
+		<motion.button
+			type="button"
+			className={cx(ring.host, h.medal)}
+			data-sealed={sealed || undefined}
+			data-on={on || undefined}
+			data-new={fresh || undefined}
+			aria-label={label}
+			aria-expanded={on}
+			{...press}
+		>
+			<span className={cx(ring.shape, h.medalDisc)} aria-hidden="true" />
+			<span className={h.medalFace} aria-hidden="true">
+				{children}
+			</span>
+		</motion.button>
 	);
 }
 
@@ -582,6 +629,7 @@ function useIosBrowser(): boolean {
 export function PushToggle({ api }: { api: Api }) {
 	const push = usePush(api);
 	const ios = useIosBrowser();
+	const failId = useId();
 	const n = M.notify;
 
 	if (push.state == null) return null;
@@ -592,36 +640,25 @@ export function PushToggle({ api }: { api: Api }) {
 	const on = push.state === "on";
 	return (
 		<div className={h.push}>
-			<Bell on={on} />
-			<span className={h.pushText}>
-				{push.busy ? n.working : on ? n.on : n.offer}
-				{push.failed ? (
-					<span className={h.pushFail} role="alert">
-						{n.failed}
-					</span>
-				) : null}
-			</span>
-			<motion.button
-				type="button"
-				role="switch"
-				aria-checked={on}
-				aria-label={n.offer}
-				className={h.switch}
-				data-on={on || undefined}
+			<Switch
+				checked={on}
+				label={n.heading}
+				hint={push.busy ? n.working : n.offer}
+				icon={<Bell on={on} />}
 				disabled={push.busy}
-				onClick={() => {
-					buzz(HAPTIC.tap);
-					if (on) push.disable();
-					else push.enable();
+				aria-describedby={push.failed ? failId : undefined}
+				onChange={(next) => {
+					if (next) push.enable();
+					else push.disable();
 				}}
-				{...pressable}
-			>
-				<motion.span
-					className={h.knob}
-					animate={{ x: on ? 22 : 0 }}
-					transition={spring.snappy}
-				/>
-			</motion.button>
+			/>
+			<div role="alert">
+				{push.failed ? (
+					<ControlNote id={failId} tone="warn" align="start">
+						{n.failed}
+					</ControlNote>
+				) : null}
+			</div>
 		</div>
 	);
 }

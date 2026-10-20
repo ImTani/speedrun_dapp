@@ -12,8 +12,9 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { buzz, HAPTIC, play, series, useSfx } from "@/audio";
+import { HAPTIC, play, series, useSfx } from "@/audio";
 import { onboarding as T } from "@/lexicon/onboarding";
+import { TextButton } from "@/ui/controls";
 import { spring } from "@/ui/motion";
 import s from "./coach.module.css";
 import { onCoachAct } from "./signal";
@@ -178,17 +179,18 @@ export function Coach({
 								{text}
 							</motion.span>
 						</p>
-						<button
-							type="button"
+						<TextButton
 							className={s.skip}
+							haptic={HAPTIC.tab}
+							// plays its own tick: the coach can show before the shell's listener
+							sfx="off"
 							onClick={() => {
 								play("tap");
-								buzz(HAPTIC.tab);
 								finish(true);
 							}}
 						>
 							{T.skip}
-						</button>
+						</TextButton>
 					</motion.div>
 				</motion.div>
 			) : null}

@@ -77,20 +77,11 @@
 	text-shadow: 0 1px 0 var(--c-soot);
 }
 
-.skip {
-	min-width: 64px;
-	min-height: var(--tap);
-	padding: 0 14px;
-	border: 0;
-	border-radius: 999px;
-	background: #0b0807cc;
-	box-shadow: 0 0 0 1px var(--c-umber-d);
-	font-family: var(--font-num);
-	font-weight: 700;
-	font-size: var(--fs-small);
-	letter-spacing: 0.1em;
-	text-transform: uppercase;
-	color: var(--c-bone);
+/* Skip is a TextButton; over the dimmed game it gets a soft dark pool behind the word
+   (no plate, no border) so it reads on any backdrop. */
+.line .skip {
+	flex: none;
+	background: radial-gradient(closest-side, #0b0807d9 40%, #0b080700);
 	pointer-events: auto;
 }
 

@@ -1,0 +1,99 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: grouped by part, then state. */
+/* IconButton: a round stone token, gilt glyph, ring around the token. */
+.btn {
+	--d: 46px;
+	position: relative;
+	isolation: isolate;
+	display: inline-grid;
+	place-items: center;
+	flex: none;
+	width: max(44px, var(--d));
+	height: max(44px, var(--d));
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: none;
+	color: var(--c-gilt-l);
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+	touch-action: manipulation;
+}
+.btn[data-size="sm"] {
+	--d: 36px;
+}
+.btn:disabled {
+	opacity: 1;
+	cursor: default;
+	color: var(--ctl-label-off);
+}
+.shape {
+	--shape-fx: var(--ctl-drop);
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: var(--d);
+	height: var(--d);
+	margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2);
+	z-index: 0;
+	pointer-events: none;
+}
+.face {
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	background: var(--ctl-stone);
+	box-shadow:
+		var(--ctl-rim),
+		0 0 0 1.5px var(--c-soot);
+	transition:
+		box-shadow var(--dur-1) var(--ease-out),
+		filter var(--dur-2) var(--ease-out);
+}
+.glyph {
+	position: relative;
+	z-index: 1;
+	display: grid;
+	place-items: center;
+	width: calc(var(--d) * 0.48);
+	height: calc(var(--d) * 0.48);
+	pointer-events: none;
+	filter: drop-shadow(0 1px 0 #050403);
+	transition: transform var(--dur-1) var(--ease-out);
+}
+.glyph > svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+	overflow: visible;
+}
+@media (hover: hover) {
+	.btn:hover:not(:disabled) .face {
+		filter: brightness(1.18);
+	}
+	.btn:hover:not(:disabled) {
+		color: var(--c-gilt-hi);
+	}
+}
+.btn:active:not(:disabled) .shape,
+.btn[data-pressed] .shape {
+	--shape-fx: var(--ctl-drop-in);
+}
+.btn:active:not(:disabled) .face,
+.btn[data-pressed] .face {
+	box-shadow:
+		inset 0 3px 6px #000000c0,
+		inset 0 0 0 1px #5a4632,
+		0 0 0 1.5px var(--c-soot);
+}
+.btn:active:not(:disabled) .glyph,
+.btn[data-pressed] .glyph {
+	transform: translateY(1px);
+}
+/* a toggle that is off (the muted speaker) */
+.btn[aria-pressed="false"] .glyph {
+	opacity: 0.7;
+}
+.btn:disabled .shape {
+	--shape-fx: var(--ctl-off) drop-shadow(0 1px 0 var(--c-void));
+}

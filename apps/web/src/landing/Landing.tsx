@@ -9,6 +9,8 @@ import { landing as L } from "@/lexicon/landing";
 import { TitleScene } from "@/screens/title/TitleScene";
 import t from "@/screens/title/title.module.css";
 import { PrimaryLink } from "@/ui/button";
+// The CSS module directly (not the @/ui/controls barrel): this is a server component.
+import link from "@/ui/controls/link.module.css";
 import { GlassWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
 import { Wordmark } from "@/ui/wordmark";
@@ -73,7 +75,7 @@ function Hero() {
 					<QrCode value={PLAY_URL} size={132} className={s.qrCode} />
 					<p className={s.qrText}>
 						{L.hero.qr}
-						<a href={PLAY_URL} className={s.qrUrl}>
+						<a href={PLAY_URL} className={`${link.inline} ${s.qrUrl}`}>
 							{PLAY_URL_SHORT}
 						</a>
 					</p>
@@ -166,7 +168,7 @@ function OnChain() {
 				))}
 			</ul>
 			<a
-				className={s.explorer}
+				className={`${link.inline} ${s.explorer}`}
 				href={fujiExplorer(ARENA)}
 				target="_blank"
 				rel="noopener noreferrer"
@@ -235,10 +237,17 @@ function Footer() {
 	return (
 		<footer className={s.footer}>
 			<nav className={s.footNav} aria-label="Project">
-				<a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+				<a
+					href={GITHUB_URL}
+					target="_blank"
+					rel="noopener noreferrer"
+					className={link.nav}
+				>
 					{L.footer.github}
 				</a>
-				<a href={ATTRIBUTION_URL}>{L.footer.credits}</a>
+				<a href={ATTRIBUTION_URL} className={link.nav}>
+					{L.footer.credits}
+				</a>
 			</nav>
 			<LegalLinks />
 			<p className={s.copy}>{L.footer.copyright}</p>

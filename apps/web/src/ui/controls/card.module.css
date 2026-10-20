@@ -1,0 +1,22 @@
+/* SelectableCard defaults (zero specificity: the caller's className lays out the content).
+   The silhouette and its states come from frame.module.css. */
+:where(.card) {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	min-height: 56px;
+	margin: 0;
+	padding: 10px 14px;
+	text-align: start;
+}
+.card {
+	--k: 10px; /* beats the frame's zero-specificity default */
+	border: 0;
+	background: none;
+	color: var(--c-bone);
+	font: inherit;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+	touch-action: manipulation;
+}

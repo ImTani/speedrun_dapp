@@ -12,7 +12,9 @@
 	min-height: 100%;
 	display: flex;
 	flex-direction: column;
-	padding: calc(10px + var(--safe-t)) var(--pad-r) 14px var(--pad-l);
+	/* the foot clears the Gathering boss, which stands above the ledge (the climb note sits there) */
+	padding: calc(10px + var(--safe-t)) var(--pad-r)
+		calc(var(--tabbar-boss) + 6px) var(--pad-l);
 	background:
 		radial-gradient(80% 38% at 50% 0%, #2c1d1470 0%, transparent 72%),
 		radial-gradient(140% 60% at 50% 110%, #00000099 0%, transparent 60%);
@@ -150,56 +152,21 @@
 	box-shadow: 0 0 0 1px var(--c-soot);
 	z-index: 0;
 }
+/* A floor is a SelectableCard (@/ui/controls): the card draws the chamfered slab, the boss's
+   blood rim, the gilt selected rim, the disabled (locked) muting and the focus ring that follows
+   the chamfer. This class only lays out the floor's content. */
 .floor {
-	position: relative;
-	z-index: 1;
+	z-index: 1; /* over the stair */
 	display: grid;
 	grid-template-columns: 36px 48px minmax(0, 1fr) auto;
 	align-items: center;
 	gap: 10px;
-	width: 100%;
 	min-height: 66px;
 	padding: 8px 12px 8px 8px;
-	text-align: start;
-	background: linear-gradient(180deg, #221813, #130d0a);
-	box-shadow:
-		inset 0 1px 0 #ffffff10,
-		inset 0 0 0 1px var(--c-umber),
-		0 6px 14px #000a;
-	clip-path: polygon(
-		0 var(--cut),
-		var(--cut) 0,
-		calc(100% - var(--cut)) 0,
-		100% var(--cut),
-		100% calc(100% - var(--cut)),
-		calc(100% - var(--cut)) 100%,
-		var(--cut) 100%,
-		0 calc(100% - var(--cut))
-	);
-	transition: box-shadow var(--dur-2) var(--ease-out);
-	-webkit-tap-highlight-color: transparent;
-}
-.floor:disabled {
-	opacity: 1;
-	cursor: default;
 }
 .floor[data-boss="true"] {
 	min-height: 78px;
 	grid-template-columns: 36px 58px minmax(0, 1fr) auto;
-	background:
-		radial-gradient(120% 140% at 0% 50%, #3a070966 0%, transparent 60%),
-		linear-gradient(180deg, #261714, #140c0a);
-	box-shadow:
-		inset 0 1px 0 #ffffff12,
-		inset 0 0 0 1px var(--c-blood),
-		0 8px 18px #000c;
-}
-.floor[data-selected="true"] {
-	box-shadow:
-		inset 0 1px 0 #ffffff14,
-		inset 0 0 0 2px var(--c-gilt),
-		0 0 0 1px #00000088,
-		0 8px 22px #000c;
 }
 .floorNum {
 	display: grid;
@@ -244,10 +211,6 @@
 	flex-direction: column;
 	gap: 2px;
 	min-width: 0;
-}
-.floor[data-status="locked"] .mask,
-.floor[data-status="locked"] .floorText {
-	opacity: 0.55;
 }
 .floor[data-status="cleared"] .mask {
 	filter: saturate(0.6);
@@ -586,16 +549,13 @@
 	flex-direction: column;
 	gap: 8px;
 }
+/* layout only: Skip is a TextButton */
 .skip {
-	min-height: var(--tap);
 	align-self: center;
-	padding: 0 18px;
-	font-family: var(--font-num);
-	font-weight: 700;
-	font-size: var(--fs-micro);
-	letter-spacing: 0.18em;
-	text-transform: uppercase;
-	color: var(--c-bone);
+}
+/* layout only: Try again is a SecondaryButton */
+.retry {
+	align-self: center;
 }
 
 .loading {
@@ -606,9 +566,4 @@
 	font-style: italic;
 	font-size: var(--fs-body);
 	color: var(--c-bone);
-}
-
-/* clip-path cuts an outside outline: the keyboard focus ring is drawn inside the slab. */
-.floor:focus-visible {
-	outline-offset: -6px;
 }

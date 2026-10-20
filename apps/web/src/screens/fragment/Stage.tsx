@@ -12,7 +12,7 @@ import { encodeConfig, type Knobs, type StrategyId } from "@arena/strategies";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { buzz, HAPTIC, SoundSettingsList, SoundToggle, useSfx } from "@/audio";
+import { HAPTIC, SoundSettingsList, SoundToggle, useSfx } from "@/audio";
 import type { FragmentRow, StandingRow } from "@/client/api";
 import { type UnlockId, useGameState } from "@/client/state";
 import { FX, fx } from "@/fx";
@@ -24,13 +24,13 @@ import { Atmosphere } from "@/scene/AtmosphereLayer";
 import { DressedMask } from "@/screens/reliquary/ItemSwatch";
 import { SettingsEntry } from "@/screens/title/SettingsEntry";
 import { PrimaryButton } from "@/ui/button";
+import { Grip, SecondaryButton, TextButton } from "@/ui/controls";
 import { GlassWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
 import {
 	enter,
 	IMPACT,
 	impact,
-	pressable,
 	rise,
 	scrim,
 	sheet,
@@ -255,18 +255,12 @@ export function Stage({
 						</div>
 					) : (
 						<Reveal fresh={isNew("retune")}>
-							<motion.button
-								type="button"
-								className={`btn btn-ghost ${s.chisel}`}
+							<SecondaryButton
 								data-coach="retune"
-								onClick={() => {
-									buzz(HAPTIC.tap);
-									setEditing(true);
-								}}
-								{...pressable}
+								onClick={() => setEditing(true)}
 							>
 								{L.hero.retune}
-							</motion.button>
+							</SecondaryButton>
 						</Reveal>
 					)
 				) : null}
@@ -422,7 +416,7 @@ function RetuneSheet({
 				aria-labelledby="retune-head"
 				{...enter(sheet)}
 			>
-				<span className={s.sheetGrip} aria-hidden="true" />
+				<Grip className={s.sheetGrip} />
 				<div className={s.sheetHead}>
 					<Mask aspect={aspect} size={48} glow />
 					<div>
@@ -441,18 +435,13 @@ function RetuneSheet({
 					/>
 				</div>
 				<div className={s.sheetFoot}>
-					<motion.button
-						type="button"
-						className="btn btn-ghost"
-						disabled={busy}
-						onClick={onClose}
-						{...pressable}
-					>
+					<TextButton disabled={busy} onClick={onClose}>
 						{L.hero.cancel}
-					</motion.button>
+					</TextButton>
 					<PrimaryButton
 						legacy="btn btn-blood"
 						size="md"
+						className={s.sheetSave}
 						disabled={busy || !changed}
 						loading={busy}
 						onClick={carve}

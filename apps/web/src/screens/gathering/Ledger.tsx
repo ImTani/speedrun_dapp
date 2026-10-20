@@ -9,8 +9,9 @@ import {
 } from "motion/react";
 import { useEffect, useId, useRef } from "react";
 import { gathering as T } from "@/lexicon/gathering.ts";
+import { Grip, IconButton, SelectableCard } from "@/ui/controls";
 import { Mask } from "@/ui/Mask";
-import { pressable, scrim, sheet } from "@/ui/motion";
+import { scrim, sheet } from "@/ui/motion";
 import { Rubric } from "@/ui/type";
 import { useBackToClose } from "@/ui/useBackToClose";
 import css from "./gathering.module.css";
@@ -35,9 +36,10 @@ export function LedgerButton({
 			: leader
 				? T.leader(leader.name || T.nameless)
 				: T.ledgerEmpty;
+	// A plain tappable card (no `selected`): the chamfered plaque, and the focus ring that
+	// follows its corners.
 	return (
-		<motion.button
-			type="button"
+		<SelectableCard
 			className={css.ledgerBtn}
 			onClick={onOpen}
 			onPanEnd={(_, info: PanInfo) => {
@@ -45,7 +47,6 @@ export function LedgerButton({
 			}}
 			aria-label={T.ledgerOpen}
 			aria-haspopup="dialog"
-			{...pressable}
 		>
 			{top.length > 0 && (
 				<span className={css.ledgerMasks} aria-hidden="true">
@@ -70,7 +71,7 @@ export function LedgerButton({
 					strokeLinejoin="round"
 				/>
 			</svg>
-		</motion.button>
+		</SelectableCard>
 	);
 }
 
@@ -137,27 +138,19 @@ export function LedgerSheet({
 						}}
 					>
 						<div className={css.sheetHead} onPointerDown={(e) => drag.start(e)}>
-							<span className={css.grabber} aria-hidden="true" />
+							<Grip className={css.sheetGrip} />
 							<h2 id={titleId} className={css.sheetTitle}>
 								{T.ledgerTitle}
 							</h2>
-							<button
+							<IconButton
 								ref={closeRef}
-								type="button"
+								icon="close"
+								label={T.close}
+								size="sm"
 								className={css.sheetClose}
 								onClick={onClose}
 								onPointerDown={(e) => e.stopPropagation()}
-								aria-label={T.close}
-							>
-								<svg viewBox="0 0 18 18" aria-hidden="true">
-									<path
-										d="M3 3l12 12M15 3 3 15"
-										stroke="currentColor"
-										strokeWidth="2.2"
-										strokeLinecap="round"
-									/>
-								</svg>
-							</button>
+							/>
 						</div>
 						{rows.length === 0 ? (
 							<p className={css.empty}>{T.ledgerEmpty}</p>

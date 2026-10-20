@@ -37,6 +37,7 @@ import type {
 	StageBeatInfo,
 	StageGeom,
 } from "@/scene/inkStage.js";
+import { IconButton } from "@/ui/controls";
 import { easeInOut, IMPACT, impact, spring, useShake } from "@/ui/motion";
 import { useTuneParam } from "@/ui/tune/useTuneParam.ts";
 import { type Beat, FaceOff } from "./FaceOff.tsx";
@@ -669,20 +670,17 @@ export function GatheringScreen() {
 			<div className={css.dock}>
 				<LedgerButton rows={rows} mine={mine} onOpen={openLedger} />
 				{playing && (
-					<motion.button
-						type="button"
-						className={css.skip}
+					<IconButton
+						icon="hourglass"
+						label={T.pass}
+						sfx="off"
 						onClick={() => {
 							play("tap");
 							stageRef.current?.skip();
 						}}
-						aria-label={T.pass}
 						initial={{ opacity: 0, scale: 0.8 }}
 						animate={{ opacity: 1, scale: 1 }}
-						whileTap={{ scale: 0.9 }}
-					>
-						<Hourglass />
-					</motion.button>
+					/>
 				)}
 			</div>
 
@@ -704,41 +702,5 @@ export function GatheringScreen() {
 				</Suspense>
 			)}
 		</div>
-	);
-}
-
-/** The hourglass from the ink study's floor, as a button glyph. */
-function Hourglass() {
-	return (
-		<svg viewBox="-16 -24 32 48" aria-hidden="true">
-			<polygon
-				points="-13,-21 13,-21 12,-16 -12,-16"
-				fill="#4a3626"
-				stroke="#0b0807"
-				strokeWidth="1.6"
-			/>
-			<polygon
-				points="-13,16 13,16 14,21 -14,21"
-				fill="#4a3626"
-				stroke="#0b0807"
-				strokeWidth="1.6"
-			/>
-			<path d="M-11 -16 V16 M11 -16 V16" stroke="#0b0807" strokeWidth="2.6" />
-			<path d="M-11 -16 V16" stroke="#6b5139" strokeWidth="1" />
-			<path
-				d="M-8 -16 Q-8 -4 0 0 Q-8 4 -8 16 H8 Q8 4 0 0 Q8 -4 8 -16Z"
-				fill="#d8c6a0"
-				opacity=".14"
-			/>
-			<path d="M-6.5 16 Q0 7 6.5 16Z" fill="#c9a24f" />
-			<path d="M-4.5 -8 Q0 -3 4.5 -8Z" fill="#c9a24f" opacity=".8" />
-			<path d="M0 -2 V12" stroke="#e3c27c" strokeWidth=".9" />
-			<path
-				d="M-8 -16 Q-8 -4 0 0 Q-8 4 -8 16 H8 Q8 4 0 0 Q8 -4 8 -16Z"
-				fill="none"
-				stroke="#0b0807"
-				strokeWidth="1.6"
-			/>
-		</svg>
 	);
 }

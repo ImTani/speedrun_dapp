@@ -106,6 +106,35 @@
 	--dur-2: 220ms;
 	--dur-3: 420ms;
 
+	/* ---- Controls (src/ui/controls; the "System" section of src/ui/CONTROLS.md) ---- */
+	--ctl-h-lg: 56px;
+	--ctl-h-md: 48px;
+	/* focus: a 2px gilt ring past a 2px soot gap that follows the control's silhouette.
+	   --ctl-ring-fx (the ring) and --ctl-edge-fx (the wax family's uneven edge) are SVG
+	   filter references, set on :root by src/ui/controls/defs.ts with the filters themselves
+	   (kept out of the bundled CSS so no url() is ever resolved as an asset). */
+	--ctl-ring: var(--c-gilt-hi);
+	--ctl-wax-r: 14px 11px 12px 9px / 12px 14px 10px 13px;
+	--ctl-cut: 7px; /* chamfer for chips and cards */
+	--ctl-label: var(--c-bone-hi);
+	--ctl-label-2: var(--c-gilt-l);
+	--ctl-label-danger: #f0695c; /* 5.2:1 on the iron bar */
+	--ctl-label-off: #9c8a6c; /* disabled: muted, still about 4.9:1 */
+	--ctl-note: var(--c-bone-d);
+	--ctl-drop: drop-shadow(0 2px 0 var(--c-void))
+		drop-shadow(0 6px 9px #000000a0);
+	--ctl-drop-in: drop-shadow(0 1px 0 var(--c-void))
+		drop-shadow(0 2px 4px #00000090);
+	--ctl-off: grayscale(0.9) brightness(0.62);
+	--ctl-stone: radial-gradient(
+		circle at 40% 28%,
+		#4a3829 0%,
+		#2c2017 55%,
+		#140e0b 100%
+	);
+	--ctl-rim:
+		inset 0 1px 0 #e3c27c24, inset 0 0 0 1px #5a4632, inset 0 -2px 3px #050403b0;
+
 	/* ---- Legacy aliases (existing screens use these) ---- */
 	--ink: var(--c-soot);
 	--void: var(--c-void);
@@ -756,18 +785,6 @@ main {
 	flex-wrap: wrap;
 	gap: 6px;
 	justify-content: center;
-}
-.chip {
-	padding: 6px 10px;
-	border: 2px solid var(--ink);
-	background: #1f1612;
-	font-size: var(--fs-small);
-	color: var(--bone-d);
-}
-.chip b {
-	font-family: var(--gothic);
-	color: #f3e6c8;
-	margin-left: 4px;
 }
 .retune {
 	display: flex;

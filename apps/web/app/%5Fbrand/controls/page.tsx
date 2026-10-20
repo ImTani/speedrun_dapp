@@ -1,17 +1,27 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ControlsClient } from "./ControlsClient";
+import { SystemClient } from "./SystemClient";
 
-// Dev-only: every kind of button and control in the game on one sheet, drawn by the real
-// components and classes, grouped by type, with the wax primary on top for reference.
-// URL: /_brand/controls. The written inventory: src/ui/CONTROLS.md.
+// Dev-only: the control system (src/ui/controls + the wax primary) in every state, and the
+// screens' compositions with it. URL: /_brand/controls.
+// ?before=1: the controls as the screens draw them today, grouped by type (the old sheet,
+// kept for before/after captures). The written inventory and API: src/ui/CONTROLS.md.
 
 export const metadata: Metadata = {
 	title: "Controls",
 	robots: { index: false, follow: false },
 };
 
-export default function ControlsPage() {
+type Search = Record<string, string | string[] | undefined>;
+
+export default async function ControlsPage({
+	searchParams,
+}: {
+	searchParams: Promise<Search>;
+}) {
 	if (process.env.NODE_ENV === "production") notFound();
-	return <ControlsClient />;
+	const q = await searchParams;
+	const before = [q.before].flat().includes("1");
+	return before ? <ControlsClient /> : <SystemClient />;
 }

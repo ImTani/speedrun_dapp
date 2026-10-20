@@ -1,12 +1,15 @@
 "use client";
 
 // The current Degree's five floors, the boss on top. Tap an open or cleared floor to choose it.
+// Each floor is a SelectableCard: the slab, the gilt selected rim and the focus ring are all
+// cut to the same chamfer, so they turn the corners together.
 import { motion } from "motion/react";
 import type { SpireFloor } from "@/client/spire";
 import { roman } from "@/lexicon/gathering";
 import { spire as T } from "@/lexicon/spire";
+import { SelectableCard } from "@/ui/controls";
 import { Mask } from "@/ui/Mask";
-import { listVariants, pressableSoft, rise } from "@/ui/motion";
+import { listVariants, rise } from "@/ui/motion";
 import s from "./spire.module.css";
 
 function subline(f: SpireFloor, levelCap: number): string {
@@ -39,17 +42,15 @@ export function Tower({
 				const status = T.status[f.status];
 				return (
 					<motion.li key={f.floor} variants={rise}>
-						<motion.button
-							type="button"
+						<SelectableCard
 							className={s.floor}
 							data-boss={f.boss ? "true" : "false"}
 							data-status={f.status}
-							data-selected={selected === f.floor ? "true" : "false"}
+							tone={f.boss ? "blood" : undefined}
+							selected={!locked && selected === f.floor}
 							disabled={locked}
-							aria-pressed={locked ? undefined : selected === f.floor}
 							aria-label={T.floorAria(f.floor, f.name, status)}
 							onClick={() => onSelect(f.floor)}
-							{...(locked ? {} : pressableSoft)}
 						>
 							<span className={s.floorNum} aria-hidden="true">
 								{roman(f.floor)}
@@ -78,7 +79,7 @@ export function Tower({
 							) : (
 								<span />
 							)}
-						</motion.button>
+						</SelectableCard>
 					</motion.li>
 				);
 			})}

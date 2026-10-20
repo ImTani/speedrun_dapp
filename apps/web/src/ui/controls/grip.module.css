@@ -1,0 +1,31 @@
+/* The sheet grip: 40 x 5 bone bar, rounded, carved (a lit lower lip). */
+.grip {
+	position: relative;
+	display: block;
+	width: 64px;
+	height: 18px;
+	margin: 0 auto;
+	flex: none;
+}
+.grip::before {
+	content: "";
+	position: absolute;
+	left: 12px;
+	right: 12px;
+	top: 50%;
+	height: 5px;
+	margin-top: -2.5px;
+	border-radius: 99px;
+	background: var(--c-bone-dd);
+	box-shadow:
+		0 1px 0 #ffffff14,
+		inset 0 1px 1px #00000080;
+}
+.grip[data-drag] {
+	height: 44px;
+	cursor: grab;
+	touch-action: none;
+}
+.grip[data-drag]:active {
+	cursor: grabbing;
+}

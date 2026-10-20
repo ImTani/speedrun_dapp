@@ -17,9 +17,10 @@ import { useEffect, useId, useRef, useState } from "react";
 import { buzz } from "@/audio";
 import { L } from "@/lexicon";
 import { coachAct } from "@/ui/coach/signal";
+import { Chip, IconButton } from "@/ui/controls";
 import { RoseWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
-import { pressableSoft, spring } from "@/ui/motion";
+import { spring } from "@/ui/motion";
 import { Rubric } from "@/ui/type";
 import s from "./fragment.module.css";
 
@@ -55,14 +56,19 @@ export function AspectCarousel({
 }) {
 	const a = L.aspects[aspect] ?? L.aspects[0];
 	const go = (d: number) => {
-		buzz(8);
 		onPick(wrap(aspect + d), d);
 		coachAct("mask");
 	};
+	// A swipe has no button to buzz for it.
 	const end = (_: unknown, { offset, velocity }: PanInfo) => {
 		const power = offset.x * Math.abs(velocity.x);
-		if (power < -SWIPE || offset.x < -90) go(1);
-		else if (power > SWIPE || offset.x > 90) go(-1);
+		if (power < -SWIPE || offset.x < -90) {
+			buzz(8);
+			go(1);
+		} else if (power > SWIPE || offset.x > 90) {
+			buzz(8);
+			go(-1);
+		}
 	};
 	const liveId = useId();
 	// Narrow phones scroll the chip strip: keep the chosen chip in view as the rose turns.
@@ -90,15 +96,13 @@ export function AspectCarousel({
 	return (
 		<div className={s.carousel}>
 			<div className={s.stageRow}>
-				<motion.button
-					type="button"
+				<IconButton
+					icon="prev"
+					label={L.bind.prevMask}
 					className={s.arrow}
-					aria-label={L.bind.prevMask}
+					haptic={8}
 					onClick={() => go(-1)}
-					{...pressableSoft}
-				>
-					<Chevron flip />
-				</motion.button>
+				/>
 				<div className={s.roseBox} data-coach="mask">
 					<RoseWindow
 						aspect={aspect}
@@ -139,15 +143,13 @@ export function AspectCarousel({
 						</motion.div>
 					</AnimatePresence>
 				</div>
-				<motion.button
-					type="button"
+				<IconButton
+					icon="next"
+					label={L.bind.nextMask}
 					className={s.arrow}
-					aria-label={L.bind.nextMask}
+					haptic={8}
 					onClick={() => go(1)}
-					{...pressableSoft}
-				>
-					<Chevron />
-				</motion.button>
+				/>
 			</div>
 
 			<div className={s.aspectText} id={liveId} aria-live="polite">
@@ -170,48 +172,24 @@ export function AspectCarousel({
 
 			<div className={s.strip} ref={strip}>
 				{L.aspects.map((x, i) => (
-					<motion.button
+					<Chip
 						key={x.key}
-						type="button"
-						className={s.chip}
-						data-on={i === aspect ? "1" : "0"}
+						className={s.maskChip}
+						selected={i === aspect}
 						aria-label={`${x.name}, ${x.mask}`}
-						aria-pressed={i === aspect}
+						haptic={8}
 						onClick={() => {
 							if (i !== aspect) {
-								buzz(8);
 								onPick(i, i > aspect ? 1 : -1);
 								coachAct("mask");
 							}
 						}}
-						{...pressableSoft}
 					>
 						<Mask aspect={i} size={34} shadow={false} />
-					</motion.button>
+					</Chip>
 				))}
 			</div>
 			<p className={s.swipeHint}>{L.bind.swipe}</p>
 		</div>
-	);
-}
-
-function Chevron({ flip = false }: { flip?: boolean }) {
-	return (
-		<svg
-			viewBox="0 0 24 24"
-			width="26"
-			height="26"
-			aria-hidden="true"
-			style={flip ? { transform: "scaleX(-1)" } : undefined}
-		>
-			<path
-				d="M8 3 L18 12 L8 21"
-				fill="none"
-				stroke="currentColor"
-				strokeWidth="3"
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</svg>
 	);
 }

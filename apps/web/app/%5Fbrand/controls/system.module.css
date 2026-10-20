@@ -1,0 +1,165 @@
+/* The system sheet's compositions (dev only). Layout and the content inside cards only:
+   every control draws itself (src/ui/controls, src/ui/button). */
+
+.stack {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 10px;
+	width: 100%;
+}
+.stack > :is(button, a):not([data-size]) {
+	align-self: center;
+}
+.row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+}
+.list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+}
+.foot {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+}
+
+/* a Spire floor, as Tower lays one out, inside a SelectableCard */
+.floor {
+	display: grid;
+	grid-template-columns: 36px 48px minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 10px;
+	min-height: 66px;
+	padding: 8px 14px 8px 8px;
+}
+.floor[data-boss] {
+	grid-template-columns: 36px 58px minmax(0, 1fr) auto;
+	min-height: 78px;
+}
+.floorNum {
+	display: grid;
+	place-items: center;
+	width: 30px;
+	height: 30px;
+	justify-self: center;
+	border-radius: 50%;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: 13px;
+	color: var(--c-bone-hi);
+	background: radial-gradient(circle at 50% 35%, #3a2c22, #160f0b);
+	box-shadow:
+		0 0 0 2px var(--c-soot),
+		inset 0 0 0 1px var(--c-umber-l);
+}
+.floorNum[data-cleared] {
+	color: var(--c-soot);
+	background: radial-gradient(
+		circle at 45% 35%,
+		var(--c-gilt-hi),
+		var(--c-gilt) 60%,
+		var(--c-gilt-d)
+	);
+}
+.floorText {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+.floorName {
+	overflow: hidden;
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-lead);
+	line-height: 1.1;
+	color: var(--c-bone-hi);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	text-shadow: 0 1px 0 var(--c-soot);
+}
+.floorSub {
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	line-height: 1.25;
+	color: var(--c-bone);
+}
+.floorTag {
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: var(--fs-micro);
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--c-gilt-l);
+}
+
+/* the Ledger plaque */
+.ledger {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 12px;
+	min-height: 60px;
+	padding: 8px 14px;
+}
+.ledgerMasks {
+	display: flex;
+}
+.ledgerMasks > * + * {
+	margin-left: -10px;
+}
+.ledgerText {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+.rubric {
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: var(--fs-micro);
+	letter-spacing: var(--track-rubric);
+	text-transform: uppercase;
+	color: var(--c-gilt-l);
+}
+.chev {
+	display: grid;
+	width: 18px;
+	height: 18px;
+	color: var(--c-gilt-l);
+	transform: rotate(-90deg);
+}
+.chev > svg {
+	width: 100%;
+	height: 100%;
+}
+
+.coin {
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: 13px;
+	color: inherit;
+}
+.prose {
+	margin: 0;
+	font-family: var(--font-text);
+	font-size: var(--fs-body);
+	line-height: 1.45;
+	color: var(--c-bone);
+}
+.sheetTitle {
+	margin: 4px 0 14px;
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-h3);
+	color: var(--c-bone-hi);
+	text-align: center;
+}

@@ -1,0 +1,44 @@
+/* =====================================================================
+   The one link rule (import { link } from "@/ui/controls"):
+     link.inline  inside running text: always underlined (a 55% gilt line,
+                  full on hover). Legal prose, consent lines, notices.
+     link.nav     standing alone (footers, legal links, "All sources",
+                  "View seal"): no underline at rest, underlined on hover
+                  and focus; a 44px tall target.
+   Both gilt; focus is the shared gilt ring as a rounded outline.
+   ===================================================================== */
+.inline,
+.nav {
+	color: var(--c-gilt-l);
+	text-decoration-line: underline;
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.2em;
+	border-radius: 3px;
+	-webkit-tap-highlight-color: transparent;
+	transition:
+		color var(--dur-1) var(--ease-out),
+		text-decoration-color var(--dur-1) var(--ease-out);
+}
+.inline {
+	text-decoration-color: #e3c27c8c;
+}
+.nav {
+	display: inline-flex;
+	align-items: center;
+	min-height: 44px;
+	text-decoration-color: transparent;
+}
+@media (hover: hover) {
+	.inline:hover,
+	.nav:hover {
+		color: var(--c-gilt-hi);
+		text-decoration-color: currentColor;
+	}
+}
+.inline:focus-visible,
+.nav:focus-visible {
+	color: var(--c-gilt-hi);
+	text-decoration-color: currentColor;
+	outline: 2px solid var(--ctl-ring);
+	outline-offset: 2px;
+}

@@ -17,7 +17,8 @@ import {
 } from "react";
 import { buzz } from "@/audio";
 import { L } from "@/lexicon";
-import { pressable, spring } from "@/ui/motion";
+import { Chip } from "@/ui/controls";
+import { spring } from "@/ui/motion";
 import s from "./fragment.module.css";
 import { sigilsFor } from "./shared";
 
@@ -307,24 +308,22 @@ function GestureTiles({
 	return (
 		<div className={s.gestures} role="radiogroup" aria-labelledby={labelledBy}>
 			{L.firstGesture.map((g, i) => (
-				<motion.button
+				<Chip
 					key={g}
-					type="button"
-					role="radio"
-					aria-checked={value === i}
+					kind="radio"
+					size="lg"
+					selected={value === i}
 					disabled={disabled}
 					className={s.gesture}
-					data-on={value === i ? "1" : "0"}
 					data-kind={["kindle", "devour", "fate"][i]}
-					onClick={() => {
-						if (value !== i) buzz(10);
-						onValue(i);
-					}}
-					{...pressable}
+					haptic={value === i ? false : 10}
+					onClick={() => onValue(i)}
 				>
-					<GestureGlyph kind={i} />
-					<span className={s.gestureName}>{g}</span>
-				</motion.button>
+					<span className={s.gestureBody}>
+						<GestureGlyph kind={i} />
+						<span className={s.gestureName}>{g}</span>
+					</span>
+				</Chip>
 			))}
 		</div>
 	);

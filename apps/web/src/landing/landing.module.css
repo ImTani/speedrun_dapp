@@ -355,6 +355,7 @@
 	background: var(--c-gilt);
 	transform: rotate(45deg);
 }
+/* a link.inline, laid out with the address beside it */
 .explorer {
 	display: inline-flex;
 	flex-wrap: wrap;
@@ -363,13 +364,6 @@
 	min-height: var(--tap);
 	margin-top: 18px;
 	font-size: var(--fs-body);
-	color: var(--c-gilt-l);
-	text-decoration: underline;
-	text-decoration-color: #e3c27c80;
-	text-underline-offset: 4px;
-}
-.explorer:hover {
-	color: var(--c-gilt-hi);
 }
 .addr {
 	font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -499,18 +493,6 @@
 	justify-content: center;
 	gap: 0 18px;
 }
-.footNav a {
-	display: inline-flex;
-	align-items: center;
-	min-height: var(--tap);
-	color: var(--c-gilt-l);
-	text-decoration: none;
-}
-.footNav a:hover,
-.footNav a:focus-visible {
-	text-decoration: underline;
-	text-underline-offset: 3px;
-}
 .copy {
 	margin-top: 4px;
 }
@@ -610,13 +592,10 @@
 		font-size: var(--fs-body);
 		color: var(--c-bone);
 	}
+	/* a link.inline in monospace */
 	.qrUrl {
 		font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 		font-size: 15px;
-		color: var(--c-gilt-l);
-		text-decoration: underline;
-		text-decoration-color: #e3c27c80;
-		text-underline-offset: 3px;
 	}
 }
 

@@ -237,12 +237,8 @@
 	text-shadow: 0 1px 0 var(--c-soot);
 	text-wrap: balance;
 }
+/* the consent links are link.inline; a taller hit area without moving the line */
 .consent a {
-	color: var(--c-gilt-l);
-	text-decoration: underline;
-	text-decoration-color: #e3c27c80;
-	text-underline-offset: 3px;
-	/* a taller hit area without moving the line */
 	padding: 13px 0;
 	margin: -13px 0;
 }
@@ -263,18 +259,9 @@
 	font-size: var(--fs-micro);
 	color: #c2ae88;
 }
-.colophonLink {
-	min-height: var(--tap);
-	min-width: var(--tap);
-	padding: 0 6px;
-	font-family: var(--font-text);
-	font-size: var(--fs-micro);
-	color: var(--c-gilt-l);
-}
-.colophonLink:hover,
-.colophonLink:focus-visible {
-	text-decoration: underline;
-	text-underline-offset: 3px;
+/* Credits: a TextButton, its side padding matched to the legal links beside it */
+.foot .colophonLink {
+	padding-inline: 6px;
 }
 
 /* ---------------------------------------------------------------- colophon */
@@ -358,43 +345,11 @@
 	text-wrap: pretty;
 	overflow-wrap: anywhere;
 }
+/* "All sources": a link.nav, set in italic like the credit lines above it */
 .leafRoll {
-	display: inline-flex;
-	align-items: center;
-	min-height: var(--tap);
 	padding: 0 10px;
 	font-style: italic;
-	color: var(--c-gilt-l);
-	text-decoration: underline;
-	text-decoration-color: #c9a24f66;
-	text-underline-offset: 4px;
 }
-/* The gear beside the speaker (SettingsEntry): the same 44 px, same bone, as the speaker. */
-.gear {
-	display: inline-grid;
-	place-items: center;
-	inline-size: 44px;
-	block-size: 44px;
-	border-radius: 999px;
-	color: var(--c-bone-d);
-	transition:
-		color 160ms ease,
-		transform 120ms ease;
-}
-.gear:hover {
-	color: var(--c-bone);
-}
-.gear:active {
-	transform: scale(0.92);
-	color: var(--c-gilt-l);
-}
-.gear svg {
-	inline-size: 22px;
-	block-size: 22px;
-	fill: currentColor;
-	filter: drop-shadow(0 1px 0 #0008);
-}
-
 /* Settings rows and the deletion block read left-aligned inside the centred leaf. */
 .leafSound {
 	width: 100%;
@@ -406,31 +361,12 @@
 	border-top: 1px solid #5a463266;
 	text-align: start;
 }
+/* Close: a SecondaryButton, as wide as the leaf's column allows */
 .leafClose {
 	width: min(100%, 300px);
-	min-height: 52px;
-	font-family: var(--font-display);
-	font-weight: 700;
-	font-size: var(--fs-lead);
-	color: var(--c-bone);
-	background: linear-gradient(180deg, #3a2a1d, #1a120d);
-	box-shadow:
-		inset 0 0 0 2px var(--c-soot),
-		inset 0 0 0 3px var(--c-umber);
-	clip-path: polygon(
-		var(--cut) 0,
-		calc(100% - var(--cut)) 0,
-		100% var(--cut),
-		100% calc(100% - var(--cut)),
-		calc(100% - var(--cut)) 100%,
-		var(--cut) 100%,
-		0 calc(100% - var(--cut)),
-		0 var(--cut)
-	);
 }
 
 /* clip-path cuts an outside outline: the keyboard focus ring is drawn inside the slab. */
-.cta:focus-visible,
-.leafClose:focus-visible {
+.cta:focus-visible {
 	outline-offset: -6px;
 }
