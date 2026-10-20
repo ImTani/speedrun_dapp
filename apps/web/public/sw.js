@@ -3,7 +3,7 @@
 // Caching, by request:
 //  - /_next/static/* (hashed chunks, CSS, self-hosted fonts): cache-first. Only responses the server
 //    marks immutable are kept, so a development server (unhashed, no-store) is never cached.
-//  - /masks/*: served from cache at once and refreshed behind (stale-while-revalidate).
+//  - /masks/*, /audio/*: served from cache at once and refreshed behind (stale-while-revalidate).
 //  - page navigations: network-first; the last good copy answers when the network is gone.
 //  - /api/* and everything else (other origins, non-GET): never touched, never cached.
 // Bump VERSION to drop every cache on the next activation.
@@ -38,7 +38,10 @@ self.addEventListener("fetch", (e) => {
 		e.respondWith(cacheFirst(req));
 		return;
 	}
-	if (url.pathname.startsWith("/masks/")) {
+	if (
+		url.pathname.startsWith("/masks/") ||
+		url.pathname.startsWith("/audio/")
+	) {
 		e.respondWith(staleWhileRevalidate(e, req));
 		return;
 	}

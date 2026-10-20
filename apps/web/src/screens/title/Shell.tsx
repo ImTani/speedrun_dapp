@@ -14,12 +14,16 @@
 import { AnimatePresence, motion } from "motion/react";
 import dynamic from "next/dynamic";
 import { type ComponentType, useEffect, useRef, useState } from "react";
+import { HAPTIC, useSfx } from "@/audio";
 import { UNLOCKS, type UnlockId, useGameState } from "@/client/state";
+import { FxLayer } from "@/fx";
 import { unlocks as U } from "@/lexicon/unlocks";
 import { FragmentScreen } from "@/screens/fragment/FragmentScreen";
 import { useToast } from "@/ui/coach/Toast";
 import { easeIn, easeOut } from "@/ui/motion/presets";
 import { TAB_ORDER, type Tab, TabBar } from "@/ui/TabBar";
+import { gildOpening, useTapSounds } from "./juice";
+import { Moments } from "./Moments";
 import s from "./shell.module.css";
 
 // Loaders kept apart from dynamic() so they can also be warmed ahead of the first tap.
@@ -88,6 +92,17 @@ function Way({ tab }: { tab: Tab }) {
 const TAB_IDS = TAB_ORDER.filter(
 	(t): t is Exclude<Tab, "fragment"> => t !== "fragment",
 );
+/** The tab an opened mechanic lives on (its icon takes the gilt ring). */
+const homeOf = (id: UnlockId): Tab =>
+	TAB_ORDER.find((t) => t === id) ?? "fragment";
+/** Opened things whose coach mark (onboarding/UnlockCoach) strikes its own unlock moment. */
+const COACHED: ReadonlySet<UnlockId> = new Set([
+	"vigil",
+	"spire",
+	"reliquary",
+	"vestry",
+]);
+
 const needOf = (id: UnlockId) => {
 	const def = UNLOCKS.find((u) => u.id === id);
 	// "Vestry · Scry once to open": the toast names what it opens and what to do.
@@ -104,6 +119,10 @@ export function GameShell({ initialTab = "fragment" }: { initialTab?: Tab }) {
 		);
 	const { state } = useGameState();
 	const [toast, say] = useToast();
+	const sfx = useSfx(["unlock"]);
+	useTapSounds();
+	const tabNow = useRef(tab);
+	tabNow.current = tab;
 	const unlocks = state?.unlocks ?? null;
 	const fresh = state?.fresh;
 	const done = state?.onboarding.done ?? true;
@@ -130,9 +149,26 @@ export function GameShell({ initialTab = "fragment" }: { initialTab?: Tab }) {
 		const news = fresh.filter((id) => !announced.current.has(id));
 		for (const id of news) announced.current.add(id);
 		const say1 = done ? news : news.filter((id) => id === "gathering");
-		if (say1.length)
-			say(U.openedLine(say1.map((id) => U.name[id]).join(", ")), "lit");
-	}, [fresh, done, say]);
+		if (!say1.length) return;
+		say(U.openedLine(say1.map((id) => U.name[id]).join(", ")), "lit");
+		// The moment itself: a bright chime and a gilt ring on each opened way's icon. Not while
+		// onboarding runs (its Gathering mark arrives as an unlock), nor for something whose
+		// coach mark is about to point at it on this very tab (that mark rings instead).
+		if (!done) return;
+		const loud = say1.filter(
+			(id) => !(COACHED.has(id) && homeOf(id) === tabNow.current),
+		);
+		if (!loud.length) return;
+		sfx.play("unlock");
+		sfx.buzz(HAPTIC.unlock);
+		const homes = new Set(loud.map(homeOf));
+		let i = 0;
+		for (const t of homes)
+			gildOpening(
+				document.querySelector(`[data-coach="tab-${t}"]`),
+				0.12 * i++,
+			);
+	}, [fresh, done, say, sfx]);
 
 	// Warm the open ways once the page is idle, so the first tap does not wait on the network.
 	const warm = useRef(new Set<string>());
@@ -184,6 +220,8 @@ export function GameShell({ initialTab = "fragment" }: { initialTab?: Tab }) {
 			/>
 			{toast}
 			{state ? <Guide tab={tab} /> : null}
+			<Moments />
+			<FxLayer />
 		</main>
 	);
 }

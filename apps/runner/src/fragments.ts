@@ -57,6 +57,36 @@ export async function syncHouse(rt: Runtime) {
 }
 
 let nextIndex = 1000;
+const PLAYER_INDEX = 1000;
+
+/**
+ * Account deletion (DELETE /api/account) removes the player's fragments row. When a row is gone,
+ * stop playing that Fragment and forget its key and seed, as the Privacy Policy promises.
+ */
+async function prunePlayers(rt: Runtime) {
+	const rows = (await sql`select lower(owner_account) as owner from fragments
+		where chain_id = ${CHAIN_ID} and house = false`) as { owner: string }[];
+	const live = new Set(rows.map((r) => r.owner));
+	const ks = loadKeys();
+	const gone = Object.keys(ks).filter((owner) => !live.has(owner));
+	if (gone.length) {
+		for (const owner of gone) delete ks[owner];
+		writeFileSync(FILE, JSON.stringify(ks, null, 2));
+	}
+	const kept = new Set(Object.values(ks).map((e) => e.agentKey));
+	const dropped = rt.house.filter(
+		(m) => m.index >= PLAYER_INDEX && !kept.has(m.agentKey),
+	);
+	for (const m of dropped) {
+		rt.byAccount.delete(m.agent.account);
+		rt.house.splice(rt.house.indexOf(m), 1);
+	}
+	if (gone.length || dropped.length) {
+		console.log(
+			`players: -${dropped.length} Fragments (deleted accounts), ${gone.length} keys forgotten`,
+		);
+	}
+}
 /** Adds registered/confirmed player Fragments with local keys to the roster (front, so they're picked first). */
 async function loadPlayers(rt: Runtime) {
 	const rows =
@@ -153,5 +183,6 @@ export async function fragmentsTick(rt: Runtime) {
 			return res;
 		});
 	}
+	await prunePlayers(rt);
 	await loadPlayers(rt);
 }

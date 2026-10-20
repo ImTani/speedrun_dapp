@@ -1,0 +1,382 @@
+/* ======================================================================
+   Legal pages, the storage notice, legal links and account deletion.
+   Reading first: Alegreya on void, ~66 characters a line. Every text colour
+   here is >= 7:1 on --c-void (bone 12:1, .muted 9.4:1, gilt-l links 11:1).
+   ====================================================================== */
+
+/* ---- Page ---- */
+.page {
+	min-height: 100dvh;
+	background: var(--c-void);
+	color: var(--c-bone);
+	padding: calc(var(--safe-t) + 12px) var(--pad-r) calc(var(--safe-b) + 48px)
+		var(--pad-l);
+	-webkit-user-select: text;
+	user-select: text;
+	-webkit-touch-callout: default;
+}
+.column {
+	max-width: 38rem;
+	margin: 0 auto;
+}
+
+.back {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4em;
+	min-height: var(--tap);
+	padding-right: 12px;
+	color: var(--c-gilt-l);
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	text-decoration: none;
+}
+.back:hover,
+.back:focus-visible {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.draft {
+	margin: 8px 0 0;
+	padding: 8px 12px;
+	border: 1px dashed var(--c-ember-hi);
+	color: var(--c-ember-hi);
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+}
+
+.header {
+	margin: 20px 0 28px;
+	padding-bottom: 20px;
+	border-bottom: 1px solid var(--c-umber);
+}
+.title {
+	font-family: var(--font-roman);
+	font-weight: 600;
+	font-size: var(--fs-h1);
+	line-height: var(--lh-snug);
+	color: var(--c-bone-hi);
+	letter-spacing: 0.01em;
+}
+.meta {
+	margin-top: 8px;
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	color: #c2ae88;
+}
+
+/* ---- Running text ---- */
+.prose {
+	font-family: var(--font-text);
+	font-size: clamp(16px, 4.3vw, 18px);
+	line-height: 1.6;
+	color: var(--c-bone);
+	font-variant-numeric: oldstyle-nums;
+	hyphens: manual;
+	overflow-wrap: break-word;
+}
+/* :where keeps these at one class of specificity, so component rules below win cleanly */
+.prose :where(p, ul) + :where(p, ul) {
+	margin-top: 0.8em;
+}
+.prose :where(ul) {
+	padding-left: 1.2em;
+}
+.prose :where(li + li) {
+	margin-top: 0.35em;
+}
+.prose li::marker {
+	color: var(--c-gilt);
+}
+.prose strong {
+	color: var(--c-bone-hi);
+	font-weight: 700;
+}
+.prose a {
+	color: var(--c-gilt-l);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	text-decoration-thickness: 1px;
+}
+.prose a:hover {
+	color: var(--c-gilt-hi);
+}
+.prose h3 {
+	margin: 1.2em 0 0.4em;
+	font-family: var(--font-roman);
+	font-weight: 600;
+	font-size: var(--fs-lead);
+	line-height: var(--lh-snug);
+	color: var(--c-bone-hi);
+}
+
+/* ---- The short version ---- */
+.short {
+	margin-bottom: 28px;
+	padding: 14px 16px 16px 18px;
+	border-left: 3px solid var(--c-gilt);
+	background: var(--c-soot-2);
+}
+.shortTitle {
+	margin-bottom: 8px;
+	font-family: var(--font-roman);
+	font-weight: 600;
+	font-size: var(--fs-lead);
+	color: var(--c-gilt-l);
+}
+
+/* ---- Contents ---- */
+.toc {
+	margin-bottom: 36px;
+}
+.tocTitle {
+	margin-bottom: 8px;
+	font-family: var(--font-roman);
+	font-weight: 600;
+	font-size: var(--fs-lead);
+	color: var(--c-gilt-l);
+}
+.tocList {
+	list-style: none;
+	columns: 1;
+	font-family: var(--font-text);
+	font-size: var(--fs-body);
+}
+.tocList li {
+	break-inside: avoid;
+}
+.tocList a {
+	display: flex;
+	gap: 0.6em;
+	min-height: 36px;
+	align-items: center;
+	color: var(--c-gilt-l);
+	text-decoration: none;
+}
+.tocList a:hover,
+.tocList a:focus-visible {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+.tocNum {
+	min-width: 1.6em;
+	color: #c2ae88;
+	font-variant-numeric: lining-nums tabular-nums;
+}
+@media (min-width: 560px) {
+	.tocList {
+		columns: 2;
+		column-gap: 28px;
+	}
+}
+
+/* ---- Sections ---- */
+.section {
+	scroll-margin-top: 16px;
+}
+.section + .section {
+	margin-top: 36px;
+}
+.sectionTitle {
+	margin-bottom: 12px;
+	font-family: var(--font-roman);
+	font-weight: 600;
+	font-size: var(--fs-h3);
+	line-height: var(--lh-snug);
+	color: var(--c-gilt-l);
+}
+.sectionNum {
+	margin-right: 0.45em;
+	color: #c2ae88;
+	font-variant-numeric: lining-nums;
+}
+
+/* ---- Storage items (Cookie Policy): cards, not a table, so they read on a phone ---- */
+.items {
+	display: grid;
+	gap: 12px;
+	margin-top: 0.8em;
+	list-style: none;
+	padding-left: 0;
+}
+.items > li {
+	margin-top: 0;
+}
+.item {
+	padding: 12px 14px;
+	border: 1px solid var(--c-umber);
+	background: var(--c-soot);
+}
+.itemName {
+	font-weight: 700;
+	color: var(--c-bone-hi);
+}
+.itemKey {
+	font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+	font-size: 0.85em;
+	color: #c2ae88;
+	overflow-wrap: anywhere;
+}
+.itemRow {
+	margin-top: 4px;
+}
+.itemLabel {
+	color: #c2ae88;
+}
+
+/* ---- Footer ---- */
+.footer {
+	margin-top: 48px;
+	padding-top: 20px;
+	border-top: 1px solid var(--c-umber);
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	color: #c2ae88;
+}
+.footer :where(p + p),
+.footer :where(p + nav) {
+	margin-top: 10px;
+}
+.footer a {
+	color: var(--c-gilt-l);
+}
+
+/* ---- Legal links (title screen, colophon, footers) ---- */
+.links {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 0 2px;
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	color: #c2ae88;
+}
+.links a {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--tap);
+	padding: 0 6px;
+	color: var(--c-gilt-l);
+	text-decoration: none;
+}
+.links a:hover,
+.links a:focus-visible {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+.linksLeft {
+	justify-content: flex-start;
+}
+
+/* ---- Storage notice ---- */
+.notice {
+	position: fixed;
+	left: max(12px, var(--safe-l));
+	right: max(12px, var(--safe-r));
+	bottom: calc(var(--tabbar-h) + 10px);
+	z-index: var(--z-toast);
+	max-width: var(--column);
+	margin: 0 auto;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 6px 6px 6px 14px;
+	border: 1px solid var(--c-umber-l);
+	background: #120c0af2;
+	box-shadow: 0 8px 24px #000c;
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	line-height: 1.35;
+	color: var(--c-bone);
+}
+.noticeLow {
+	bottom: calc(var(--safe-b) + 12px);
+}
+.noticeText {
+	flex: 1;
+	min-width: 0;
+}
+.noticeText a {
+	color: var(--c-gilt-l);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	white-space: nowrap;
+}
+.noticeDismiss {
+	flex: none;
+	min-width: var(--tap);
+	min-height: var(--tap);
+	padding: 0 12px;
+	border: 1px solid var(--c-umber-l);
+	color: var(--c-bone-hi);
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+}
+.noticeDismiss:hover {
+	border-color: var(--c-gilt);
+}
+
+/* ---- Account deletion ---- */
+.delete {
+	font-family: var(--font-text);
+	font-size: var(--fs-body);
+	line-height: 1.5;
+	color: var(--c-bone);
+}
+.deleteTitle {
+	font-family: var(--font-roman);
+	font-weight: 600;
+	font-size: var(--fs-lead);
+	color: var(--c-bone-hi);
+}
+.delete p {
+	margin-top: 8px;
+}
+.deleteSmall {
+	font-size: var(--fs-small);
+	color: #c2ae88;
+}
+.deleteActions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-top: 14px;
+}
+.btn {
+	min-height: var(--tap);
+	padding: 0 16px;
+	border: 1px solid var(--c-umber-l);
+	color: var(--c-bone-hi);
+	font-family: var(--font-text);
+	font-size: var(--fs-body);
+}
+.btn:hover {
+	border-color: var(--c-gilt);
+}
+.btnDanger {
+	border-color: var(--c-blood-l);
+	background: var(--c-blood);
+	color: var(--c-bone-hi);
+}
+.btnDanger:hover {
+	border-color: var(--c-ember-hi);
+}
+.deleteStatus {
+	margin-top: 10px;
+	font-size: var(--fs-small);
+}
+.deleteError {
+	color: var(--c-ember-hi);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	html:has(.page) {
+		scroll-behavior: smooth;
+	}
+}
+.delete a {
+	color: var(--c-gilt-l);
+	text-underline-offset: 3px;
+}

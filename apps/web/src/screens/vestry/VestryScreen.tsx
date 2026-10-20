@@ -6,6 +6,7 @@
  */
 import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { HAPTIC, play, useSfx } from "@/audio";
 import { useApi } from "@/client/api";
 import {
 	type BuyError,
@@ -17,11 +18,12 @@ import {
 	resumeClaims,
 	type VestryState,
 } from "@/client/inventory";
+import { FX, fx } from "@/fx";
 import { itemById } from "@/game/reliquary";
 import { PACKS, type Pack, type PackId } from "@/game/vestry";
 import { itemName, reliquary as R } from "@/lexicon/reliquary";
 import { vestry as T } from "@/lexicon/vestry";
-import { haptic, pressable } from "@/ui/motion";
+import { pressable } from "@/ui/motion";
 import { DressedMask, useFragmentLook } from "../reliquary/ItemSwatch";
 import s from "./vestry.module.css";
 import { Wardrobe } from "./Wardrobe";
@@ -41,6 +43,7 @@ export function VestryScreen() {
 	const [buying, setBuying] = useState<Buying>(null);
 	const [notice, setNotice] = useState<Notice>(null);
 	const [down, setDown] = useState(false);
+	const sfx = useSfx(["unlock", "seal"]);
 
 	const load = useCallback(async () => {
 		try {
@@ -81,12 +84,20 @@ export function VestryScreen() {
 				v ? { ...v, owned: [...new Set([...v.owned, out.pack])] } : v,
 			);
 			setNotice({ tone: "ok", text: T.bought });
-			haptic([14, 30, 20]);
+			// Bought: the chime, and the pack's mask catches the light.
+			sfx.play("unlock");
+			sfx.buzz(HAPTIC.unlock);
+			const art = document.querySelector(`[data-pack="${pack.id}"]`);
+			if (art) {
+				fx.burst("sparkle", art, { rarity: "rare", spread: 30 });
+				fx.ring(art, FX.gilt, { radius: 110, width: 6 });
+			}
 			inv
 				.vestry()
 				.then(setShop)
 				.catch(() => {});
 		} catch (e) {
+			play("error");
 			setNotice({
 				tone: "err",
 				text: e instanceof BuyFailed ? ERR[e.reason] : T.errors.generic,
@@ -176,7 +187,7 @@ function PackCard({
 			: T.buy(pack.usdc);
 	return (
 		<li className={s.pack} data-owned={owned ? "1" : "0"}>
-			<div className={s.packArt}>
+			<div className={s.packArt} data-pack={pack.id}>
 				<DressedMask aspect={aspect} equipped={pack.preview} size={76} glow />
 			</div>
 			<div className={s.packBody}>

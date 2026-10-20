@@ -9,10 +9,12 @@
  */
 import { motion, useAnimate, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
+import { buzz, HAPTIC, useSfx } from "@/audio";
 import { shell } from "@/lexicon/shell";
 import { useShake } from "@/ui/motion/impact";
 import { easeIn, easeOut, pressable, spring } from "@/ui/motion/presets";
 import { Colophon } from "./Colophon";
+import { useTapSounds } from "./juice";
 import { TitleScene } from "./TitleScene";
 import s from "./title.module.css";
 
@@ -31,6 +33,9 @@ export function TitleScreen({
 	const [flare, setFlare] = useState(0);
 	const [struck, setStruck] = useState(false);
 	const [colophon, setColophon] = useState(false);
+	// The bell is fetched right after the first touch (nothing loads before one).
+	const sfx = useSfx(["toll"]);
+	useTapSounds();
 
 	// The name falls out of the dark and strikes; the glass flares with it.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: plays once on mount
@@ -125,8 +130,14 @@ export function TitleScreen({
 						type="button"
 						className={s.cta}
 						data-ready={ready || undefined}
+						data-sfx="off"
 						disabled={!ready}
-						onClick={onEnter}
+						onClick={() => {
+							// The first touch is this one: give the bell time to arrive.
+							sfx.play("toll", { maxLate: 1500 });
+							buzz(HAPTIC.seal);
+							onEnter();
+						}}
 						{...pressable}
 					>
 						<span className={s.ctaLabel}>{ready ? T.enter : T.entering}</span>

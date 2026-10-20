@@ -1,0 +1,17 @@
+/* The promotion moment: lettering over a pool of dark, above the screens, never taking a touch. */
+.layer {
+	position: fixed;
+	inset: 0;
+	z-index: calc(var(--z-modal) + 2);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding-bottom: 12vh;
+	pointer-events: none;
+	background: radial-gradient(
+		closest-side,
+		#050403e6 0%,
+		#050403b3 55%,
+		#05040300 100%
+	);
+}

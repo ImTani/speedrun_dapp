@@ -182,6 +182,7 @@ export function FaceOff({
 							<div
 								className={css.maskSlot}
 								data-state={role}
+								data-window={k}
 								style={
 									{
 										"--mw": `${mw}px`,

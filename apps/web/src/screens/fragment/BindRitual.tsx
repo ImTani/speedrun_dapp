@@ -13,19 +13,14 @@ import {
 	type StrategyId,
 } from "@arena/strategies";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { buzz, HAPTIC, play } from "@/audio";
+import { fx } from "@/fx";
 import { L } from "@/lexicon";
 import { coachAct } from "@/ui/coach/signal";
 import { Mask } from "@/ui/Mask";
-import {
-	haptic,
-	IMPACT,
-	impact,
-	pressable,
-	spring,
-	useShake,
-} from "@/ui/motion";
+import { IMPACT, impact, pressable, spring, useShake } from "@/ui/motion";
 import { Plate, Rubric, Slam } from "@/ui/type";
 import { AspectCarousel } from "./AspectCarousel";
 import s from "./fragment.module.css";
@@ -72,7 +67,7 @@ export function BindRitual({
 	const goto = (n: Step) => {
 		setDir(n > step ? 1 : -1);
 		setStep(n);
-		haptic(10);
+		buzz(10);
 	};
 
 	const bind = async () => {
@@ -93,6 +88,7 @@ export function BindRitual({
 			setPour("failed");
 			onHold(false);
 			setErr(errText(res.reason));
+			play("error");
 			await impact(shaker, IMPACT.ruin);
 			await wait(900);
 			setPour(null);
@@ -256,7 +252,7 @@ export function BindRitual({
 										setName(divineName(name));
 										coachAct("name");
 										setDivined((n) => n + 1);
-										haptic(12);
+										buzz(12);
 									}}
 									{...pressable}
 								>
@@ -333,6 +329,7 @@ function PourOverlay({
 	onDone: () => void;
 }) {
 	const shaker = useShake<HTMLDivElement>();
+	const drop = useRef<HTMLDivElement>(null);
 	return (
 		<motion.div
 			className={s.overlay}
@@ -343,6 +340,7 @@ function PourOverlay({
 		>
 			<div className={s.overlayInner} ref={shaker.ref}>
 				<motion.div
+					ref={drop}
 					className={s.drop}
 					initial={{ y: "-55vh", scaleX: 0.42, scaleY: 0.58 }}
 					animate={
@@ -368,7 +366,13 @@ function PourOverlay({
 								}
 					}
 					onAnimationComplete={() => {
-						if (poured) impact(shaker, IMPACT.kindle);
+						if (!poured) return;
+						// The wax lands on the vow: a heavy seal and a ring of embers.
+						play("seal");
+						buzz(HAPTIC.seal);
+						if (drop.current)
+							fx.burst("embers", drop.current, { amount: 0.9, scale: 1.1 });
+						impact(shaker, { ...IMPACT.kindle, buzz: false });
 					}}
 				>
 					<WaxSeal aspect={aspect} state="poured" size={150} />

@@ -10,9 +10,9 @@
  */
 import { motion, useReducedMotion } from "motion/react";
 import { useId } from "react";
+import { buzz, HAPTIC, play } from "@/audio";
 import { shell } from "@/lexicon/shell";
 import { unlocks as U } from "@/lexicon/unlocks";
-import { haptic } from "@/ui/motion/impact";
 import { spring } from "@/ui/motion/presets";
 import s from "./TabBar.module.css";
 import { ICONS } from "./tabIcons";
@@ -46,7 +46,8 @@ export function TabBar({
 	const stone = `${uid}-stone`;
 	const gilt = `${uid}-gilt`;
 	return (
-		<nav className={s.bar} aria-label={shell.ways}>
+		// data-sfx="off": the ledge plays its own cues, not the shell's shared tap.
+		<nav className={s.bar} aria-label={shell.ways} data-sfx="off">
 			<svg className={s.defs} aria-hidden="true" focusable="false">
 				<defs>
 					<linearGradient id={stone} x1="0" y1="0" x2="0" y2="1">
@@ -93,11 +94,16 @@ export function TabBar({
 						transition={spring.press}
 						onClick={() => {
 							if (shut) {
-								haptic([6, 30, 6]);
+								// A dull knock on the stone, and the small shake below.
+								play("error");
+								buzz(HAPTIC.error);
 								onLocked?.(t);
 								return;
 							}
-							if (!on) haptic(8);
+							if (!on) {
+								play("tab");
+								buzz(HAPTIC.tab);
+							}
 							onTab(t);
 						}}
 					>

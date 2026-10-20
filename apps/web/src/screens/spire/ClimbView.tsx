@@ -3,11 +3,14 @@
 // One climb played back: five turns, Kindle or Devour per side, Light tallied against the floor's
 // need, then the outcome and what it paid.
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { HAPTIC, play, useSfx } from "@/audio";
 import type { ClimbResponse, DuelTurn, SpireFloor } from "@/client/spire";
+import { FX, fx, PALETTES } from "@/fx";
 import { turnLight } from "@/game/spire";
 import { roman } from "@/lexicon/gathering";
 import { spire as T } from "@/lexicon/spire";
+import { promoteMoment } from "@/screens/title/Moments";
 import { Mask } from "@/ui/Mask";
 import {
 	easeOut,
@@ -19,6 +22,52 @@ import {
 } from "@/ui/motion";
 import { Count, Slam } from "@/ui/type";
 import s from "./spire.module.css";
+
+const WARM = ["kindle", "devour", "win", "lose", "promote"] as const;
+
+/** A turn's pip punching in: a small flare of light, or blood shards for a Devour. */
+function pipFlare(root: HTMLElement | null, n: number, turn: DuelTurn): void {
+	if (!root) return;
+	for (const side of ["mine", "theirs"] as const) {
+		const el = root.querySelector(
+			`ol[data-side="${side}"] > li:nth-child(${n})`,
+		);
+		if (!el) continue;
+		const bite = (side === "mine" ? turn.mine : turn.theirs) === 1;
+		if (bite)
+			fx.burst("shards", el, {
+				palette: PALETTES.devour,
+				amount: 0.3,
+				scale: 0.7,
+				spread: 6,
+			});
+		else fx.burst("kindle", el, { amount: 0.25, scale: 0.6, spread: 6 });
+	}
+}
+
+const motes = (n: number) =>
+	Math.max(3, Math.min(12, Math.round(Math.sqrt(n) * 1.4)));
+
+/** What a clear paid flies home: Ash to the Fragment tab, Resonance into the Degree line. */
+function payOut(from: Element | null, ash: number, res: number): void {
+	if (!from) return;
+	const ashTo = document.querySelector('[data-coach="tab-fragment"]');
+	const resTo = document.querySelector('[data-fx="spire-standing"]');
+	if (ash > 0 && ashTo)
+		void fx.flyTo(from, ashTo, {
+			icon: "ash",
+			count: motes(ash),
+			duration: 1.1,
+			onArrive: (i) => play("ash", { rate: 1 + Math.min(i, 10) * 0.04 }),
+		});
+	if (res > 0 && resTo)
+		void fx.flyTo(from, resTo, {
+			icon: "light",
+			count: motes(res),
+			onArrive: (i) =>
+				play("light", { volume: 0.5, rate: 1 + Math.min(i, 10) * 0.04 }),
+		});
+}
 
 const FIRST_MS = 420;
 const STEP_MS = 640;
@@ -79,6 +128,8 @@ export function ClimbView({
 	const [shown, setShown] = useState(reduce ? turns.length : 0);
 	const [settled, setSettled] = useState(false);
 	const shaker = useShake<HTMLDivElement>();
+	const resultRef = useRef<HTMLDivElement>(null);
+	const sfx = useSfx(WARM);
 	const played = shown >= turns.length;
 	const cols = useMemo(() => turns.map((t, i) => ({ t, n: i + 1 })), [turns]);
 
@@ -103,7 +154,10 @@ export function ClimbView({
 				? { stop: 50, amp: 6, duration: 0.24, twist: 0.4, buzz: [12] }
 				: IMPACT.tap,
 		);
-	}, [shown, reduce, turns, shaker]);
+		// Quiet: five of these in three seconds, under the result that follows.
+		sfx.play(bite ? "devour" : "kindle", { volume: bite ? 0.26 : 0.3 });
+		pipFlare(shaker.ref.current, shown, t);
+	}, [shown, reduce, turns, shaker, sfx]);
 
 	// Let the result word land a beat after the last turn.
 	useEffect(() => {
@@ -241,6 +295,7 @@ export function ClimbView({
 						{settled ? (
 							<motion.div
 								key="result"
+								ref={resultRef}
 								className={s.result}
 								initial={{ opacity: 0 }}
 								animate={{ opacity: 1 }}
@@ -251,9 +306,27 @@ export function ClimbView({
 									tone={won ? "kindle" : "devour"}
 									{...(kicker ? { kicker } : {})}
 									sub={sub}
-									onImpact={() =>
-										impact(shaker, won ? IMPACT.kindle : IMPACT.devour)
-									}
+									onImpact={() => {
+										const el = resultRef.current;
+										if (won) {
+											impact(shaker, { ...IMPACT.kindle, buzz: false });
+											sfx.play("win");
+											sfx.buzz(HAPTIC.win);
+											if (el) {
+												fx.burst("unlock", el, { spread: 50 });
+												fx.ring(el, FX.gilt, { radius: 170, width: 7 });
+											}
+											payOut(el, r.ash, r.resonance);
+											const up = res.promoted;
+											// The boss fell: the Degree moment, once the clear has rung.
+											if (up) setTimeout(() => promoteMoment(up.degree), 1600);
+										} else {
+											impact(shaker, { ...IMPACT.devour, buzz: false });
+											sfx.play("lose");
+											sfx.buzz(HAPTIC.lose);
+											if (el) fx.burst("ash", el, { spread: 70 });
+										}
+									}}
 								/>
 							</motion.div>
 						) : null}

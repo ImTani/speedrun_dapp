@@ -9,11 +9,12 @@
  */
 import { AnimatePresence, motion, type PanInfo } from "motion/react";
 import { useId, useState } from "react";
+import { buzz } from "@/audio";
 import { L } from "@/lexicon";
 import { coachAct } from "@/ui/coach/signal";
 import { RoseWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
-import { haptic, pressableSoft, spring } from "@/ui/motion";
+import { pressableSoft, spring } from "@/ui/motion";
 import { Rubric } from "@/ui/type";
 import s from "./fragment.module.css";
 
@@ -49,7 +50,7 @@ export function AspectCarousel({
 }) {
 	const a = L.aspects[aspect] ?? L.aspects[0];
 	const go = (d: number) => {
-		haptic(8);
+		buzz(8);
 		onPick(wrap(aspect + d), d);
 		coachAct("mask");
 	};
@@ -156,7 +157,7 @@ export function AspectCarousel({
 						aria-pressed={i === aspect}
 						onClick={() => {
 							if (i !== aspect) {
-								haptic(8);
+								buzz(8);
 								onPick(i, i > aspect ? 1 : -1);
 								coachAct("mask");
 							}

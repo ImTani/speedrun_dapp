@@ -5,13 +5,15 @@
  * beside it. It advances when the player does the thing (taps the target, or a screen sends
  * coachAct(id) for swipes and typing), never on a "next" button. The veil passes touches
  * through, so it never traps anyone; Skip (or Escape) dismisses. Follows the target as the
- * layout moves; reduced motion drops the pulse and the glide.
+ * layout moves; reduced motion drops the pulse and the glide. Doing the thing rings a soft
+ * two-note chime (unless the caller strikes its own sound: chime={false}).
  */
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { buzz, HAPTIC, play, series, useSfx } from "@/audio";
 import { onboarding as T } from "@/lexicon/onboarding";
-import { haptic, spring } from "@/ui/motion";
+import { spring } from "@/ui/motion";
 import s from "./coach.module.css";
 import { onCoachAct } from "./signal";
 import { useAnchor } from "./useAnchor";
@@ -29,6 +31,8 @@ export function Coach({
 	tap = true,
 	round = false,
 	above = false,
+	chime = true,
+	onShown,
 }: {
 	/** data-coach id of the element to spotlight (or a CSS selector). */
 	target: string;
@@ -46,19 +50,36 @@ export function Coach({
 	round?: boolean;
 	/** Put the line above the target when it fits (e.g. to keep a caption below it readable). */
 	above?: boolean;
+	/** A soft chime when the player does the thing. Off when the caller plays its own sound. */
+	chime?: boolean;
+	/** Once, when the target is first found on screen (for an entrance: a ring, a sound). */
+	onShown?: (el: HTMLElement) => void;
 }) {
 	const { el, box } = useAnchor(target);
 	const reduce = useReducedMotion() ?? false;
 	const done = useRef(false);
-	const cb = useRef({ onDone, onSkip });
-	cb.current = { onDone, onSkip };
+	const cb = useRef({ onDone, onSkip, onShown, chime });
+	cb.current = { onDone, onSkip, onShown, chime };
+	useSfx();
 
 	const finish = useCallback((skipped: boolean) => {
 		if (done.current) return;
 		done.current = true;
 		if (skipped) (cb.current.onSkip ?? cb.current.onDone)();
-		else cb.current.onDone();
+		else {
+			if (cb.current.chime)
+				series("light", 2, { every: 95, rise: 0.26, volume: 1.2 });
+			cb.current.onDone();
+		}
 	}, []);
+
+	// The entrance, once: the first time the target shows.
+	const shown = useRef(false);
+	useEffect(() => {
+		if (!el || shown.current) return;
+		shown.current = true;
+		cb.current.onShown?.(el);
+	}, [el]);
 
 	// Signals from screens (swipes, typing, picks).
 	useEffect(() => {
@@ -153,7 +174,8 @@ export function Coach({
 						type="button"
 						className={s.skip}
 						onClick={() => {
-							haptic(6);
+							play("tap");
+							buzz(HAPTIC.tab);
 							finish(true);
 						}}
 					>

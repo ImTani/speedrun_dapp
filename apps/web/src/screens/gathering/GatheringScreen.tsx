@@ -26,6 +26,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { play, useSfx } from "@/audio";
 import { readGathering, readStandings, useApi } from "@/client/api";
 import { usePoll } from "@/client/poll.ts";
 import { gathering as T } from "@/lexicon/gathering.ts";
@@ -42,6 +43,14 @@ import { Lower } from "./Feed.tsx";
 import { fixtureGathering, fixtureStandings } from "./fixture.ts";
 import css from "./gathering.module.css";
 import { Hud } from "./Hud.tsx";
+import {
+	ledgerCue,
+	lightDing,
+	sealTicks,
+	tollCue,
+	unveilCue,
+	verdictJuice,
+} from "./juice.ts";
 import { LedgerButton, LedgerSheet } from "./Ledger.tsx";
 import { fitStage, GEOM } from "./layout.ts";
 import {
@@ -82,6 +91,18 @@ const DOCK_H = 74;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const PLAYING = new Set<Beat>(["arrive", "hush", "reveal", "tally"]);
 const SHOWS_VERDICT = new Set<Beat>(["reveal", "tally", "end"]);
+/** Cues the verdict needs at once, fetched after the first tap. */
+const WARM = [
+	"toll",
+	"unveil",
+	"kindle",
+	"devour",
+	"light",
+	"seal",
+	"tab",
+] as const;
+/** At most one flurry of seal ticks this often (ms); the player's own seal always sounds. */
+const SEAL_EVERY = 700;
 /** The ?tune drawer: fetched only when the address asks for it. */
 const GatheringTune = lazy(() => import("./GatheringTune.tsx"));
 
@@ -97,6 +118,7 @@ export function GatheringScreen() {
 	const [flashScope, animateFlash] = useAnimate<HTMLDivElement>();
 	const reduce = useReducedMotion();
 	const api = useApi();
+	useSfx(WARM);
 
 	const [box, setBox] = useState({ w: 390, h: 776, hud: 84 });
 	const [geom, setGeom] = useState<StageGeom>(GEOM);
@@ -167,6 +189,10 @@ export function GatheringScreen() {
 	const posed = useRef(false);
 	const dataRef = useRef<GatheringResponse | null>(null);
 	const duelRef = useRef<Duel | null>(null);
+	/** Pace of the duel now playing: 1 live, more while the queue catches up (lighter cues). */
+	const paceRef = useRef(1);
+	/** The last toll the bell rang for (a new number rings out in full). */
+	const heardToll = useRef(0);
 	const fixtureCursor = useRef(0);
 
 	const who = useMemo(
@@ -187,6 +213,7 @@ export function GatheringScreen() {
 		setReplayed(null);
 		const backlog = queue.current.length;
 		const speed = backlog > 4 ? 3 : backlog > 1 ? 1.7 : 1;
+		paceRef.current = speed;
 		const d = describeDuel(next, dataRef.current?.events ?? [], whoRef.current);
 		duelRef.current = d;
 		setDuel(d);
@@ -219,6 +246,46 @@ export function GatheringScreen() {
 		pump();
 	}, [pump]);
 
+	// Seals pressed since the last look: the first look only learns what is already there.
+	const sealsSeen = useRef<Set<string> | null>(null);
+	const lastSealCue = useRef(0);
+	const heardRound = useRef<number | null>(null);
+	const listen = useCallback((d: GatheringResponse) => {
+		const commits = d.events.filter((e) => e.name === "Committed");
+		const known = sealsSeen.current;
+		sealsSeen.current = new Set(commits.map(evKey));
+		const g = d.gathering;
+		if (!known || !g) {
+			heardRound.current = g ? g.round : null;
+			return;
+		}
+		const fresh = commits.filter((e) => !known.has(evKey(e)));
+		if (fresh.length && !document.hidden) {
+			const mine = fresh.some((e) => whoRef.current(e.agent).mine);
+			const now = performance.now();
+			const due = now - lastSealCue.current >= SEAL_EVERY;
+			if (due || mine) {
+				lastSealCue.current = now;
+				sealTicks(due ? fresh.length - (mine ? 1 : 0) : 0, mine);
+			}
+		}
+		// A new toll begins (its choices are being sealed): the bell, unless a duel is playing
+		// (its own hush rings the bell then).
+		if (heardRound.current !== null && g.round !== heardRound.current) {
+			const t = Math.min(g.round + 1, g.rounds);
+			if (
+				d.active &&
+				g.phase === "commit" &&
+				!busy.current &&
+				t !== heardToll.current
+			) {
+				heardToll.current = t;
+				tollCue(true, 1);
+			}
+		}
+		heardRound.current = g.round;
+	}, []);
+
 	const misses = useRef({ gathering: 0, standings: 0 });
 	const pollGathering = useCallback(async (): Promise<number> => {
 		const r = (await readGathering()) as GatheringResponse | null;
@@ -227,6 +294,7 @@ export function GatheringScreen() {
 		setVision(!r);
 		dataRef.current = d;
 		setData(d);
+		if (r) listen(r);
 		const scored = d.events.filter((e) => e.name === "PairScored");
 		const fresh = scored.filter((e) => !seen.current.has(evKey(e)));
 		for (const e of fresh) seen.current.add(evKey(e));
@@ -243,7 +311,7 @@ export function GatheringScreen() {
 		pump();
 		if (!r) return silent(misses.current.gathering, POLL.live);
 		return d.active ? POLL.live : POLL.idle;
-	}, [pump]);
+	}, [pump, listen]);
 	usePoll(pollGathering);
 
 	const pollStandings = useCallback(async (): Promise<number> => {
@@ -268,7 +336,15 @@ export function GatheringScreen() {
 	const onBeat = useEffectEvent((b: StageBeat, info: StageBeatInfo) => {
 		const d = duelRef.current;
 		if (b === "tally") setSpan(info.until);
-		if (b === "hush") setHushSpan(info.until);
+		if (b === "hush") {
+			setHushSpan(info.until);
+			// The bell on the pier rings out now: in full for a new toll.
+			if (d) {
+				tollCue(d.toll !== heardToll.current, paceRef.current);
+				heardToll.current = d.toll;
+			}
+		}
+		if (b === "reveal") unveilCue(paceRef.current);
 		if (b === "end" && d)
 			setTally({ A: d.a.lit + d.a.gain, B: d.b.lit + d.b.gain });
 		setBeat(b);
@@ -399,11 +475,18 @@ export function GatheringScreen() {
 					: d.kind === "ruin"
 						? IMPACT.ruin
 						: IMPACT.devour;
-			void impact(shaker, { ...preset, stop: 0 });
+			void impact(shaker, { ...preset, stop: 0, buzz: false });
+			// Sound, particles and the buzz on the same frame as the shake and the flash.
+			const root = rootRef.current;
+			verdictJuice(
+				d,
+				(k) => root?.querySelector(`[data-window="${k}"]`) ?? null,
+				paceRef.current,
+			);
 			if (reduce) return;
-			const root = flashScope.current;
-			const light = root?.querySelector<HTMLElement>("[data-flash]");
-			const blood = root?.querySelector<HTMLElement>("[data-blood]");
+			const flash = flashScope.current;
+			const light = flash?.querySelector<HTMLElement>("[data-flash]");
+			const blood = flash?.querySelector<HTMLElement>("[data-blood]");
 			if (light)
 				animateFlash(
 					light,
@@ -420,11 +503,12 @@ export function GatheringScreen() {
 		[shaker, reduce, flashScope, animateFlash],
 	);
 
-	const onLand = useCallback((k: SideKey) => {
+	const onLand = useCallback((k: SideKey, i: number) => {
 		const d = duelRef.current;
 		if (!d) return;
 		const s = k === "A" ? d.a : d.b;
 		setTally((t) => ({ ...t, [k]: Math.min(s.lit + s.gain, t[k] + 1) }));
+		if (i >= 0) lightDing(i, paceRef.current);
 	}, []);
 
 	const onTouch = useCallback(() => {
@@ -473,8 +557,14 @@ export function GatheringScreen() {
 		!!verdictDuel && (!!replayed || showVerdict || (frozen && beat === "rest"));
 	// Between the two masks: where the camera leans in during the hush.
 	const focusY = fit.y(geom.GTOP + geom.GH * 0.5);
-	const openLedger = useCallback(() => setLedgerOpen(true), []);
-	const closeLedger = useCallback(() => setLedgerOpen(false), []);
+	const openLedger = useCallback(() => {
+		ledgerCue(true);
+		setLedgerOpen(true);
+	}, []);
+	const closeLedger = useCallback(() => {
+		ledgerCue(false);
+		setLedgerOpen(false);
+	}, []);
 
 	return (
 		<div
@@ -574,7 +664,10 @@ export function GatheringScreen() {
 					<motion.button
 						type="button"
 						className={css.skip}
-						onClick={() => stageRef.current?.skip()}
+						onClick={() => {
+							play("tap");
+							stageRef.current?.skip();
+						}}
 						aria-label={T.pass}
 						initial={{ opacity: 0, scale: 0.8 }}
 						animate={{ opacity: 1, scale: 1 }}

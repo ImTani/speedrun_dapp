@@ -19,21 +19,23 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Hex } from "viem";
+import { buzz, play as cue, HAPTIC, useSfx } from "@/audio";
+import { FX, fx, PALETTES } from "@/fx";
 import { remnantAt, remnantConfig } from "@/game/spire";
 import { onboarding as T } from "@/lexicon/onboarding";
 import { Mask } from "@/ui/Mask";
-import {
-	haptic,
-	IMPACT,
-	impact,
-	pressable,
-	spring,
-	useShake,
-} from "@/ui/motion";
+import { IMPACT, impact, pressable, spring, useShake } from "@/ui/motion";
 import { Count, Rubric } from "@/ui/type";
 import s from "./practice.module.css";
 
 const TOLLS = 3;
+/** The verdict strikes as the cards finish turning (ms after the tap). */
+const STRIKE_MS = 200;
+/** Most motes of Light flown per side per toll (the last carries any remainder). */
+const MOTES = 6;
+/** The Gathering's verdict, at practice scale. */
+const SMALL = { amount: 0.45, scale: 0.8 } as const;
+const WARM = ["unveil", "kindle", "devour", "light"] as const;
 /** The Remnant met in practice: Degree VII, floor 2 (it chooses by chance). */
 const REMNANT = remnantAt(7, 2);
 const MY_SEED = `0x${"a7".repeat(32)}` as Hex;
@@ -99,35 +101,99 @@ export function Practice({
 	const reduce = useReducedMotion() ?? false;
 	const shaker = useShake<HTMLDivElement>();
 	const go = useRef<HTMLButtonElement>(null);
+	const root = useRef<HTMLDivElement>(null);
 	const over = shown >= TOLLS;
 	const last = shown > 0 ? tolls[shown - 1] : null;
-	const totals = tolls
-		.slice(0, shown)
-		.reduce<[number, number]>(
-			(acc, t) => [acc[0] + t.light[0], acc[1] + t.light[1]],
-			[0, 0],
-		);
+	// The totals fill as each mote of Light lands (at once when particles are off).
+	const [totals, setTotals] = useState<[number, number]>([0, 0]);
+	const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+	useSfx(WARM);
 
 	useEffect(() => {
 		go.current?.focus();
+		const ts = timers.current;
+		return () => {
+			for (const t of ts) clearTimeout(t);
+		};
 	}, []);
+
+	/** The verdict of one toll: sound, particles, the shake, and the Light flown home. */
+	const strike = (t: PracticeToll) => {
+		const el = (sel: string) =>
+			root.current?.querySelector<HTMLElement>(sel) ?? null;
+		const card = (k: Who) => el(`[data-card="${k}"]`);
+		const devours = [t.mine === Move.Defect, t.theirs === Move.Defect] as const;
+		if (devours[0] && devours[1]) {
+			cue("devour", { volume: 0.7, rate: 0.84 });
+			cue("devour", { volume: 0.5, rate: 0.72, delay: 150 });
+			void impact(shaker, { ...IMPACT.devour, buzz: false });
+			for (const k of ["me", "them"] as const) {
+				const c = card(k);
+				if (c) fx.burst("shards", c, SMALL);
+			}
+			buzz(HAPTIC.devour);
+		} else if (devours[0] || devours[1]) {
+			const victim: Who = devours[0] ? "them" : "me";
+			const c = card(victim);
+			cue("devour", { volume: 0.75 });
+			void impact(shaker, { ...IMPACT.devour, buzz: false });
+			if (c) {
+				fx.burst("shards", c, SMALL);
+				fx.burst("shards", c, { ...SMALL, palette: PALETTES.devour });
+				fx.ring(c, FX.blood, { radius: 56 });
+			}
+			if (victim === "me") buzz(HAPTIC.devour);
+		} else {
+			cue("kindle", { volume: 0.8 });
+			void impact(shaker, { ...IMPACT.kindle, buzz: false });
+			for (const k of ["me", "them"] as const) {
+				const c = card(k);
+				if (c) fx.burst("kindle", c, SMALL);
+			}
+		}
+		// Each side's Light: torn from the one it devoured, or risen between the two.
+		(["me", "them"] as const).forEach((k, side) => {
+			const gain = t.light[side] ?? 0;
+			const to = el(`[data-total="${k}"]`);
+			if (gain <= 0) return;
+			const n = Math.min(MOTES, gain);
+			const prey: Who = k === "me" ? "them" : "me";
+			const from =
+				devours[side] && !devours[1 - side] ? card(prey) : el("[data-vs]");
+			const land = (i: number) => {
+				const add = i === n - 1 ? gain - (n - 1) : 1;
+				setTotals((v) =>
+					side === 0 ? [v[0] + add, v[1]] : [v[0], v[1] + add],
+				);
+				cue("light", { rate: 1 + i * 0.06, pitchJitter: 0.15, volume: 0.85 });
+			};
+			if (!from || !to) {
+				for (let i = 0; i < n; i++) land(i);
+				return;
+			}
+			void fx.stream(from, to, {
+				count: n,
+				duration: 0.55,
+				stagger: 0.07,
+				size: 3,
+				onArrive: land,
+			});
+		});
+	};
 
 	const unveil = () => {
 		if (over) return;
 		const t = tolls[shown];
 		setShown((n) => n + 1);
 		if (!t) return;
-		if (t.mine === Move.Defect || t.theirs === Move.Defect) {
-			haptic([10, 30, 16]);
-			void impact(shaker, IMPACT.devour);
-		} else {
-			haptic(10);
-		}
+		cue("unveil", { volume: 0.8 });
+		timers.current.push(setTimeout(() => strike(t), STRIKE_MS));
 	};
 
 	if (typeof document === "undefined") return null;
 	return createPortal(
 		<motion.div
+			ref={root}
 			className={s.root}
 			role="dialog"
 			aria-modal="true"
@@ -174,7 +240,7 @@ export function Practice({
 						turn={shown}
 						reduce={reduce}
 					/>
-					<span className={s.vs} aria-hidden="true">
+					<span className={s.vs} aria-hidden="true" data-vs>
 						✠
 					</span>
 					<Side
@@ -247,6 +313,7 @@ export function Practice({
 }
 
 const moveKey = (m: Move) => (m === Move.Defect ? "devour" : "kindle");
+type Who = "me" | "them";
 
 function Side({
 	who,
@@ -271,7 +338,7 @@ function Side({
 		<div className={s.side} data-them={them || undefined}>
 			<div className={s.mask}>{mask}</div>
 			<p className={s.who}>{who}</p>
-			<div className={s.cardSlot}>
+			<div className={s.cardSlot} data-card={them ? "them" : "me"}>
 				<AnimatePresence mode="popLayout" initial={false}>
 					<motion.div
 						key={turn}
@@ -324,7 +391,7 @@ function Side({
 					) : null}
 				</AnimatePresence>
 			</div>
-			<div className={s.total}>
+			<div className={s.total} data-total={them ? "them" : "me"}>
 				<Count value={total} tone="gilt" size="lg" showDelta={false} />
 				<span className={s.unit}>{T.practice.light}</span>
 			</div>

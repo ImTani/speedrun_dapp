@@ -12,8 +12,10 @@ import { encodeConfig, type Knobs, type StrategyId } from "@arena/strategies";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { buzz, HAPTIC, SoundSettingsList, SoundToggle, useSfx } from "@/audio";
 import type { FragmentRow, StandingRow } from "@/client/api";
 import { type UnlockId, useGameState } from "@/client/state";
+import { FX, fx } from "@/fx";
 import { cosmeticOf } from "@/game/reliquary";
 import { L } from "@/lexicon";
 import { hud as hudText } from "@/lexicon/hud";
@@ -23,7 +25,6 @@ import { GlassWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
 import {
 	enter,
-	haptic,
 	IMPACT,
 	impact,
 	pressable,
@@ -64,7 +65,9 @@ export function Stage({
 	const [slam, setSlam] = useState(fresh);
 	const [glassIn, setGlassIn] = useState(false);
 	const floor = useRef<HTMLCanvasElement>(null);
+	const glass = useRef<HTMLDivElement>(null);
 	const shaker = useShake<HTMLDivElement>();
+	const sfx = useSfx(fresh ? ["unlock"] : undefined);
 	const hud = useHud(api);
 	const { state } = useGameState();
 	const open = (id: UnlockId) => state?.unlocks[id] ?? false;
@@ -101,7 +104,8 @@ export function Stage({
 		<div className={s.stage}>
 			<canvas ref={floor} className={s.floor} />
 			<div className={s.stageTop} ref={shaker.ref}>
-				<div className={s.windowWrap}>
+				<SoundToggle className={s.soundCorner ?? ""} />
+				<div className={s.windowWrap} ref={glass}>
 					<GlassWindow
 						aspect={aspect}
 						mood="lit"
@@ -124,7 +128,15 @@ export function Stage({
 								delay={0.55}
 								onImpact={() => {
 									setSwell((n) => n + 1);
-									impact(shaker, IMPACT.kindle);
+									impact(shaker, { ...IMPACT.kindle, buzz: false });
+									// Bound: the window takes the light.
+									sfx.play("unlock");
+									sfx.buzz(HAPTIC.unlock);
+									const w = glass.current;
+									if (w) {
+										fx.burst("kindle", w, { amount: 0.8 });
+										fx.ring(w, FX.gilt, { radius: 150, width: 7 });
+									}
 								}}
 								onDone={() => setTimeout(() => setSlam(false), 1600)}
 							/>
@@ -230,7 +242,7 @@ export function Stage({
 								className={`btn btn-ghost ${s.chisel}`}
 								data-coach="retune"
 								onClick={() => {
-									haptic(10);
+									buzz(HAPTIC.tap);
 									setEditing(true);
 								}}
 								{...pressable}
@@ -259,6 +271,7 @@ export function Stage({
 					</Reveal>
 				) : null}
 				<PushToggle api={api} />
+				<SoundSettingsList className={s.soundList ?? ""} />
 			</motion.div>
 
 			{typeof document !== "undefined"

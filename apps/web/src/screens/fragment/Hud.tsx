@@ -6,8 +6,20 @@
  * Standing comes from the shared game state (one poll for the whole shell); Marks and the
  * wardrobe are read once and again only when the shared state says they changed.
  */
-import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	AnimatePresence,
+	animate,
+	motion,
+	useReducedMotion,
+} from "motion/react";
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
+import { buzz, HAPTIC, play, useSfx } from "@/audio";
 import type { Api } from "@/client/api";
 import { claimVigil, levelProgress, type Profile } from "@/client/economy";
 import { type InventoryState, inventory } from "@/client/inventory";
@@ -24,11 +36,13 @@ import {
 } from "@/client/marks";
 import { usePush } from "@/client/push";
 import { useGameState } from "@/client/state";
+import { fx, PALETTES } from "@/fx";
 import { economy } from "@/lexicon/economy";
 import { roman } from "@/lexicon/gathering";
 import { hud } from "@/lexicon/hud";
 import { marks as M } from "@/lexicon/marks";
-import { haptic, pressable, spring } from "@/ui/motion";
+import { promoteMoment } from "@/screens/title/Moments";
+import { easeOut, pressable, spring } from "@/ui/motion";
 import { Count, Rubric } from "@/ui/type";
 import h from "./hud.module.css";
 
@@ -103,8 +117,55 @@ export function useHud(api: Api): HudData {
 
 // ---------------------------------------------------------------- standing
 
-function Bar({ value, label }: { value: number; label: string }) {
+/**
+ * A gilt bar. Pass `level` and a rise in it plays the level-up fill: the bar runs to full,
+ * empties and settles at the new level's progress.
+ */
+function Bar({
+	value,
+	label,
+	level,
+}: {
+	value: number;
+	label: string;
+	level?: number;
+}) {
 	const pct = Math.round(Math.max(0, Math.min(1, value)) * 100);
+	const fill = useRef<HTMLSpanElement>(null);
+	const lastLevel = useRef(level);
+	const placed = useRef(false);
+	const reduce = useReducedMotion() ?? false;
+
+	useLayoutEffect(() => {
+		const el = fill.current;
+		if (!el) return;
+		const to = pct / 100;
+		const up =
+			level != null && lastLevel.current != null && level > lastLevel.current;
+		lastLevel.current = level;
+		if (!placed.current || reduce) {
+			placed.current = true;
+			el.style.transform = `scaleX(${to})`;
+			return;
+		}
+		if (!up) {
+			const c = animate(el, { scaleX: to }, spring.soft);
+			return () => c.stop();
+		}
+		let dead = false;
+		let next: { stop: () => void } | null = null;
+		const full = animate(el, { scaleX: 1 }, { duration: 0.42, ease: easeOut });
+		full.then(() => {
+			if (dead) return;
+			next = animate(el, { scaleX: [0, to] }, { ...spring.soft, delay: 0.18 });
+		});
+		return () => {
+			dead = true;
+			full.stop();
+			next?.stop();
+		};
+	}, [pct, level, reduce]);
+
 	return (
 		<div
 			className={h.bar}
@@ -114,25 +175,50 @@ function Bar({ value, label }: { value: number; label: string }) {
 			aria-valuemax={100}
 			aria-valuenow={pct}
 		>
-			<motion.span
-				className={h.barFill}
-				initial={false}
-				animate={{ scaleX: pct / 100 }}
-				transition={spring.soft}
-			/>
+			<span ref={fill} className={h.barFill} />
 		</div>
 	);
 }
 
+/** When the Vigil last paid out: the Ash counter ticks only for a rise the player caused. */
+let collectedAt = 0;
+const justCollected = () => Date.now() - collectedAt < 3000;
+
 export function StandingCard({ profile: p }: { profile: Profile }) {
 	const capped = p.level >= p.levelCap || p.resonanceToNext <= 0;
 	const prevLevel = useRef(p.level);
+	const prevDegree = useRef(p.degree);
+	const levelRef = useRef<HTMLSpanElement>(null);
 	const [rose, setRose] = useState<number | null>(null);
+	const reduce = useReducedMotion() ?? false;
+	const sfx = useSfx(["levelUp", "promote"]);
 
+	// The level-up moment: the bar fills (see Bar), a three-note rise, a small gilt burst and
+	// the level line pops.
 	useEffect(() => {
-		if (p.level > prevLevel.current) setRose(p.level);
+		const up = p.level > prevLevel.current;
 		prevLevel.current = p.level;
-	}, [p.level]);
+		if (!up) return;
+		setRose(p.level);
+		sfx.play("levelUp", { delay: 120 });
+		sfx.buzz(HAPTIC.unlock);
+		const el = levelRef.current;
+		if (!el) return;
+		fx.burst("sparkle", el, {
+			rarity: "rare",
+			palette: PALETTES.gilt,
+			amount: 0.7,
+			delay: 0.12,
+		});
+		if (!reduce)
+			animate(el, { scale: [1, 1.18, 1] }, { duration: 0.5, ease: easeOut });
+	}, [p.level, sfx, reduce]);
+
+	// A Degree climbed (lower is higher): the shared promotion moment, once per Degree.
+	useEffect(() => {
+		if (p.degree < prevDegree.current) promoteMoment(p.degree);
+		prevDegree.current = p.degree;
+	}, [p.degree]);
 	useEffect(() => {
 		if (rose == null) return;
 		const t = setTimeout(() => setRose(null), 2600);
@@ -143,14 +229,23 @@ export function StandingCard({ profile: p }: { profile: Profile }) {
 		<section className={h.card} aria-label={hud.standing}>
 			<div className={h.head}>
 				<span className={h.degree}>{economy.degreeOf(p.degree)}</span>
-				<span className={h.ash}>
+				<span className={h.ash} data-fx="hud-ash">
 					<AshGlyph />
-					<Count value={p.ash} tone="bone" size="md" />
+					<Count
+						value={p.ash}
+						tone="bone"
+						size="md"
+						tick={justCollected() ? "ash" : undefined}
+					/>
 					<span className={h.unit}>{economy.ash}</span>
 				</span>
 			</div>
 			<div className={h.levelRow}>
-				<span className={h.level}>
+				<span
+					ref={levelRef}
+					className={h.level}
+					style={{ transformOrigin: "0 50%" }}
+				>
 					{economy.levelOf(p.level, p.levelCap)}
 					<AnimatePresence>
 						{rose != null ? (
@@ -171,7 +266,13 @@ export function StandingCard({ profile: p }: { profile: Profile }) {
 					<span className={h.next}>{economy.toNext(p.resonanceToNext)}</span>
 				)}
 			</div>
-			<Bar value={levelProgress(p)} label={economy.resonance} />
+			<div data-fx="hud-level">
+				<Bar
+					value={levelProgress(p)}
+					label={economy.resonance}
+					level={p.level}
+				/>
+			</div>
 			{capped ? <p className={h.note}>{economy.capped}</p> : null}
 		</section>
 	);
@@ -197,6 +298,49 @@ const SPARKS = Array.from({ length: 9 }, (_, i) => {
 	return { x: Math.cos(a) * (46 + (i % 3) * 14), y: Math.sin(a) * 58 };
 });
 
+const motes = (n: number) =>
+	Math.max(4, Math.min(14, Math.round(Math.sqrt(n) * 1.6)));
+
+/**
+ * Ash and Resonance fly from the Collect button into the standing card. The standing
+ * updates as the first mote lands, so the counter rolls while the rest come in.
+ */
+async function flyHome(
+	from: Element | null,
+	ash: number,
+	res: number,
+	land: () => void,
+): Promise<void> {
+	let landed = false;
+	const once = () => {
+		if (landed) return;
+		landed = true;
+		collectedAt = Date.now();
+		land();
+	};
+	const ashTo = document.querySelector('[data-fx="hud-ash"]');
+	const resTo = document.querySelector('[data-fx="hud-level"]');
+	const flights: Promise<void>[] = [];
+	if (from && ash > 0 && ashTo)
+		flights.push(
+			fx.flyTo(from, ashTo, { icon: "ash", count: motes(ash), onArrive: once }),
+		);
+	if (from && res > 0 && resTo)
+		flights.push(
+			fx.flyTo(from, resTo, {
+				icon: "light",
+				count: motes(res),
+				duration: 0.95,
+				onArrive: (i) => {
+					once();
+					play("light", { volume: 0.45, rate: 1 + Math.min(i, 10) * 0.03 });
+				},
+			}),
+		);
+	await Promise.all(flights);
+	once();
+}
+
 export function VigilCard({
 	api,
 	profile: p,
@@ -215,6 +359,8 @@ export function VigilCard({
 		res: number;
 	} | null>(null);
 	const empty = v.ash <= 0 && v.resonance <= 0;
+	const sfx = useSfx(["collect"]);
+	const btn = useRef<HTMLButtonElement>(null);
 
 	useEffect(() => {
 		if (!burst) return;
@@ -224,20 +370,19 @@ export function VigilCard({
 
 	const collect = async () => {
 		if (busy || empty) return;
-		haptic(10);
+		buzz(HAPTIC.tap);
 		setBusy(true);
 		setFailed(false);
 		try {
 			const r = await claimVigil(api);
-			onClaimed(r.profile);
-			if (r.gained.ash > 0 || r.gained.resonance > 0) {
-				haptic([8, 40, 14]);
-				setBurst({
-					id: Date.now(),
-					ash: r.gained.ash,
-					res: r.gained.resonance,
-				});
-			}
+			const { ash, resonance } = r.gained;
+			if (ash > 0 || resonance > 0) {
+				sfx.play("collect");
+				sfx.buzz(HAPTIC.collect);
+				setBurst({ id: Date.now(), ash, res: resonance });
+				// Held busy until the motes land: no second tap on a stale Vigil.
+				await flyHome(btn.current, ash, resonance, () => onClaimed(r.profile));
+			} else onClaimed(r.profile);
 		} catch {
 			setFailed(true);
 		} finally {
@@ -268,6 +413,7 @@ export function VigilCard({
 			{v.full ? <p className={h.note}>{hud.fullHint}</p> : null}
 			<div className={h.claimWrap}>
 				<motion.button
+					ref={btn}
 					type="button"
 					className={h.claim}
 					disabled={busy || empty}
@@ -462,7 +608,7 @@ export function PushToggle({ api }: { api: Api }) {
 				data-on={on || undefined}
 				disabled={push.busy}
 				onClick={() => {
-					haptic(8);
+					buzz(HAPTIC.tap);
 					if (on) push.disable();
 					else push.enable();
 				}}

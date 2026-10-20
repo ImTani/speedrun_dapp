@@ -11,10 +11,13 @@
  *   seal      the wax, once it can be sealed
  *   gathering the Gathering tab, once bound: then onboarding is done
  * Every step is saved (setStep); Skip ends it (finish). A returning player (done) sees nothing.
+ * Each mark done rings a soft chime (Coach); the seal presses wax with a sparkle; the Gathering's
+ * mark arrives as an unlock (cue and gold ring).
  */
 import type { AgentConfig, StrategyId } from "@arena/strategies";
 import { AnimatePresence } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSfx } from "@/audio";
 import type { FragmentStatus } from "@/client/api";
 import {
 	type GameState,
@@ -25,9 +28,12 @@ import {
 import { onboarding as T } from "@/lexicon/onboarding";
 import { configOf } from "@/screens/fragment/shared";
 import { Coach } from "@/ui/coach/Coach";
-import { useAnchorPresent } from "@/ui/coach/useAnchor";
+import { findAnchor, useAnchorPresent } from "@/ui/coach/useAnchor";
 import type { Tab } from "@/ui/TabBar";
+import { sealMoment, unlockMoment } from "./juice";
 import { Practice } from "./Practice";
+
+const WARM = ["seal", "unlock", "light"] as const;
 
 const at = (s: OnboardingStep | null) => (s ? ONBOARDING_STEPS.indexOf(s) : -1);
 
@@ -102,6 +108,7 @@ function Script({
 	const saved = state.onboarding.step;
 	const step = effectiveStep(saved, f?.status ?? null);
 	const onFragment = tab === "fragment";
+	useSfx(WARM);
 
 	// Each move is sent once, however many signals ask for it.
 	const sent = useRef<OnboardingStep | "done" | null>(saved);
@@ -198,7 +205,20 @@ function Script({
 					text={coach.text}
 					round={coach.round}
 					above={coach.above ?? false}
-					onDone={step === "gathering" ? end : advance(step ?? "mask")}
+					chime={coach.target !== "seal"}
+					{...(coach.target === "tab-gathering"
+						? { onShown: unlockMoment }
+						: {})}
+					onDone={
+						step === "gathering"
+							? end
+							: coach.target === "seal"
+								? () => {
+										sealMoment(findAnchor("seal"));
+										advance("seal")();
+									}
+								: advance(step ?? "mask")
+					}
 					onSkip={end}
 				/>
 			) : null}

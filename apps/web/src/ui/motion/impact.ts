@@ -16,6 +16,7 @@ import {
 	useReducedMotion,
 } from "motion/react";
 import { type RefObject, useCallback, useEffect, useMemo, useRef } from "react";
+import { buzz as vibrate } from "@/audio/haptics";
 
 export type ShakeOptions = {
 	/** Peak offset in px. 6 = nudge, 12 = blow, 20 = catastrophe. */
@@ -100,20 +101,10 @@ export function hitStop(
 	});
 }
 
-/** Phone buzz where supported (Android Chrome); silently nothing elsewhere. */
+/** Phone buzz where supported (Android Chrome); silently nothing elsewhere. Goes through
+ * @/audio/haptics so it respects the player's Vibration switch. */
 export function haptic(pattern: number | number[] = 14): void {
-	if (typeof navigator === "undefined") return;
-	const nav = navigator as Navigator & {
-		vibrate?: (p: number | number[]) => boolean;
-		userActivation?: { hasBeenActive: boolean };
-	};
-	// Browsers refuse (and log) vibration before the first tap.
-	if (nav.userActivation && !nav.userActivation.hasBeenActive) return;
-	try {
-		nav.vibrate?.(pattern);
-	} catch {
-		/* user gesture not yet granted: ignore */
-	}
+	vibrate(pattern);
 }
 
 export type ImpactOptions = ShakeOptions & {

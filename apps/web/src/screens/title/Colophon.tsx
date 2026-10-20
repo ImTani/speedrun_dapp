@@ -7,6 +7,8 @@
  */
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useId, useRef } from "react";
+import { SOUND_CREDITS } from "@/audio";
+import { audio } from "@/lexicon/audio";
 import { shell } from "@/lexicon/shell";
 import { ATTRIBUTION_PATH, MASK_CREDITS } from "@/ui/masks/credits";
 import { pressable, scrim, sheet } from "@/ui/motion/presets";
@@ -42,6 +44,7 @@ export function Colophon({
 		{ head: C.masks, lines: MASK_CREDITS },
 		{ head: C.carvings, lines: [C.carvingsLine] },
 		{ head: C.letters, lines: [C.lettersLine] },
+		{ head: audio.creditsHead, lines: SOUND_CREDITS },
 	];
 
 	return (

@@ -775,6 +775,16 @@
 	display: flex;
 	justify-content: center;
 }
+/* the speaker, tucked in the corner above the window */
+.soundCorner {
+	position: absolute;
+	top: 4px;
+	right: calc(var(--gutter) - 10px);
+	z-index: 5;
+}
+.soundList {
+	margin-top: 4px;
+}
 .boundSlam {
 	position: absolute;
 	left: 0;

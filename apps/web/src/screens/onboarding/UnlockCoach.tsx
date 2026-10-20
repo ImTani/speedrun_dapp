@@ -5,14 +5,19 @@
  * at its first action (Vigil: Collect, Spire: Climb, Reliquary: Scry, Vestry: a pack); things
  * with no single action (Retune, Marks, the Gathering) only rise in with their reveal. Either
  * way it is then acknowledged, so it never plays again. One at a time, in unlock order.
+ * The mark arrives with the unlock cue and a gold ring around the action it points at.
  */
 import { useEffect } from "react";
+import { useSfx } from "@/audio";
 import { type GameState, type UnlockId, useGameState } from "@/client/state";
 import { onboarding as T } from "@/lexicon/onboarding";
 import { Coach } from "@/ui/coach/Coach";
 import { findAnchor } from "@/ui/coach/useAnchor";
 import type { Tab } from "@/ui/TabBar";
 import { FIRST_ACTION, HOME } from "./firstActions";
+import { unlockMoment } from "./juice";
+
+const WARM = ["unlock"] as const;
 
 /** How long a reveal is left to play before it counts as seen. */
 const REVEAL_MS = 2600;
@@ -42,6 +47,7 @@ function One({
 	ack: (ids: UnlockId[]) => Promise<void>;
 }) {
 	const target = FIRST_ACTION[id]?.() ?? null;
+	useSfx(WARM);
 
 	useEffect(() => {
 		const t = setTimeout(
@@ -56,5 +62,12 @@ function One({
 
 	if (!target) return null;
 	const text = T.first[id as keyof typeof T.first];
-	return <Coach target={target} text={text} onDone={() => void ack([id])} />;
+	return (
+		<Coach
+			target={target}
+			text={text}
+			onShown={unlockMoment}
+			onDone={() => void ack([id])}
+		/>
+	);
 }

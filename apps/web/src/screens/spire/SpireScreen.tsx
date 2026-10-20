@@ -129,7 +129,7 @@ export function SpireScreen() {
 				<header className={s.head}>
 					<div className={s.titleBlock}>
 						<h1 className={s.title}>{T.title}</h1>
-						<p className={s.meta}>
+						<p className={s.meta} data-fx="spire-standing">
 							{T.degreeOf(state.degree)} ·{" "}
 							{T.levelOf(state.level, state.levelCap)}
 						</p>

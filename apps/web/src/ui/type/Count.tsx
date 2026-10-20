@@ -6,6 +6,10 @@
  * gilt (gain) or blood (loss).
  *
  *   <Count value={light} unit={L.light} size="lg" />
+ *   <Count value={ash} tick="ash" />   // a rising tick per step while it climbs
+ *
+ * Leave `tick` unset where the number moves on its own (polls): only rises the player
+ * caused should sound.
  */
 import {
 	AnimatePresence,
@@ -16,6 +20,7 @@ import {
 	useTransform,
 } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { type Cue, series } from "@/audio";
 import { easeOut } from "../motion/presets";
 import s from "./type.module.css";
 
@@ -32,6 +37,8 @@ export type CountProps = {
 	/** Float a +n / -n ghost on change. Default true. */
 	showDelta?: boolean;
 	format?: (n: number) => string;
+	/** Cue ticked (up to 14 rising hits, spread over the roll) when the value rises. */
+	tick?: Cue | undefined;
 	className?: string;
 };
 
@@ -51,6 +58,7 @@ export function Count({
 	unit,
 	showDelta = true,
 	format = plain,
+	tick,
 	className,
 }: CountProps) {
 	const reduce = useReducedMotion();
@@ -68,6 +76,11 @@ export function Count({
 		// Compare against the live value, not prev: survives StrictMode's
 		// effect replay and interrupted rolls.
 		if (mv.get() === value) return;
+		if (tick && d > 0) {
+			const n = Math.min(14, d);
+			const ms = (reduce ? 0.4 : (duration ?? rollTime(d))) * 1000;
+			series(tick, n, { every: Math.max(36, Math.min(110, (ms * 0.8) / n)) });
+		}
 		if (reduce) {
 			mv.set(value);
 			return;

@@ -8,11 +8,14 @@
  *   failed     the glass is cracked.
  */
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { buzz, play, useSfx } from "@/audio";
 import type { FragmentRow } from "@/client/api";
+import { useGameState } from "@/client/state";
+import { fx } from "@/fx";
 import { L } from "@/lexicon";
 import { GlassWindow, type WindowMood } from "@/ui/GlassWindow";
-import { haptic, IMPACT, impact, pressable, useShake } from "@/ui/motion";
+import { IMPACT, impact, pressable, useShake } from "@/ui/motion";
 import { Plate, Rubric } from "@/ui/type";
 import s from "./fragment.module.css";
 import { type Api, aspectOf, wait } from "./shared";
@@ -34,19 +37,29 @@ export function Waiting({
 	const [phase, setPhase] = useState<Phase>("idle");
 	const [err, setErr] = useState<string | null>(null);
 	const shaker = useShake<HTMLDivElement>();
+	const sealRef = useRef<HTMLButtonElement>(null);
+	useSfx(["seal"]);
+	// While onboarding runs its coach mark presses this wax with its own seal and sparkle.
+	const { state } = useGameState();
+	const ownJuice = state?.onboarding.done ?? true;
 	const st = fragment.status;
 
 	const seal = async () => {
 		if (phase !== "idle") return;
 		setErr(null);
 		setPhase("stamping");
-		haptic(10);
+		buzz(10);
 		// The signet strikes first; the nave answers after.
 		const op = api.runPlayerOp({ action: "confirm" }).then(
 			(ok) => ok,
 			() => false,
 		);
 		await wait(330);
+		// The signet strikes: wax and a spit of embers.
+		if (ownJuice) {
+			play("seal");
+			if (sealRef.current) fx.burst("embers", sealRef.current, { amount: 0.7 });
+		}
 		await impact(shaker, IMPACT.kindle);
 		setPhase("sealing");
 		const ok = await op;
@@ -56,6 +69,7 @@ export function Waiting({
 		}
 		setPhase("cracked");
 		setErr(L.status.sealFailed);
+		play("error");
 		await impact(shaker, IMPACT.devour);
 		await wait(1400);
 		setPhase("idle");
@@ -134,8 +148,10 @@ export function Waiting({
 			{st !== "failed" ? (
 				<div className={s.sealBox}>
 					<motion.button
+						ref={sealRef}
 						type="button"
 						className={s.sealButton}
+						data-sfx="off"
 						data-coach="seal"
 						data-live={st === "registered" && phase === "idle" ? "1" : "0"}
 						disabled={st !== "registered" || phase !== "idle"}

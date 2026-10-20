@@ -5,6 +5,7 @@
  * A tap wears the item at once; the preview follows.
  */
 import { type ReactNode, useState } from "react";
+import { buzz, HAPTIC, play } from "@/audio";
 import type { Api } from "@/client/api";
 import { type InventoryState, inventory } from "@/client/inventory";
 import {
@@ -41,6 +42,9 @@ export function Wardrobe({
 
 	const choose = async (slot: ItemKind, id: string | null) => {
 		if (eq[slot] === id || saving) return;
+		// Worn at once (the preview follows), so it sounds at once: a soft seal.
+		play("seal", { volume: 0.5 });
+		buzz(HAPTIC.seal);
 		const before = state;
 		onChange({ ...state, equipped: { ...eq, [slot]: id } as Equipped });
 		setSaving(slot);
@@ -50,6 +54,7 @@ export function Wardrobe({
 		} catch {
 			onChange(before);
 			setErr(T.errors.saveFailed);
+			play("error");
 		} finally {
 			setSaving(null);
 		}
@@ -129,6 +134,7 @@ function Chip({
 			type="button"
 			className={s.chip}
 			data-on={on ? "1" : "0"}
+			data-sfx="off"
 			aria-pressed={on}
 			onClick={onPick}
 		>

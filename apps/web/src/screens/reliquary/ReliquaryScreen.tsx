@@ -5,19 +5,57 @@
  * duplicates give Ash back. Recent Scryings sit below.
  */
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+	type Ref,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
+import { type Cue, HAPTIC, play, useSfx, type Voice } from "@/audio";
 import { ApiError, useApi } from "@/client/api";
 import {
 	type InventoryState,
 	inventory,
 	type ReliquaryState,
 } from "@/client/inventory";
-import { itemById, type ScryResult } from "@/game/reliquary";
+import { FX, fx } from "@/fx";
+import { itemById, type Rarity, type ScryResult } from "@/game/reliquary";
 import { itemName, reliquary as T } from "@/lexicon/reliquary";
-import { haptic, pressable } from "@/ui/motion";
+import { hitStop, IMPACT, impact, pressable, useShake } from "@/ui/motion";
 import { Count, Rubric } from "@/ui/type";
 import { DressedMask, ItemSwatch, useFragmentLook } from "./ItemSwatch";
 import s from "./reliquary.module.css";
+
+const STINGER: Record<Rarity, Cue> = {
+	common: "rarityCommon",
+	rare: "rarityRare",
+	relic: "rarityRelic",
+};
+
+/** Embers drawn in from around the card while the Scrying builds. */
+function gatherEmbers(card: Element, wave: number): void {
+	const r = card.getBoundingClientRect();
+	const cx = r.left + r.width / 2;
+	const cy = r.top + r.height / 2;
+	const reach = Math.max(r.width, r.height) * 0.8;
+	for (let i = 0; i < 6; i++) {
+		const a = (i / 6) * Math.PI * 2 + wave * 0.5;
+		void fx.stream(
+			{ x: cx + Math.cos(a) * reach, y: cy + Math.sin(a) * reach },
+			card,
+			{
+				count: 3,
+				color: i % 2 ? FX.ember : FX.emberHi,
+				duration: 0.6,
+				spread: 18,
+				size: 2.4,
+				pop: false,
+			},
+		);
+	}
+}
 
 type Card =
 	| { state: "idle" }
@@ -35,6 +73,19 @@ export function ReliquaryScreen() {
 	const [card, setCard] = useState<Card>({ state: "idle" });
 	const [err, setErr] = useState<string | null>(null);
 	const [wearing, setWearing] = useState(false);
+	const sfx = useSfx([
+		"scryBuild",
+		"rarityCommon",
+		"rarityRare",
+		"rarityRelic",
+	]);
+	const shaker = useShake<HTMLDivElement>();
+	const cardRef = useRef<HTMLDivElement>(null);
+	const purseRef = useRef<HTMLDivElement>(null);
+	const build = useRef<Voice | null>(null);
+
+	// Leaving mid-Scry: let the swell go with the screen.
+	useEffect(() => () => build.current?.stop(120), []);
 
 	const load = useCallback(async () => {
 		try {
@@ -55,16 +106,29 @@ export function ReliquaryScreen() {
 		if (!state || card.state === "scrying") return;
 		setErr(null);
 		setCard({ state: "scrying" });
+		// The price leaves the purse at once; a duplicate's refund flies back after the reveal.
+		const before = state.ash;
+		setState((st) => (st ? { ...st, ash: Math.max(0, st.ash - st.cost) } : st));
+		build.current?.stop(60);
+		build.current = sfx.play("scryBuild");
+		const el = cardRef.current;
+		const waves: ReturnType<typeof setTimeout>[] = [];
+		if (el) {
+			gatherEmbers(el, 0);
+			waves.push(setTimeout(() => gatherEmbers(el, 1), 380));
+		}
 		try {
 			const [out] = await Promise.all([
 				inv.scry(),
 				new Promise((r) => setTimeout(r, reduce ? 0 : 650)),
 			]);
+			const { rarity, duplicate, refund } = out.result;
+			const back = duplicate && refund > 0 ? refund : 0;
 			setState((st) =>
 				st
 					? {
 							...st,
-							ash: out.ash,
+							ash: out.ash - back,
 							pityLeft: out.pityLeft,
 							recent: [out.result, ...st.recent].slice(0, 10),
 						}
@@ -74,16 +138,68 @@ export function ReliquaryScreen() {
 				setWardrobe((w) =>
 					w ? { ...w, items: [...w.items, out.result.item] } : w,
 				);
+			// A relic holds its breath before the turn: a blow, a frozen beat, then the flip.
+			if (rarity === "relic") {
+				void impact(shaker, {
+					...IMPACT.devour,
+					stop: 0,
+					buzz: HAPTIC.relic.slice(),
+				});
+				await hitStop(reduce ? 0 : 280);
+			} else if (rarity === "rare") {
+				sfx.buzz(HAPTIC.reveal);
+			}
+			build.current?.stop(rarity === "common" ? 140 : 60);
+			build.current = null;
 			setCard({ state: "shown", result: out.result });
-			if (out.result.rarity === "relic") haptic([18, 40, 28]);
-			else if (out.result.rarity === "rare") haptic(16);
+			// The face comes round about a third of the way into the flip.
+			const turn = reduce ? 0 : 0.26;
+			sfx.play(STINGER[rarity], { delay: turn * 1000 });
+			if (el) {
+				fx.burst("sparkle", el, { rarity, spread: 40, delay: turn });
+				if (rarity === "relic") {
+					fx.ring(el, FX.gilt, { radius: 220, width: 10, delay: turn });
+					fx.ring(el, FX.giltHi, {
+						radius: 140,
+						width: 5,
+						duration: 0.5,
+						delay: turn + 0.1,
+					});
+				}
+			}
+			if (back > 0) {
+				// The duplicate melts back into Ash, which flies to the purse.
+				setTimeout(() => {
+					const to = purseRef.current;
+					if (!el || !to) {
+						setState((st) => (st ? { ...st, ash: out.ash } : st));
+						return;
+					}
+					let landed = false;
+					void fx.flyTo(el, to, {
+						icon: "ash",
+						count: Math.max(4, Math.min(10, Math.round(back / 10))),
+						onArrive: () => {
+							if (landed) return;
+							landed = true;
+							setState((st) => (st ? { ...st, ash: out.ash } : st));
+						},
+					});
+				}, 900);
+			}
 		} catch (e) {
+			build.current?.stop(80);
+			build.current = null;
+			play("error");
+			setState((st) => (st ? { ...st, ash: before } : st));
 			setCard({ state: "idle" });
 			setErr(
 				e instanceof ApiError && e.status === 402
 					? T.errors.notEnoughAsh
 					: T.errors.failed,
 			);
+		} finally {
+			for (const w of waves) clearTimeout(w);
 		}
 	};
 
@@ -93,6 +209,8 @@ export function ReliquaryScreen() {
 		setWearing(true);
 		try {
 			setWardrobe(await inv.equip({ [it.kind]: id }));
+			sfx.play("seal", { volume: 0.55 });
+			sfx.buzz(HAPTIC.seal);
 		} catch {
 			setErr(T.errors.failed);
 		} finally {
@@ -107,9 +225,9 @@ export function ReliquaryScreen() {
 		<section className={s.screen}>
 			<header className={s.head}>
 				<h1 className={s.title}>{T.name}</h1>
-				<div className={s.purse}>
+				<div className={s.purse} ref={purseRef}>
 					{state ? (
-						<Count value={state.ash} size="sm" unit={T.ash} />
+						<Count value={state.ash} size="sm" unit={T.ash} tick="ash" />
 					) : (
 						<span className={s.muted}>{T.loading}</span>
 					)}
@@ -122,8 +240,9 @@ export function ReliquaryScreen() {
 				</p>
 			) : null}
 
-			<div className={s.stage}>
+			<div className={s.stage} ref={shaker.ref}>
 				<FlipCard
+					ref={cardRef}
 					card={card}
 					aspect={look.aspect}
 					name={look.name}
@@ -138,6 +257,7 @@ export function ReliquaryScreen() {
 				<motion.button
 					type="button"
 					className={s.cta}
+					data-sfx="off"
 					disabled={!state || busy || short}
 					onClick={doScry}
 					{...pressable}
@@ -163,6 +283,7 @@ export function ReliquaryScreen() {
 
 /** The face-down card. Flips to the result once the Scrying returns. */
 function FlipCard({
+	ref,
 	card,
 	aspect,
 	name,
@@ -171,6 +292,7 @@ function FlipCard({
 	wearing,
 	onWear,
 }: {
+	ref: Ref<HTMLDivElement>;
 	card: Card;
 	aspect: number;
 	name: string | null;
@@ -182,7 +304,7 @@ function FlipCard({
 	const shown = card.state === "shown" ? card.result : null;
 	const flipped = shown != null;
 	return (
-		<div className={s.cardWrap}>
+		<div className={s.cardWrap} ref={ref}>
 			<motion.div
 				className={s.card}
 				data-rarity={shown?.rarity}

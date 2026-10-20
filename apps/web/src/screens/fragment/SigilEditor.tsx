@@ -15,8 +15,9 @@ import {
 	useId,
 	useRef,
 } from "react";
+import { buzz } from "@/audio";
 import { L } from "@/lexicon";
-import { haptic, pressable, spring } from "@/ui/motion";
+import { pressable, spring } from "@/ui/motion";
 import s from "./fragment.module.css";
 import { sigilsFor } from "./shared";
 
@@ -192,7 +193,7 @@ function NotchRail({
 			);
 			if (v !== live.current) {
 				live.current = v;
-				haptic(6);
+				buzz(6);
 				onValue(v);
 			}
 		},
@@ -316,7 +317,7 @@ function GestureTiles({
 					data-on={value === i ? "1" : "0"}
 					data-kind={["kindle", "devour", "fate"][i]}
 					onClick={() => {
-						if (value !== i) haptic(10);
+						if (value !== i) buzz(10);
 						onValue(i);
 					}}
 					{...pressable}
