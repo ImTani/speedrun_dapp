@@ -2,6 +2,9 @@ import type { Address } from "viem";
 import fuji from "../../../contracts/deployments/43113.json" with {
 	type: "json",
 };
+import mainnet from "../../../contracts/deployments/43114.json" with {
+	type: "json",
+};
 
 export interface Deployment {
 	owner: Address;
