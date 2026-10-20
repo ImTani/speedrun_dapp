@@ -1,8 +1,9 @@
 "use client";
 
 import { useReducedMotion } from "motion/react";
-import { type CSSProperties, useId, useMemo } from "react";
+import { type CSSProperties, useEffect, useId, useMemo, useRef } from "react";
 import { L } from "@/lexicon";
+import { registerEmitter } from "@/scene/emitters.js";
 import { MASK, type MaskVariant } from "@/scene/masks.js";
 
 export type { MaskVariant };
@@ -16,6 +17,12 @@ export interface MaskProps {
 	width?: number;
 	/** Ember eyes burning behind the eye holes. */
 	glow?: boolean;
+	/**
+	 * The ember eyes light the scene (with glow): registered as emitters, so an Atmosphere
+	 * mounted in the same scene adds their hot bloom and a faint red spill around the mask.
+	 * For masks standing in a scene (the Gathering face-off), not UI chips.
+	 */
+	emit?: boolean;
 	/** gilded (full colour), grisaille (brown glass painting) or ink (paper and ink). */
 	variant?: MaskVariant;
 	/** "square": framed tightly on the mask (default). "space": the shared 100 x 84 mask space. */
@@ -34,6 +41,7 @@ export function Mask({
 	size,
 	width,
 	glow = false,
+	emit = false,
 	variant = "gilded",
 	fit = "square",
 	label = false,
@@ -58,8 +66,34 @@ export function Mask({
 			}),
 		[a, px, variant, glow, reduced, fit, uid, label],
 	);
+	const ref = useRef<HTMLSpanElement>(null);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: svg is the markup the eyes sit in
+	useEffect(() => {
+		const el = ref.current?.querySelector("svg");
+		if (!emit || !glow || !el) return;
+		const vb = el.viewBox.baseVal;
+		if (!vb?.width || !vb.height) return;
+		const eyes = MASK.EYES[a.key as keyof typeof MASK.EYES] ?? [];
+		const hs = eyes.map(([x, y], i) =>
+			registerEmitter({
+				kind: "ember",
+				anchor: el,
+				x: (x - vb.x) / vb.width,
+				y: (y - vb.y) / vb.height,
+				// the eye's glow, in mask widths (the spill reaches about twice this)
+				radius: 9 / vb.width,
+				color: "#e2481e",
+				intensity: 0.9,
+				phase: (aspect * 0.17 + i * 0.41) % 1,
+			}),
+		);
+		return () => {
+			for (const h of hs) h.remove();
+		};
+	}, [emit, glow, svg, a.key, aspect]);
 	return (
 		<span
+			ref={ref}
 			className={className ? `mask-svg ${className}` : "mask-svg"}
 			style={{
 				lineHeight: 0,

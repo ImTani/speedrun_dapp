@@ -20,6 +20,7 @@ import { cosmeticOf } from "@/game/reliquary";
 import { L } from "@/lexicon";
 import { hud as hudText } from "@/lexicon/hud";
 import { titleText } from "@/lexicon/reliquary";
+import { Atmosphere } from "@/scene/AtmosphereLayer";
 import { DressedMask } from "@/screens/reliquary/ItemSwatch";
 import { SettingsEntry } from "@/screens/title/SettingsEntry";
 import { GlassWindow } from "@/ui/GlassWindow";
@@ -105,6 +106,17 @@ export function Stage({
 	return (
 		<div className={s.stage}>
 			<canvas ref={floor} className={s.floor} />
+			{/* Post-processing over the floor light, under the window and every word (both are in
+			    later, higher layers): the window's halo, spill and dust reach the stone around it. */}
+			<Atmosphere
+				floor="auto"
+				lean={0}
+				rise={0.6}
+				opaque={false}
+				style={{
+					inset: "0 calc(var(--pad-r) * -1) 0 calc(var(--pad-l) * -1)",
+				}}
+			/>
 			<div className={s.stageTop} ref={shaker.ref}>
 				<div className={s.soundCorner}>
 					<SettingsEntry />

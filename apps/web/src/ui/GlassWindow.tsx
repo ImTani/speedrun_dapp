@@ -25,6 +25,7 @@ import {
 	useState,
 } from "react";
 import { L } from "@/lexicon";
+import { type EmitterHandle, registerEmitter } from "@/scene/emitters.js";
 import type { GlassApi } from "@/scene/glassgl.js";
 import { MASK } from "@/scene/masks.js";
 import { Mask } from "./Mask";
@@ -104,6 +105,14 @@ const HALO: Record<WindowMood, number> = {
 	stirring: 0.3,
 	dark: 0.06,
 	broken: 0.14,
+};
+/** How strongly each mood's glass lights the atmosphere when it has no shader (SVG art). */
+const GLASS_EMIT: Record<WindowMood, number> = {
+	lit: 1,
+	waiting: 0.4,
+	stirring: 0.45,
+	dark: 0.06,
+	broken: 0.3,
 };
 const EYES_ON: Record<WindowMood, number> = {
 	lit: 1,
@@ -247,6 +256,57 @@ export function GlassWindow({
 		return () => clearInterval(t);
 	}, [mood, lit, reduce]);
 
+	// ---- emission: the atmosphere (when the scene mounts one) lights the stone from this window ----
+	const eyesRef = useRef<SVGSVGElement>(null);
+	const glassEmit = useRef<EmitterHandle | null>(null);
+	const eyeEmit = useRef<EmitterHandle[]>([]);
+	useEffect(() => {
+		const box = boxRef.current;
+		if (!box) return;
+		const h = registerEmitter({
+			kind: "glass",
+			anchor: box,
+			color: tint,
+			intensity: GLASS_EMIT[moodRef.current],
+		});
+		glassEmit.current = h;
+		return () => {
+			h.remove();
+			glassEmit.current = null;
+		};
+	}, [tint]);
+	const eyeKey = (MASK.EYES[key as keyof typeof MASK.EYES] ?? []).join(";");
+	const hasBox = boxW > 0;
+	// biome-ignore lint/correctness/useExhaustiveDependencies: eyeKey stands for the eye list
+	useEffect(() => {
+		const svg = eyesRef.current;
+		if (!svg || !mask) return;
+		const list = MASK.EYES[key as keyof typeof MASK.EYES] ?? [];
+		const hs = list.map(([x, y], i) =>
+			registerEmitter({
+				kind: "ember",
+				anchor: svg,
+				x: x / 100,
+				y: y / 84,
+				radius: 0.13,
+				color: "#ff6a3a",
+				intensity: 0,
+				phase: (idx * 0.13 + i * 0.37) % 1,
+			}),
+		);
+		eyeEmit.current = hs;
+		return () => {
+			for (const h of hs) h.remove();
+			eyeEmit.current = [];
+		};
+	}, [eyeKey, mask, hasBox]);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: re-apply after either re-registers
+	useEffect(() => {
+		glassEmit.current?.update({ intensity: art ? GLASS_EMIT[mood] : 0 });
+		for (const h of eyeEmit.current)
+			h.update({ intensity: art ? EYES_ON[mood] * 0.6 : 0 });
+	}, [mood, art, tint, eyeKey, hasBox]);
+
 	// Swell: the light surges once.
 	const haloRef = useRef<HTMLDivElement>(null);
 	const firstSwell = useRef(swell);
@@ -361,6 +421,7 @@ export function GlassWindow({
 						/>
 					</motion.div>
 					<motion.svg
+						ref={eyesRef}
 						aria-hidden="true"
 						viewBox="0 0 100 84"
 						initial={false}

@@ -394,6 +394,8 @@ void main(){
 				gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 			});
 		}
+		// Lit glass is a light source: the atmosphere (atmosgl.js) finds it by this mark.
+		winCanvas.dataset.lensGlass = "";
 		const view = addView({
 			targets: causticCanvas ? [winCanvas, causticCanvas] : [winCanvas],
 			live: !reduce,
@@ -470,6 +472,7 @@ void main(){
 			},
 			destroy() {
 				ac.abort();
+				delete winCanvas.dataset.lensGlass;
 				view.remove();
 			},
 		};

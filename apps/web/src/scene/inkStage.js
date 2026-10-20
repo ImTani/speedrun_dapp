@@ -9,6 +9,7 @@
 // The stage is a fixed 390 x 844 world; the caller scales it to COVER its box (see screens/gathering/layout.ts).
 // Browser-only: import dynamically from a client component.
 
+import { registerEmitter } from "./emitters.js";
 import { FLOOR } from "./floorgl.js";
 import { G } from "./glass.js";
 import { GL } from "./glassgl.js";
@@ -1230,6 +1231,7 @@ export async function mountStage(root, opts = {}) {
 			`M-30 0 Q0 -19 30 0 Q0 ${(-19 + 38 * (1 - lid)).toFixed(1)} -30 0Z`,
 		);
 		A_(byId("eyeIris"), "opacity", lid.toFixed(2));
+		lightEye(lid);
 		// tally: each side's Light medallions pop one by one
 		for (const k of ["A", "B"]) {
 			const base = D.lit[k],
@@ -1321,6 +1323,55 @@ export async function mountStage(root, opts = {}) {
 	}
 
 	await Promise.all([bake(), bakeArt(), mountGlass(), mountFloor()]);
+
+	// ---------- Light hooks: where the light lives, for the screen's atmosphere ----------
+	// The two windows (their shader frames are tapped; the tint stands in until then), a few gilt
+	// glints on the hood mouldings, and the floor eye's red iris while it is open. All anchored
+	// to the stage, so the caller's cover scaling and the camera lean carry them.
+	const at = (x, y) => ({ x: x / SW, y: y / SH });
+	const lights = [
+		...Object.entries(WIN).map(([k, w]) =>
+			registerEmitter({
+				kind: "glass",
+				anchor: byId(`win${k}`),
+				color: w.tint,
+			}),
+		),
+		...Object.values(WIN).flatMap((w, i) => [
+			registerEmitter({
+				kind: "gilt",
+				anchor: el,
+				...at(w.cx, SPRING - 2 - (GW / 2 + 31)),
+				radius: 12 / SW,
+				phase: 0.1 + i * 0.5,
+			}),
+			registerEmitter({
+				kind: "gilt",
+				anchor: el,
+				...at(i ? w.x1 + 30 : w.x0 - 30, SPRING + 1),
+				radius: 10 / SW,
+				phase: 0.35 + i * 0.5,
+			}),
+		]),
+	];
+	const eyeLight = registerEmitter({
+		kind: "ember",
+		anchor: el,
+		...at(EYE.x, EYE.y),
+		radius: 26 / SW,
+		color: "#c7262c",
+		intensity: 0,
+		phase: 0.6,
+	});
+	lights.push(eyeLight);
+	let eyeLit = 0;
+	/** The iris lights the floor as the lid opens (only on a real change). */
+	function lightEye(lid) {
+		if (Math.abs(lid - eyeLit) < 0.03 && !(lid === 0 && eyeLit > 0)) return;
+		eyeLit = lid;
+		eyeLight.update({ intensity: lid * 0.8 });
+	}
+
 	ready = true;
 	last = performance.now();
 	if (!dead) el.classList.add("on");
@@ -1411,10 +1462,12 @@ export async function mountStage(root, opts = {}) {
 			if (y === eyeY) return;
 			eyeY = y;
 			A_(byId("floorEye"), "transform", `translate(${EYE.x} ${y})`);
+			eyeLight.update({ y: y / SH });
 		},
 		destroy() {
 			dead = true;
 			cancelAnimationFrame(raf);
+			for (const h of lights) h.remove();
 			settle();
 			GAPI.A?.destroy();
 			GAPI.B?.destroy();

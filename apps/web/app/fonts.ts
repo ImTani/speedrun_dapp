@@ -14,6 +14,11 @@
  *  - Alegreya (text): a calligraphic book face with open counters and a 0.46 x-height; reads
  *    at 13-18px over the busy floor. The Gathering's subline, feed and hints. Variable 400-900
  *    + italic.
+ *  - UnifrakturMaguntia (fraktur): a classic Fraktur with broad, inkable strokes, for the wordmark's
+ *    illuminated variants only (src/ui/wordmark: "postasy"). Not preloaded: it is fetched only
+ *    when one of those variants puts it on screen.
+ *  - UnifrakturCook (fraktur initial): a Schwabacher-boned Fraktur whose capital A has a closed
+ *    apex and a crossbar; the wordmark's B3 initial only. Not preloaded, one weight (700).
  *
  * Each exposes a private --ff-* variable; globals.css builds the public
  * --font-display / --font-book / --font-num stacks from them.
@@ -24,6 +29,8 @@ import {
 	Grenze,
 	Grenze_Gotisch,
 	IM_Fell_English,
+	UnifrakturCook,
+	UnifrakturMaguntia,
 } from "next/font/google";
 
 export const fontDisplay = Grenze_Gotisch({
@@ -64,6 +71,24 @@ export const fontText = Alegreya({
 	fallback: ["Georgia", "serif"],
 });
 
+export const fontFraktur = UnifrakturMaguntia({
+	subsets: ["latin"],
+	weight: "400",
+	display: "swap",
+	preload: true, // the shipped wordmark (B3) sets "postasy" in Maguntia
+	variable: "--ff-fraktur",
+	fallback: ["Georgia", "serif"],
+});
+
+export const fontFrakturCap = UnifrakturCook({
+	subsets: ["latin"],
+	weight: "700",
+	display: "swap",
+	preload: true, // the shipped wordmark's capital A
+	variable: "--ff-fraktur-cap",
+	fallback: ["Georgia", "serif"],
+});
+
 /** Put on <html>: defines the --ff-* variables for the whole tree. */
 export const fontVars = [
 	fontDisplay.variable,
@@ -71,4 +96,6 @@ export const fontVars = [
 	fontNum.variable,
 	fontRoman.variable,
 	fontText.variable,
+	fontFraktur.variable,
+	fontFrakturCap.variable,
 ].join(" ");

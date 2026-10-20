@@ -30,6 +30,7 @@ import { play, useSfx } from "@/audio";
 import { readGathering, readStandings, useApi } from "@/client/api";
 import { usePoll } from "@/client/poll.ts";
 import { gathering as T } from "@/lexicon/gathering.ts";
+import { Atmosphere } from "@/scene/AtmosphereLayer.tsx";
 import type {
 	Stage,
 	StageBeat,
@@ -593,6 +594,13 @@ export function GatheringScreen() {
 						style={{
 							transform: `translate(${(-fit.ox * fit.s).toFixed(2)}px, ${(-fit.oy * fit.s).toFixed(2)}px) scale(${fit.s.toFixed(4)})`,
 						}}
+					/>
+					{/* Post-processing over the stage only: under the shades, plates, verdict and HUD. */}
+					<Atmosphere
+						floor={box.h > 0 ? fit.y(geom.FT) / box.h : 0.6}
+						lean={0}
+						rise={0.7}
+						opaque={!fit.narrow}
 					/>
 					<div className={css.shadeTop} />
 					<div className={css.shadeBottom} />

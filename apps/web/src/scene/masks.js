@@ -177,10 +177,15 @@ function mask(aspect, width = 60, opts = {}) {
 					`<ellipse cx="${x}" cy="${y}" rx="${er[0] * 1.15}" ry="${er[1] * 1.3}" fill="${url("e")}"/>`,
 			)
 			.join("")}</g>`;
+		// A small hot bloom over each eye: the wide warm halo, then a tight white-hot core.
+		defs.push(
+			`<radialGradient id="${id("ec")}"><stop offset="0" stop-color="#fff4d2" stop-opacity=".95"/><stop offset=".4" stop-color="#ffb860" stop-opacity=".42"/><stop offset="1" stop-color="#ff7a2a" stop-opacity="0"/></radialGradient>`,
+		);
+		const em = Math.max(er[0], er[1]);
 		over = `<g style="mix-blend-mode:screen" opacity=".7">${flick}${eyes
 			.map(
 				([x, y]) =>
-					`<circle cx="${x}" cy="${y}" r="${Math.max(er[0], er[1]) * 1.7}" fill="${url("eh")}"/>`,
+					`<circle cx="${x}" cy="${y}" r="${em * 1.7}" fill="${url("eh")}"/><circle cx="${x}" cy="${y}" r="${(em * 0.62).toFixed(2)}" fill="${url("ec")}"/>`,
 			)
 			.join("")}</g>`;
 	} else if (o.void) {

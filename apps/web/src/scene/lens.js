@@ -31,6 +31,7 @@ const uniforms = new WeakMap(); // program -> Map(name -> location)
 const views = new Set();
 const owners = new Map(); // target canvas -> Set(view)
 const ctx2d = new WeakMap(); // target canvas -> its 2D context
+const taps = new Map(); // target canvas -> tap (a small GPU copy of each frame drawn to it)
 let raf = 0;
 let last = -1e9;
 let parkTimer = 0;
@@ -81,6 +82,11 @@ function drop() {
 	gl = null;
 	canvas = null;
 	programs.clear();
+	for (const t of taps.values()) {
+		t.tex = null;
+		t.fbo = null;
+		t.ready = false;
+	}
 }
 
 /** Give the context back to the browser; the next frame that needs it builds a new one. */
@@ -164,7 +170,8 @@ function tick(now) {
 	}
 	if (due && drew) last = now;
 	for (const v of views) if (v.dirty && !v.broken && seen(v)) again = true;
-	if (again) raf = requestAnimationFrame(tick);
+	// (an invalidate() made during this frame may already have queued the next one)
+	if (again && !raf) raf = requestAnimationFrame(tick);
 }
 
 /**
@@ -179,6 +186,8 @@ function pass(target, render) {
 	if (canvas.height < h) canvas.height = h;
 	gl.viewport(0, 0, w, h);
 	render();
+	const tp = taps.get(target);
+	if (tp) grab(tp, w, h);
 	let x = ctx2d.get(target);
 	if (x === undefined) {
 		x = target.getContext("2d");
@@ -188,6 +197,112 @@ function pass(target, render) {
 	// The viewport sits at the buffer's bottom-left; the copy reads from the top-left.
 	x.globalCompositeOperation = "copy";
 	x.drawImage(canvas, 0, gl.drawingBufferHeight - h, w, h, 0, 0, w, h);
+}
+
+/** Longest side of a tap's copy, in pixels: a light mask, not a picture. */
+const TAP_MAX = 128;
+
+/** Copy the frame just rendered for a tapped target into its small texture (GPU only, scaled). */
+function grab(tp, w, h) {
+	const g = gl;
+	const k = Math.min(1, TAP_MAX / Math.max(w, h));
+	const tw = Math.max(1, Math.round(w * k));
+	const th = Math.max(1, Math.round(h * k));
+	if (!tp.tex || tp.gen !== gen || tp.w !== tw || tp.h !== th) {
+		if (tp.tex && tp.gen === gen) {
+			g.deleteTexture(tp.tex);
+			g.deleteFramebuffer(tp.fbo);
+		}
+		const [t, f] = renderTarget(g, tw, th);
+		tp.tex = t;
+		tp.fbo = f;
+		tp.gen = gen;
+		tp.w = tw;
+		tp.h = th;
+	}
+	g.bindFramebuffer(g.READ_FRAMEBUFFER, null);
+	g.bindFramebuffer(g.DRAW_FRAMEBUFFER, tp.fbo);
+	g.blitFramebuffer(0, 0, w, h, 0, 0, tw, th, g.COLOR_BUFFER_BIT, g.LINEAR);
+	g.bindFramebuffer(g.FRAMEBUFFER, null);
+	tp.ready = true;
+	for (const f of tp.listeners) f();
+}
+
+/**
+ * An offscreen render target on the current context: [texture, framebuffer], RGBA8, linear,
+ * clamped. The caller owns both (delete them in its view's `dispose`).
+ */
+export function renderTarget(g, w, h) {
+	const t = g.createTexture();
+	g.activeTexture(g.TEXTURE0);
+	g.bindTexture(g.TEXTURE_2D, t);
+	g.texStorage2D(g.TEXTURE_2D, 1, g.RGBA8, w, h);
+	g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.LINEAR);
+	g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MAG_FILTER, g.LINEAR);
+	g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_S, g.CLAMP_TO_EDGE);
+	g.texParameteri(g.TEXTURE_2D, g.TEXTURE_WRAP_T, g.CLAMP_TO_EDGE);
+	const f = g.createFramebuffer();
+	g.bindFramebuffer(g.FRAMEBUFFER, f);
+	g.framebufferTexture2D(
+		g.FRAMEBUFFER,
+		g.COLOR_ATTACHMENT0,
+		g.TEXTURE_2D,
+		t,
+		0,
+	);
+	g.bindFramebuffer(g.FRAMEBUFFER, null);
+	return [t, f];
+}
+
+/**
+ * Tap a view's target canvas: each time the lens draws it, a small copy of that frame (longest
+ * side TAP_MAX; GL orientation, row 0 at the bottom) lands in a texture on the shared context, so
+ * another view can read what was rendered without a CPU readback (the atmosphere's light mask).
+ * Taps are counted per canvas; the copy is freed when the last holder releases it.
+ */
+export function tap(canvasEl) {
+	let tp = taps.get(canvasEl);
+	if (!tp) {
+		tp = {
+			tex: null,
+			fbo: null,
+			gen: -1,
+			w: 0,
+			h: 0,
+			ready: false,
+			refs: 0,
+			listeners: new Set(),
+		};
+		taps.set(canvasEl, tp);
+		// Its views draw once more so the copy fills even if they are still (reduced motion).
+		for (const v of owners.get(canvasEl) ?? []) v.dirty = true;
+		kick();
+	}
+	tp.refs += 1;
+	const t = tp;
+	let gone = false;
+	let own = null;
+	return {
+		target: canvasEl,
+		texture: () => (t.ready && t.gen === gen && gl ? t.tex : null),
+		onDraw(fn) {
+			if (own) t.listeners.delete(own);
+			own = fn ?? null;
+			if (own) t.listeners.add(own);
+		},
+		release() {
+			if (gone) return;
+			gone = true;
+			if (own) t.listeners.delete(own);
+			t.refs -= 1;
+			if (t.refs > 0) return;
+			taps.delete(canvasEl);
+			if (gl && t.gen === gen && t.tex) {
+				gl.deleteTexture(t.tex);
+				gl.deleteFramebuffer(t.fbo);
+			}
+		},
+	};
 }
 
 function compile(g, fs) {
@@ -282,6 +397,7 @@ export function lensReady(...frags) {
  *  live:    true (or a function returning true) while it animates on its own
  *  setup(gl, texture): build its textures on the current context; runs again after a rebuild
  *  draw(gl, now, pass): render; call pass(target, render) once per target
+ *  dispose(gl):         optional; free what it made beyond its textures (framebuffers)
  * Returns { invalidate() (draw on the next frame), remove() }.
  */
 export function addView(spec) {
@@ -326,7 +442,14 @@ export function addView(spec) {
 					io?.unobserve(t);
 				}
 			}
-			if (gl && v.gen === gen) for (const t of v.textures) gl.deleteTexture(t);
+			if (gl && v.gen === gen) {
+				for (const t of v.textures) gl.deleteTexture(t);
+				try {
+					v.dispose?.(gl);
+				} catch (e) {
+					console.error("[lens]", e);
+				}
+			}
 			v.textures = [];
 			if (!views.size) park(PARK_IDLE_MS);
 		},

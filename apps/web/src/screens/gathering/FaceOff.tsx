@@ -231,6 +231,7 @@ export function FaceOff({
 													aspect={who.aspect}
 													size={mw}
 													glow={!gutter}
+													emit
 													variant="gilded"
 													shadow={false}
 												/>

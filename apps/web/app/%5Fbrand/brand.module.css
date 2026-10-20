@@ -1,5 +1,4 @@
-/* Brand render pages (dev only). Lettering copied from the title screen
-   (src/screens/title/title.module.css), rebuilt in em so it scales to any size. */
+/* Brand render pages (dev only). The lettering is the shared lockup (src/ui/wordmark). */
 
 .root {
 	position: relative;
@@ -34,102 +33,6 @@
 		#120c0a 48%,
 		var(--c-void) 100%
 	);
-}
-
-.mark {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 0.12em;
-	line-height: 1;
-	text-align: center;
-}
-.mark[data-lay="row"] {
-	flex-direction: row;
-	align-items: center;
-	gap: 0.3em;
-}
-.name {
-	position: relative;
-	display: grid;
-	font-family: var(--font-display);
-	font-weight: 900;
-	font-size: 1em;
-	line-height: 0.86;
-	letter-spacing: 0.01em;
-	white-space: nowrap;
-}
-.nameInk,
-.nameFill {
-	grid-area: 1 / 1;
-	padding: 0 0.08em 0.06em;
-}
-.nameInk {
-	color: var(--c-soot);
-	-webkit-text-stroke: 0.14em var(--c-soot);
-	text-shadow:
-		0 0.06em 0 var(--c-soot),
-		0 0.12em 0.3em #000;
-}
-.nameFill {
-	color: transparent;
-	background: linear-gradient(
-		180deg,
-		var(--c-bone-hi) 0%,
-		var(--c-gilt-l) 46%,
-		var(--c-gilt) 62%,
-		var(--c-gilt-d) 100%
-	);
-	background-clip: text;
-	-webkit-background-clip: text;
-	filter: drop-shadow(0 0 0.19em #e3c27c40);
-}
-
-.sub {
-	display: flex;
-	align-items: center;
-	gap: 0.7em;
-	font-family: var(--font-num);
-	font-weight: 700;
-	font-size: 0.185em;
-	letter-spacing: 0.3em;
-	text-transform: uppercase;
-	color: var(--c-blood-l);
-	text-shadow:
-		0 0.13em 0 var(--c-soot),
-		0 0 0.9em #c7262c66;
-	white-space: nowrap;
-	margin-right: -0.3em;
-}
-.mark[data-lay="row"] .sub {
-	font-size: 0.27em;
-	padding-top: 0.25em;
-}
-.rule {
-	display: block;
-	width: 1.9em;
-	height: 0.13em;
-	min-height: 2px;
-	background: linear-gradient(90deg, transparent, var(--c-blood-l));
-	position: relative;
-}
-.rule:last-child {
-	background: linear-gradient(90deg, var(--c-blood-l), transparent);
-}
-.rule::after {
-	content: "";
-	position: absolute;
-	top: 50%;
-	width: 0.4em;
-	height: 0.4em;
-	background: var(--c-blood-l);
-	transform: translateY(-50%) rotate(45deg);
-}
-.rule:first-child::after {
-	right: -0.2em;
-}
-.rule:last-child::after {
-	left: -0.2em;
 }
 
 /* ---------------------------------------------------------------- logo */

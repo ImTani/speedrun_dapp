@@ -17,6 +17,8 @@ export interface LensSpec {
 	): void;
 	/** Render; call `pass(target, render)` once per target. */
 	draw(gl: WebGL2RenderingContext, now: number, pass: LensPass): void;
+	/** Free what the view made beyond its textures (framebuffers); called on remove. */
+	dispose?(gl: WebGL2RenderingContext): void;
 }
 
 export interface LensView {
@@ -24,6 +26,23 @@ export interface LensView {
 	invalidate(): void;
 	remove(): void;
 }
+
+/** A small GPU copy of each frame the lens draws to one target canvas. */
+export interface LensTap {
+	readonly target: HTMLCanvasElement;
+	/** The copy (GL orientation: row 0 is the bottom), or null before the first draw. */
+	texture(): WebGLTexture | null;
+	/** Called after each draw of the target (reduced motion: redraw what reads it). */
+	onDraw(fn: (() => void) | null): void;
+	release(): void;
+}
+export function tap(target: HTMLCanvasElement): LensTap;
+/** An offscreen RGBA8 render target on the current context: [texture, framebuffer]. */
+export function renderTarget(
+	gl: WebGL2RenderingContext,
+	w: number,
+	h: number,
+): [WebGLTexture, WebGLFramebuffer];
 
 /** True when WebGL2 is here and every given fragment shader compiles. */
 export function lensReady(...frags: string[]): boolean;

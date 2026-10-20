@@ -11,6 +11,7 @@ import { TitleScene } from "@/screens/title/TitleScene";
 import t from "@/screens/title/title.module.css";
 import { GlassWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
+import { Wordmark } from "@/ui/wordmark";
 import { LegacyTab } from "./LegacyTab";
 import s from "./landing.module.css";
 import { QrCode } from "./QrCode";
@@ -59,13 +60,7 @@ function Hero() {
 			</div>
 			<div className={s.heroText}>
 				<h1 className={s.wordmark}>
-					<span className={s.name}>{L.hero.name}</span>
-					<span className="sr-only">: </span>
-					<span className={s.sub}>
-						<i className={s.rule} aria-hidden="true" />
-						{L.hero.sub}
-						<i className={s.rule} aria-hidden="true" />
-					</span>
+					<Wordmark />
 				</h1>
 				<p className={s.line}>{L.hero.line}</p>
 				<div className={s.ctaRow}>

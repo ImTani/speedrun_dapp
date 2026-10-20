@@ -1,11 +1,14 @@
 import { ImageResponse } from "next/og";
 import { landing } from "@/lexicon/landing";
 import { MASK } from "@/scene/masks.js";
+import { WORDMARK_VARIANT, type WordmarkVariant } from "@/ui/wordmark/config";
+import { OgWordmark, ogWordmarkFonts } from "@/ui/wordmark/og";
 import { PLAY_URL_SHORT } from "./site";
 
 /**
  * The share card (Open Graph and Twitter): the name, the line, and the Echo mask with its
- * ember eyes. Drawn in code; no image files. The faces are fetched from Google Fonts at
+ * ember eyes. Drawn in code; no image files. The name is the wordmark (WORDMARK_VARIANT),
+ * flattened for Satori (src/ui/wordmark/og.tsx). The faces are fetched from Google Fonts at
  * build time (OFL); if that fails the card still renders in the default face.
  */
 export const OG_SIZE = { width: 1200, height: 630 };
@@ -25,7 +28,10 @@ async function font(family: string, weight: number, text: string) {
 	}
 }
 
-export async function renderOg(): Promise<ImageResponse> {
+/** `variant` picks the lettering (default: the configured one). */
+export async function renderOg(
+	variant: WordmarkVariant = WORDMARK_VARIANT,
+): Promise<ImageResponse> {
 	const H = landing.hero;
 	const svg = MASK.mask("echo", 400, {
 		variant: "gilded",
@@ -36,15 +42,17 @@ export async function renderOg(): Promise<ImageResponse> {
 	}).replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ');
 	const mask = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 
-	const [display, caps, text] = await Promise.all([
-		font("Grenze+Gotisch", 800, H.name),
-		font("Cinzel", 700, H.sub.toUpperCase()),
+	const marks = ogWordmarkFonts(variant);
+	const [text, ...faces] = await Promise.all([
 		font("Alegreya", 500, `${H.line}${PLAY_URL_SHORT}`),
+		...marks.map((m) => font(m.family, m.weight, m.text)),
 	]);
 	const fonts = [
-		display && { name: "Grenze Gotisch", data: display, weight: 800 as const },
-		caps && { name: "Cinzel", data: caps, weight: 700 as const },
 		text && { name: "Alegreya", data: text, weight: 500 as const },
+		...marks.map((m, i) => {
+			const data = faces[i];
+			return data ? { name: m.name, data, weight: m.weight } : null;
+		}),
 	].filter((f) => !!f);
 
 	return new ImageResponse(
@@ -65,28 +73,7 @@ export async function renderOg(): Promise<ImageResponse> {
 			{/* biome-ignore lint/performance/noImgElement: ImageResponse renders plain img */}
 			<img src={mask} width={400} height={400} alt="" />
 			<div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-				<div
-					style={{
-						fontFamily: "Grenze Gotisch",
-						fontSize: 156,
-						lineHeight: 0.9,
-						color: "#e9cc8a",
-						textShadow: "0 4px 0 #0b0807",
-					}}
-				>
-					{H.name}
-				</div>
-				<div
-					style={{
-						fontFamily: "Cinzel",
-						fontSize: 30,
-						letterSpacing: 9,
-						color: "#e8574d",
-						marginTop: 14,
-					}}
-				>
-					{H.sub.toUpperCase()}
-				</div>
+				<OgWordmark variant={variant} width={580} />
 				<div
 					style={{
 						fontFamily: "Alegreya",

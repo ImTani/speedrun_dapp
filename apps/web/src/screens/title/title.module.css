@@ -113,119 +113,28 @@
 	z-index: -1;
 }
 
+/* The name: an SVG lockup (src/ui/wordmark) sized in em, so this clamp() sizes it. The name and
+   the rubric are two marks so the rubric can be drawn out after the strike. */
 .mark {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 0.15em;
+	gap: 0.02em;
+	max-width: 100%;
 	margin: 0;
 	font-weight: inherit;
+	font-size: clamp(64px, 21vw, 96px);
+	line-height: 0;
 }
 .name {
 	position: relative;
-	display: grid;
-	font-family: var(--font-display);
-	font-weight: 900;
-	font-size: clamp(64px, 21vw, 96px);
-	line-height: 0.86;
-	letter-spacing: 0.01em;
+	display: block;
+	max-width: 100%;
 	will-change: transform, filter;
 }
-.nameInk,
-.nameFill {
-	grid-area: 1 / 1;
-	padding: 0 0.08em 0.06em;
-}
-/* the cut: a thick ink outline and a cast shadow on the stone */
-.nameInk {
-	color: var(--c-soot);
-	-webkit-text-stroke: 0.14em var(--c-soot);
-	text-shadow:
-		0 0.06em 0 var(--c-soot),
-		0 0.12em 0.3em #000;
-}
-/* the gilt: bone-hi to old gold, with a slow light passing along it */
-.nameFill {
-	color: transparent;
-	background:
-		linear-gradient(
-			100deg,
-			transparent 0 38%,
-			#fff6dc 47%,
-			#fff6dc 50%,
-			transparent 60% 100%
-		)
-		0 0 / 300% 100% no-repeat,
-		linear-gradient(
-			180deg,
-			var(--c-bone-hi) 0%,
-			var(--c-gilt-l) 46%,
-			var(--c-gilt) 62%,
-			var(--c-gilt-d) 100%
-		);
-	background-clip: text;
-	-webkit-background-clip: text;
-	filter: drop-shadow(0 0 18px #e3c27c40);
-	animation: sheen 7.5s 2.4s var(--ease-out) infinite;
-}
-@keyframes sheen {
-	0% {
-		background-position:
-			120% 0,
-			0 0;
-	}
-	36%,
-	100% {
-		background-position:
-			-30% 0,
-			0 0;
-	}
-}
-
 .sub {
-	display: flex;
-	align-items: center;
-	gap: 0.7em;
-	font-family: var(--font-num);
-	font-weight: 700;
-	font-size: clamp(13px, 3.9vw, 17px);
-	text-transform: uppercase;
-	color: var(--c-blood-l);
-	text-shadow:
-		0 2px 0 var(--c-soot),
-		0 0 14px #c7262c66;
-	white-space: nowrap;
-	/* letter-spacing trails the last letter; pull it back so it centres */
-	margin-right: -0.3em;
-}
-.rule {
 	display: block;
-	width: clamp(18px, 7vw, 34px);
-	height: 2px;
-	background: linear-gradient(90deg, transparent, var(--c-blood-l));
-	position: relative;
-}
-.rule:last-child {
-	transform-origin: left center;
-	background: linear-gradient(90deg, var(--c-blood-l), transparent);
-}
-.rule:first-child {
-	transform-origin: right center;
-}
-.rule::after {
-	content: "";
-	position: absolute;
-	top: 50%;
-	width: 6px;
-	height: 6px;
-	background: var(--c-blood-l);
-	transform: translateY(-50%) rotate(45deg);
-}
-.rule:first-child::after {
-	right: -3px;
-}
-.rule:last-child::after {
-	left: -3px;
+	max-width: 100%;
 }
 
 .tagline {

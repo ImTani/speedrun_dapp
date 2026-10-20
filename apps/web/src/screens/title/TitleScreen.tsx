@@ -15,6 +15,7 @@ import { LegalLinks } from "@/legal";
 import { shell } from "@/lexicon/shell";
 import { useShake } from "@/ui/motion/impact";
 import { easeIn, easeOut, pressable, spring } from "@/ui/motion/presets";
+import { Wordmark } from "@/ui/wordmark";
 import { Colophon } from "./Colophon";
 import { useTapSounds } from "./juice";
 import { TitleScene } from "./TitleScene";
@@ -91,34 +92,19 @@ export function TitleScreen({
 				<div className={s.pool} aria-hidden="true" />
 				<h1 className={s.mark}>
 					<span data-name className={s.name} style={{ opacity: 0 }}>
-						<span className={s.nameInk} aria-hidden="true">
-							{T.name}
-						</span>
-						<span className={s.nameFill}>{T.name}</span>
+						<Wordmark part="name" sheen />
 					</span>
 					<motion.span
 						className={s.sub}
-						initial={{ opacity: 0, letterSpacing: "0.7em" }}
+						initial={{ opacity: 0, clipPath: "inset(0 50% 0 50%)" }}
 						animate={
 							struck
-								? { opacity: 1, letterSpacing: "0.3em" }
-								: { opacity: 0, letterSpacing: "0.7em" }
+								? { opacity: 1, clipPath: "inset(0 0% 0 0%)" }
+								: { opacity: 0, clipPath: "inset(0 50% 0 50%)" }
 						}
-						transition={{ duration: 0.9, ease: easeOut }}
+						transition={{ duration: 0.8, ease: easeOut }}
 					>
-						<motion.i
-							className={s.rule}
-							initial={{ scaleX: 0 }}
-							animate={{ scaleX: struck ? 1 : 0 }}
-							transition={{ duration: 0.7, ease: easeOut, delay: 0.1 }}
-						/>
-						<span>{T.sub}</span>
-						<motion.i
-							className={s.rule}
-							initial={{ scaleX: 0 }}
-							animate={{ scaleX: struck ? 1 : 0 }}
-							transition={{ duration: 0.7, ease: easeOut, delay: 0.1 }}
-						/>
+						<Wordmark part="sub" defs={false} />
 					</motion.span>
 				</h1>
 

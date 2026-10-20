@@ -10,8 +10,10 @@
  */
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Atmosphere } from "@/scene/AtmosphereLayer";
+import { type EmitterHandle, registerEmitter } from "@/scene/emitters.js";
 import type { GlassApi } from "@/scene/glassgl";
-import { svgURL } from "./ink";
+import { alongArch, svgURL } from "./ink";
 import {
 	type Bleed,
 	FLOOR_Y,
@@ -80,6 +82,45 @@ export function TitleScene({
 	const [layout, setLayout] = useState<Layout | null>(null);
 	const [art, setArt] = useState<string | null>(null);
 	const [lit, setLit] = useState(false);
+	// The shader light (Atmosphere) retires the hand-drawn shafts, candle glows and dust.
+	const [rays, setRays] = useState(false);
+	const lightRef = useRef<HTMLDivElement>(null);
+	const glassRef = useRef<HTMLDivElement>(null);
+
+	// ---- where the light lives, for the atmosphere: the window, the tapers, the gilt studs ----
+	useEffect(() => {
+		const stage = lightRef.current;
+		const glass = glassRef.current;
+		if (!stage || !glass) return;
+		const hs: EmitterHandle[] = [
+			registerEmitter({ kind: "glass", anchor: glass, color: GLASS_TINT }),
+			...CANDLES.map((c, i) =>
+				registerEmitter({
+					kind: "candle",
+					anchor: stage,
+					x: c.x / STAGE_W,
+					y: c.flame / STAGE_H,
+					base: c.base / STAGE_H,
+					radius: 36 / STAGE_W,
+					color: "#ffb35c",
+					phase: 0.21 + i * 0.47,
+				}),
+			),
+			...GLINTS.map(([x, y], i) =>
+				registerEmitter({
+					kind: "gilt",
+					anchor: stage,
+					x: x / STAGE_W,
+					y: y / STAGE_H,
+					radius: 13 / STAGE_W,
+					phase: i / GLINTS.length,
+				}),
+			),
+		];
+		return () => {
+			for (const h of hs) h.remove();
+		};
+	}, []);
 	const reduce = useReducedMotion();
 
 	// ---- fit the stage; re-measure on resize (debounced) ----
@@ -205,7 +246,7 @@ export function TitleScene({
 						transition={{ duration: 1.1, ease: "easeOut" }}
 					/>
 				)}
-				<Shafts reduce={!!reduce} />
+				{!rays && <Shafts reduce={!!reduce} />}
 			</div>
 
 			<motion.canvas
@@ -218,6 +259,7 @@ export function TitleScene({
 			/>
 
 			<motion.div
+				ref={glassRef}
 				className={s.glass}
 				style={glassStyle}
 				initial={{ opacity: 0, filter: "brightness(0.25)" }}
@@ -235,10 +277,17 @@ export function TitleScene({
 				<canvas key={`w${glassKey}`} ref={winRef} className={s.glassGL} />
 			</motion.div>
 
-			<div className={s.stage} style={stageStyle}>
-				<Candles reduce={!!reduce} />
-				{!reduce && <Motes />}
+			<div ref={lightRef} className={s.stage} style={stageStyle}>
+				<Candles reduce={!!reduce} glow={!rays} />
+				{!reduce && !rays && <Motes />}
 			</div>
+
+			{/* Post-processing over the nave, under the title's words (they sit in a higher layer). */}
+			<Atmosphere
+				floor={layout ? (layout.top + FLOOR_Y * layout.scale) / layout.h : 0.58}
+				lean={0.12}
+				onLight={setRays}
+			/>
 		</div>
 	);
 }
@@ -287,9 +336,32 @@ function Shafts({ reduce }: { reduce: boolean }) {
 	);
 }
 
+/** The window's light colour for the atmosphere until its shader is tapped (vesper amber). */
+const GLASS_TINT = "#f0a95a";
+/** The two sill tapers: x, the sill they stand on, the centre of the flame (stage units). */
+const CANDLE_X = [WIN.cx - WIN.w / 2 - 6, WIN.cx + WIN.w / 2 + 6] as const;
+const CANDLE_H = [38, 30] as const;
+const CANDLES = CANDLE_X.map((x, i) => ({
+	x,
+	base: WIN_BOT + 2,
+	flame: WIN_BOT + 2 - (CANDLE_H[i] ?? 34) - 10,
+}));
+/**
+ * Gilt glints: the highlights of a few studs around the arch (nave.ts draws 27 along radius
+ * R0 + 22; each stud's highlight sits at -1.5, -1.6). Sparse on purpose.
+ */
+const GLINTS = (() => {
+	const r0 = WIN.w / 2;
+	const pts = alongArch(WIN.cx, r0 + 22, WIN.top + r0, WIN_BOT, 27);
+	return [5, 11, 16, 22]
+		.map((i) => pts[i])
+		.filter((p): p is [number, number] => !!p)
+		.map(([x, y]) => [x - 1.5, y - 1.6] as const);
+})();
+
 /** Two tapers on the sill, flames that never sit still. */
-function Candles({ reduce }: { reduce: boolean }) {
-	const at = [WIN.cx - WIN.w / 2 - 6, WIN.cx + WIN.w / 2 + 6];
+function Candles({ reduce, glow }: { reduce: boolean; glow: boolean }) {
+	const at = CANDLE_X;
 	const base = WIN_BOT + 2;
 	return (
 		<svg
@@ -315,23 +387,26 @@ function Candles({ reduce }: { reduce: boolean }) {
 				</radialGradient>
 			</defs>
 			{at.map((x, i) => {
-				const h = i ? 30 : 38;
+				const h = CANDLE_H[i] ?? 34;
 				const top = base - h;
 				return (
 					<g key={x}>
-						<motion.circle
-							cx={x}
-							cy={top - 8}
-							r="34"
-							fill="url(#ts-candle)"
-							style={{ mixBlendMode: "screen" }}
-							animate={reduce ? {} : { opacity: [0.8, 1, 0.7, 0.95, 0.8] }}
-							transition={{
-								duration: 2.6 + i * 0.7,
-								repeat: Number.POSITIVE_INFINITY,
-								ease: "easeInOut",
-							}}
-						/>
+						{/* The shader light draws the flame's halo when it runs. */}
+						{glow && (
+							<motion.circle
+								cx={x}
+								cy={top - 8}
+								r="34"
+								fill="url(#ts-candle)"
+								style={{ mixBlendMode: "screen" }}
+								animate={reduce ? {} : { opacity: [0.8, 1, 0.7, 0.95, 0.8] }}
+								transition={{
+									duration: 2.6 + i * 0.7,
+									repeat: Number.POSITIVE_INFINITY,
+									ease: "easeInOut",
+								}}
+							/>
+						)}
 						<path
 							d={`M${x - 5} ${base} V${top + 2} Q${x - 5} ${top} ${x - 2} ${top} H${x + 3} Q${x + 5} ${top} ${x + 5} ${top + 3} V${base} Z`}
 							fill="url(#ts-wax)"

@@ -6,6 +6,8 @@
  *
  *   /_brand?a=logo&bg=dark|clear|maskable      square, fills the viewport
  *   /_brand?a=wordmark&lay=stack|row&bg=dark|clear
+ *   ...&wordmark=gilded|illuminated|engraved|hybrid (or a-d) on any of them: the lettering
+ *   (default: WORDMARK_VARIANT in src/ui/wordmark/config.ts). Side by side: /_brand/wordmarks
  *   /_brand?a=cover                              840 x 300 (capture at DPR 1 and 2)
  *   /_brand?a=key[&mark=0]                       1920 x 1080 key art (title nave + wordmark)
  *   /_brand?a=logosvg&bg=dark|maskable[&show=1] the logo as one flat SVG, written to #svgout
@@ -22,11 +24,19 @@ import {
 	useState,
 } from "react";
 import { L } from "@/lexicon";
+import { Atmosphere } from "@/scene/AtmosphereLayer";
 import { svgURL } from "@/screens/title/ink";
 import { naveBox, naveSVG } from "@/screens/title/nave";
 import { TitleScene } from "@/screens/title/TitleScene";
 import { GlassWindow, RoseWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
+import {
+	parseWordmarkVariant,
+	WORDMARK_VARIANT,
+	Wordmark,
+	type WordmarkVariant,
+	wordmarkEm,
+} from "@/ui/wordmark";
 import b from "./brand.module.css";
 
 type Q = Record<string, string>;
@@ -114,6 +124,7 @@ function Index() {
 		"?a=key",
 		"?a=masks",
 		"?a=frame&cap=Climb%20the%20Spire",
+		"/wordmarks",
 	];
 	return (
 		<ul className={b.index}>
@@ -128,59 +139,22 @@ function Index() {
 
 // ---------------------------------------------------------------- the wordmark
 
-/** The title's lettering: gilt blackletter name over the blood Cinzel rubric with its rules. */
-export function Wordmark({
-	size,
-	lay = "stack",
-	style,
-}: {
-	/** Cap size of the name in px. */
-	size: number;
-	lay?: "stack" | "row";
-	style?: CSSProperties;
-}) {
-	return (
-		<div className={b.mark} data-lay={lay} style={{ fontSize: size, ...style }}>
-			<span className={b.name}>
-				<span className={b.nameInk} aria-hidden="true">
-					Apostasy
-				</span>
-				<span className={b.nameFill}>Apostasy</span>
-			</span>
-			<span className={b.sub}>
-				<i className={b.rule} />
-				<span>Sede Vacante</span>
-				<i className={b.rule} />
-			</span>
-		</div>
-	);
-}
+/** The lettering for this render: `?wordmark=` or the configured default. */
+const markOf = (q: Q): WordmarkVariant =>
+	parseWordmarkVariant(q.wordmark) ?? WORDMARK_VARIANT;
 
 function WordmarkPlate({ q, w, h }: { q: Q; w: number; h: number }) {
-	const lay = q.lay === "row" ? "row" : "stack";
+	const layout = q.lay === "row" ? "horizontal" : "stacked";
+	const variant = markOf(q);
 	const pad = num(q.pad, 0.09);
-	const ref = useRef<HTMLDivElement>(null);
-	const [size, setSize] = useState(100);
-	// Fit: measure at 100 px once the faces are in, then scale to the plate less its padding.
-	useEffect(() => {
-		let dead = false;
-		document.fonts.ready.then(() => {
-			const el = ref.current?.firstElementChild as HTMLElement | null;
-			if (dead || !el) return;
-			const r = el.getBoundingClientRect();
-			const k = Math.min(
-				(w * (1 - 2 * pad)) / r.width,
-				(h * (1 - 2 * pad)) / r.height,
-			);
-			setSize(Math.floor(100 * k));
-		});
-		return () => {
-			dead = true;
-		};
-	}, [w, h, pad]);
+	// The lockup is laid out from glyph tables, so its em box is known: fit it to the plate.
+	const em = wordmarkEm(variant, layout);
+	const size = Math.floor(
+		Math.min((w * (1 - 2 * pad)) / em.w, (h * (1 - 2 * pad)) / em.h),
+	);
 	return (
-		<div ref={ref} className={b.plate} data-bg={q.bg ?? "dark"}>
-			<Wordmark size={size} lay={lay} />
+		<div className={b.plate} data-bg={q.bg ?? "dark"}>
+			<Wordmark variant={variant} layout={layout} size={size} />
 		</div>
 	);
 }
@@ -282,7 +256,7 @@ function LogoSvg({ size, q, ready }: { size: number; q: Q; ready: boolean }) {
 // ---------------------------------------------------------------- the ink stone
 
 /** The title nave's ink stone as a backdrop image, centred on its window, at `scale`. */
-function NaveBackdrop({
+export function NaveBackdrop({
 	w,
 	h,
 	scale,
@@ -320,14 +294,36 @@ function NaveBackdrop({
 
 // ---------------------------------------------------------------- cover
 
-/** Wide face-off: two masked Fragments in lit arched windows, the name between them. */
-function Cover({ w, h, q }: { w: number; h: number; q: Q }) {
+/**
+ * Wide face-off: two masked Fragments in lit arched windows, the name between them.
+ * `variant` overrides ?wordmark=; `shader={false}` shows the glass as its finished SVG art.
+ */
+export function Cover({
+	w,
+	h,
+	q,
+	variant,
+	shader = true,
+	defs = true,
+}: {
+	w: number;
+	h: number;
+	q: Q;
+	variant?: WordmarkVariant;
+	shader?: boolean;
+	/** Pass false when the page already carries the wordmark defs. */
+	defs?: boolean;
+}) {
 	const winW = num(q.win, 148);
 	const floor = num(q.floor, 274);
 	const inset = num(q.inset, 84);
 	const left = num(q.al, 2);
 	const right = num(q.ar, 5);
 	const winH = (winW * 420) / 300;
+	const mark = variant ?? markOf(q);
+	// The name fits between the windows whatever its lettering.
+	const room = w - 2 * (inset + winW) - 24;
+	const size = Math.min(num(q.ms, 88), room / wordmarkEm(mark).w);
 	return (
 		<div className={b.cover} style={{ width: w, height: h }}>
 			<NaveBackdrop
@@ -343,16 +339,18 @@ function Cover({ w, h, q }: { w: number; h: number; q: Q }) {
 				className={b.coverWin}
 				style={{ left: inset, top: floor - winH, width: winW }}
 			>
-				<GlassWindow aspect={left} width={winW} />
+				<GlassWindow aspect={left} width={winW} shader={shader} />
 			</div>
 			<div
 				className={b.coverWin}
 				style={{ right: inset, top: floor - winH, width: winW }}
 			>
-				<GlassWindow aspect={right} width={winW} />
+				<GlassWindow aspect={right} width={winW} shader={shader} />
 			</div>
+			{/* Post-processing over the nave and glass, under the name (a later layer). */}
+			<Atmosphere floor={floor / h} lean={0} rise={0.7} />
 			<div className={b.coverMark} style={{ top: num(q.my, 0.47) * h }}>
-				<Wordmark size={num(q.ms, 88)} lay="stack" />
+				<Wordmark variant={mark} size={size} defs={defs} />
 			</div>
 		</div>
 	);
@@ -362,6 +360,8 @@ function Cover({ w, h, q }: { w: number; h: number; q: Q }) {
 
 /** The title nave with the wordmark struck over the floor. */
 function KeyArt({ w, h, q }: { w: number; h: number; q: Q }) {
+	const mark = markOf(q);
+	const size = Math.min(num(q.ms, 0.17) * h, (w * 0.86) / wordmarkEm(mark).w);
 	return (
 		<div className={b.key} style={{ width: w, height: h }}>
 			<div className={b.keyScene}>
@@ -371,7 +371,7 @@ function KeyArt({ w, h, q }: { w: number; h: number; q: Q }) {
 				<>
 					<div className={b.keyPool} />
 					<div className={b.keyMark} style={{ top: num(q.my, 0.745) * h }}>
-						<Wordmark size={num(q.ms, 0.17) * h} lay="stack" />
+						<Wordmark variant={mark} size={size} />
 					</div>
 				</>
 			)}
