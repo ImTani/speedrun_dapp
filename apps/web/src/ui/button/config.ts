@@ -22,7 +22,7 @@ export const BUTTON_LOOKS = [
 export type ButtonLook = (typeof BUTTON_LOOKS)[number];
 
 /** The shipped look. Unchanged until the owner picks. */
-export const BUTTON_STYLE: ButtonLook = "current";
+export const BUTTON_STYLE: ButtonLook = "wax";
 
 export const isButtonLook = (v: unknown): v is ButtonLook =>
 	typeof v === "string" && (BUTTON_LOOKS as readonly string[]).includes(v);

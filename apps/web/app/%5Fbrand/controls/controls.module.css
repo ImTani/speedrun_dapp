@@ -1,0 +1,252 @@
+/* biome-ignore-all lint/complexity/noImportantStyles: the forced states must beat motion's inline transforms and the screens' own classes on a dev-only sheet. */
+/* biome-ignore-all lint/style/noDescendingSpecificity: forced-state rules sit together, after the layout rules. */
+/* The controls review sheet (dev only). Layout only: every control is drawn by its own class. */
+
+.page {
+	min-height: 100dvh;
+	padding: 26px 24px 64px;
+	background: var(--c-void);
+	color: var(--c-bone);
+	font-family: var(--font-text);
+}
+.head,
+.section {
+	max-width: 852px;
+	margin: 0 auto;
+}
+.section {
+	margin-top: 34px;
+}
+.h1 {
+	margin: 0 0 6px;
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: 30px;
+	color: var(--c-bone-hi);
+}
+.lede {
+	margin: 0;
+	max-width: 74ch;
+	font-size: 14.5px;
+	line-height: 1.45;
+	color: var(--c-bone);
+}
+.lede code {
+	font-size: 13px;
+	color: var(--c-gilt-l);
+}
+.h2 {
+	margin: 0 0 4px;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: 13px;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--c-gilt);
+}
+.sub {
+	margin: 0 0 14px;
+	max-width: 80ch;
+	font-size: 13.5px;
+	line-height: 1.4;
+	color: var(--c-bone-d);
+}
+
+/* items: one phone column (390) each, packed into two columns at 900 */
+.grid {
+	columns: 2 390px;
+	column-gap: 20px;
+}
+.item {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: min(390px, 100%);
+	margin-bottom: 20px;
+	break-inside: avoid;
+	padding: 12px 12px 14px;
+	background: linear-gradient(#1a1210, #0b0807);
+	box-shadow: inset 0 0 0 1px #2b1e16;
+}
+.item[data-wide] {
+	width: 100%;
+	column-span: all;
+}
+.cap {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+.name {
+	margin: 0;
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: 17px;
+	line-height: 1.15;
+	color: var(--c-bone-hi);
+}
+.where {
+	margin: 0;
+	font-size: 12.5px;
+	line-height: 1.35;
+	color: var(--c-bone-d);
+}
+.uses {
+	margin-left: 4px;
+	padding: 1px 6px;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: 10px;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	white-space: nowrap;
+	color: var(--c-gilt-l);
+	box-shadow: inset 0 0 0 1px var(--c-gilt-d);
+}
+.note {
+	margin: 0;
+	font-size: 12.5px;
+	font-style: italic;
+	line-height: 1.35;
+	color: #c9b48a;
+}
+
+.cells {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 14px 14px;
+}
+.cells[data-flush] {
+	margin-inline: -12px;
+}
+.cell {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+.cell[data-size="full"] {
+	flex: 1 1 100%;
+}
+.cell[data-size="half"] {
+	flex: 1 1 calc(50% - 7px);
+}
+.state {
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: 10px;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--c-bone-dd);
+}
+.cells[data-flush] .state {
+	padding-inline: 12px;
+}
+/* the Gathering's round boss stands 22px above the ledge */
+.raise {
+	width: 100%;
+	padding-top: 24px;
+}
+.body {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+}
+.cell[data-size] > .body > * {
+	flex: 1 1 auto;
+}
+
+/* Forced states for controls that only show them under a finger or the keyboard
+   (approximations of :active and :focus-visible, marked with "≈" in the state label). */
+.body[data-force="press"] > * {
+	transform: translateY(2px) scale(0.96) !important;
+}
+.body[data-force="soft"] > * {
+	transform: scale(0.92) !important;
+}
+.body[data-force="focus"] > * {
+	outline: 2px solid var(--c-gilt) !important;
+	outline-offset: 2px !important;
+}
+.body[data-force="focusIn"] > * {
+	outline: 2px solid var(--c-gilt) !important;
+	outline-offset: -6px !important;
+}
+
+/* small stands-in for the place a control sits */
+.closeBox {
+	position: relative;
+	width: 56px;
+	height: 56px;
+}
+.sheetBox {
+	width: 100%;
+	padding-top: 8px;
+	background:
+		radial-gradient(120% 40% at 50% 0%, #3a2c2240, transparent 70%),
+		linear-gradient(180deg, #1f150f 0%, #120c0a 30%, #0b0807 100%);
+	border-top: 3px solid var(--c-soot);
+}
+.retuneBox {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	padding: 8px 14px 4px;
+	background: linear-gradient(#2a1d14, #140e0b 40%);
+	border-top: 4px solid var(--c-soot);
+}
+.dim {
+	width: 100%;
+	padding: 14px 10px;
+	background: #050403d9;
+}
+.gathering {
+	height: auto !important;
+	min-height: 0 !important;
+	width: 100%;
+	padding: 12px 0;
+}
+.stack {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: 100%;
+}
+.landing {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: 22px 44px;
+	width: 100%;
+	padding: 26px 28px;
+	background:
+		radial-gradient(60% 90% at 25% 50%, #3a2c2280, transparent 70%),
+		var(--c-void);
+}
+.landingCol {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 12px;
+	min-width: 0;
+}
+
+@media (max-width: 500px) {
+	.page {
+		padding: 18px 0 40px;
+	}
+	.head,
+	.sub,
+	.h2 {
+		padding-inline: 14px;
+	}
+	.grid {
+		gap: 14px;
+	}
+	.landing {
+		padding: 20px 14px;
+	}
+}
