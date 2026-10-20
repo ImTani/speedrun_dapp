@@ -12,6 +12,7 @@ import { gathering as T } from "@/lexicon/gathering.ts";
 import { Mask } from "@/ui/Mask";
 import { pressable, scrim, sheet } from "@/ui/motion";
 import { Rubric } from "@/ui/type";
+import { useBackToClose } from "@/ui/useBackToClose";
 import css from "./gathering.module.css";
 import { aspectName, low } from "./model.ts";
 import type { StandingsRow } from "./types.ts";
@@ -87,6 +88,8 @@ export function LedgerSheet({
 	const drag = useDragControls();
 	const titleId = useId();
 	const closeRef = useRef<HTMLButtonElement>(null);
+	// Android back closes the sheet rather than leaving the app.
+	useBackToClose(open, onClose);
 
 	useEffect(() => {
 		if (!open) return;

@@ -29,6 +29,11 @@
 		inset 0 5px 0 var(--c-soot),
 		0 -14px 28px #000c;
 }
+/* The soft keyboard is up (src/ui/appFrame.ts): the ledge steps aside so the field and its
+   action keep the little screen that is left. */
+:global(html[data-kb]) .bar {
+	display: none;
+}
 /* an ink moulding line above the ledge */
 .bar::before {
 	content: "";

@@ -330,8 +330,8 @@
 	text-decoration-color: #e3c27c80;
 	text-underline-offset: 3px;
 	/* a taller hit area without moving the line */
-	padding: 10px 0;
-	margin: -10px 0;
+	padding: 13px 0;
+	margin: -13px 0;
 }
 
 /* Terms · Privacy · Cookies · Credits along the foot. */
@@ -514,4 +514,10 @@
 		0 calc(100% - var(--cut)),
 		0 var(--cut)
 	);
+}
+
+/* clip-path cuts an outside outline: the keyboard focus ring is drawn inside the slab. */
+.cta:focus-visible,
+.leafClose:focus-visible {
+	outline-offset: -6px;
 }

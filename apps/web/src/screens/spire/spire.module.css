@@ -607,3 +607,8 @@
 	font-size: var(--fs-body);
 	color: var(--c-bone);
 }
+
+/* clip-path cuts an outside outline: the keyboard focus ring is drawn inside the slab. */
+.floor:focus-visible {
+	outline-offset: -6px;
+}

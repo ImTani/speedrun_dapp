@@ -16,6 +16,9 @@ export const shell = {
 		},
 	},
 
+	/** A phone held sideways: the game is drawn upright. */
+	rotate: "Turn your phone upright",
+
 	/** Accessible name of the tab bar. */
 	ways: "Main",
 	tabs: {

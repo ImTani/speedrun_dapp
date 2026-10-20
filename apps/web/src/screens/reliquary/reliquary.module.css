@@ -175,8 +175,14 @@
 	flex-direction: column;
 	align-items: center;
 	gap: 4px;
+	width: 100%;
+	min-width: 0;
 }
 .plateName {
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 	font-family: var(--font-roman);
 	font-weight: 700;
 	font-size: var(--fs-lead);
@@ -347,4 +353,9 @@
 .titleSwatch > span + span {
 	width: 64%;
 	background: var(--c-bone-d);
+}
+
+/* clip-path cuts an outside outline: the keyboard focus ring is drawn inside the slab. */
+.cta:focus-visible {
+	outline-offset: -6px;
 }

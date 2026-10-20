@@ -13,11 +13,12 @@ import {
 	type StrategyId,
 } from "@arena/strategies";
 import { AnimatePresence, motion } from "motion/react";
-import { useRef, useState } from "react";
+import { type RefObject, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { buzz, HAPTIC, play } from "@/audio";
 import { fx } from "@/fx";
 import { L } from "@/lexicon";
+import { useKeepAboveKeyboard } from "@/ui/appFrame";
 import { coachAct } from "@/ui/coach/signal";
 import { Mask } from "@/ui/Mask";
 import { IMPACT, impact, pressable, spring, useShake } from "@/ui/motion";
@@ -29,6 +30,11 @@ import { type Api, divineName, errText, wait } from "./shared";
 import { WaxSeal } from "./WaxSeal";
 
 type Step = 0 | 1 | 2;
+
+/** The server's limit (app/api/fragment/route.ts). */
+const NAME_MAX = 24;
+/** The count shows from here on. */
+const NAME_COUNT_FROM = 18;
 
 const stepSwap = {
 	enter: (d: number) => ({ opacity: 0, x: 36 * d, filter: "blur(4px)" }),
@@ -59,9 +65,10 @@ export function BindRitual({
 	>(null);
 	const [err, setErr] = useState<string | null>(null);
 	const shaker = useShake<HTMLDivElement>();
+	const bindRef = useRef<HTMLButtonElement>(null);
 
 	const trimmed = name.trim();
-	const nameOk = trimmed.length >= 1 && trimmed.length <= 24;
+	const nameOk = trimmed.length >= 1 && trimmed.length <= NAME_MAX;
 	const a = L.aspects[aspect] ?? L.aspects[0];
 
 	const goto = (n: Step) => {
@@ -227,23 +234,15 @@ export function BindRitual({
 										size="lg"
 									/>
 								</motion.div>
-								<label className={s.nameField} data-coach="name">
-									<span className="sr-only">{L.bind.nameLabel}</span>
-									<input
-										value={name}
-										maxLength={24}
-										placeholder={L.bind.namePlaceholder}
-										onChange={(e) => {
-											setName(e.target.value);
-											if (e.target.value.trim()) coachAct("name");
-										}}
-										disabled={!!pour}
-										autoComplete="off"
-										autoCapitalize="words"
-										spellCheck={false}
-										enterKeyHint="done"
-									/>
-								</label>
+								<NameField
+									name={name}
+									disabled={!!pour}
+									action={bindRef}
+									onChange={(v) => {
+										setName(v);
+										if (v.trim()) coachAct("name");
+									}}
+								/>
 								<motion.button
 									type="button"
 									className={s.divine}
@@ -285,6 +284,7 @@ export function BindRitual({
 				{err && <p className="banner">{err}</p>}
 				{step < 2 ? (
 					<motion.button
+						key="next"
 						type="button"
 						className="btn btn-blood"
 						onClick={() => {
@@ -297,7 +297,10 @@ export function BindRitual({
 						{step === 0 ? L.bind.wear : L.bind.carve}
 					</motion.button>
 				) : (
+					// Keyed apart from "Next": motion binds its ref once, at mount.
 					<motion.button
+						key="bind"
+						ref={bindRef}
 						type="button"
 						className="btn btn-blood"
 						onClick={bind}
@@ -310,6 +313,65 @@ export function BindRitual({
 				)}
 			</footer>
 		</div>
+	);
+}
+
+/**
+ * The name field. While the keyboard is up, the field and the Bind button (`action`) both stay in
+ * sight (the footer joins the flow under the field, see fragment.module.css). "Done" on the
+ * keyboard closes it, leaving Bind right there.
+ */
+function NameField({
+	name,
+	disabled,
+	action,
+	onChange,
+}: {
+	name: string;
+	disabled: boolean;
+	action: RefObject<HTMLButtonElement | null>;
+	onChange: (v: string) => void;
+}) {
+	const input = useRef<HTMLInputElement>(null);
+	useKeepAboveKeyboard(input, action);
+	const n = name.length;
+	const showCount = n >= NAME_COUNT_FROM;
+	return (
+		<label className={s.nameField} data-coach="name">
+			<span className="sr-only">{L.bind.nameLabel}</span>
+			<input
+				ref={input}
+				type="text"
+				value={name}
+				maxLength={NAME_MAX}
+				placeholder={L.bind.namePlaceholder}
+				onChange={(e) => onChange(e.target.value)}
+				onKeyDown={(e) => {
+					if (e.key === "Enter") {
+						e.preventDefault();
+						e.currentTarget.blur();
+					}
+				}}
+				disabled={disabled}
+				autoComplete="off"
+				autoCorrect="off"
+				autoCapitalize="words"
+				spellCheck={false}
+				enterKeyHint="done"
+				aria-describedby={showCount ? "name-count" : undefined}
+			/>
+			{showCount ? (
+				<span
+					id="name-count"
+					className={s.nameCount}
+					data-full={n >= NAME_MAX ? "1" : undefined}
+					aria-live="polite"
+				>
+					<span aria-hidden="true">{L.bind.nameCount(n, NAME_MAX)}</span>
+					<span className="sr-only">{L.bind.nameCountLabel(NAME_MAX - n)}</span>
+				</span>
+			) : null}
+		</label>
 	);
 }
 

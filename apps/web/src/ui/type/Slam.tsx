@@ -53,6 +53,23 @@ export function slamLines(text: string): string[] {
 	return [t.slice(0, best), t.slice(best + 1)];
 }
 
+/**
+ * A line's width in average letters: wide letters count for more, so a 24-letter name of
+ * W's and M's sizes down to fit instead of running off both edges (nowrap).
+ */
+function slamWidth(line: string): number {
+	let w = 0;
+	for (const c of line)
+		w += /[WM]/.test(c)
+			? 1.5
+			: /[wm]/.test(c)
+				? 1.3
+				: c !== c.toLowerCase()
+					? 1.15
+					: 1;
+	return w;
+}
+
 /** Character ranges of `names` in `t`, in order, each searched after the previous one. */
 function nameRanges(t: string, names: readonly string[]): [number, number][] {
 	const out: [number, number][] = [];
@@ -124,7 +141,7 @@ export function Slam({
 		[sub],
 	);
 	const subKey = subs.join("\u0001");
-	const longest = Math.max(...lines.map((l) => l.length), 4);
+	const longest = Math.max(...lines.map(slamWidth), 4);
 
 	// Latest callbacks, without replaying the slam when they change.
 	const fireImpact = useEffectEvent(() => onImpact?.());

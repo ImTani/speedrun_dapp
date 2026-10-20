@@ -127,21 +127,23 @@
 	padding: 0;
 }
 
-/* ---- Full-bleed phone base ---- */
+/* ---- Full-bleed phone base ----
+   The document is the scroller on reading pages (landing, legal). `clip`, not `hidden`:
+   overflow-x:hidden on both html and body turned body into its own (non-overflowing)
+   scroll container, and with overscroll-behavior:none on it no wheel or swipe could
+   chain to the page; only the scrollbar moved it. */
 html {
 	width: 100%;
-	height: 100%;
+	min-height: 100%;
 	background: var(--c-void);
 	-webkit-text-size-adjust: 100%;
 	text-size-adjust: 100%;
-	overflow-x: hidden;
-	overscroll-behavior: none;
+	overflow-x: clip;
 }
 body {
 	width: 100%;
 	min-height: 100dvh;
-	overflow-x: hidden;
-	overscroll-behavior: none;
+	overflow-x: clip;
 	background: var(--c-void);
 	color: var(--c-bone);
 	font-family: var(--font-book);
@@ -159,6 +161,78 @@ body {
 	-webkit-user-select: none;
 	user-select: none;
 }
+/* The game (/play, src/ui/appFrame.ts sets the class): a full-bleed app. The document never
+   scrolls, bounces or pulls to refresh; each screen scrolls inside its own container. */
+html.app-frame,
+html.app-frame body {
+	height: 100%;
+	overflow: hidden;
+	overscroll-behavior: none;
+}
+
+/* A phone held sideways in the game: the screens are drawn upright, so ask for that rather
+   than show a squashed, clipped shell. Tablets and desktops (taller, or fine pointers) never see it. */
+.rotate-hint {
+	display: none;
+}
+@media (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+	.rotate-hint {
+		position: fixed;
+		inset: 0;
+		z-index: calc(var(--z-modal) + 20);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 14px;
+		padding: var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);
+		background:
+			radial-gradient(60% 70% at 50% 40%, #2a1c14 0%, transparent 70%),
+			var(--c-void);
+		color: var(--c-bone);
+		font-family: var(--font-roman);
+		font-size: var(--fs-lead);
+		text-align: center;
+	}
+	.rotate-hint svg {
+		fill: none;
+		stroke: var(--c-gilt-l);
+		stroke-width: 2.2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		filter: drop-shadow(0 0 10px #e3c27c44);
+	}
+}
+
+/* Scrollbars: thin, a dark umber groove with a quiet gilt thumb. Inherited, so the game's
+   inner scrollers get it too. Mobile overlay scrollbars are left to the platform. */
+html {
+	scrollbar-color: #8a6d38 #1a120d;
+}
+* {
+	scrollbar-width: thin;
+}
+@supports not (scrollbar-color: auto) {
+	::-webkit-scrollbar {
+		width: 10px;
+		height: 10px;
+	}
+	::-webkit-scrollbar-track {
+		background: #1a120d;
+	}
+	::-webkit-scrollbar-thumb {
+		background: #8a6d38;
+		border: 2px solid #1a120d;
+		border-radius: 999px;
+	}
+	::-webkit-scrollbar-thumb:hover {
+		background: var(--c-gilt);
+	}
+	::-webkit-scrollbar-corner {
+		background: #1a120d;
+	}
+}
+
 input,
 textarea,
 [contenteditable="true"],
@@ -319,6 +393,10 @@ main {
 	transition:
 		transform 0.08s,
 		filter 0.2s;
+}
+/* clip-path cuts an outside outline: the keyboard focus ring is drawn inside the slab. */
+.btn:focus-visible {
+	outline-offset: -6px;
 }
 .btn:active:not(:disabled) {
 	transform: translateY(2px) scale(0.99);

@@ -178,6 +178,10 @@ export const L = {
 		nameHint: "Everyone sees it in the Gathering.",
 		nameLabel: "Name",
 		namePlaceholder: "Up to 24 letters",
+		/** Shown under the field as the name nears the limit. */
+		nameCount: (n: number, max: number) => `${n} / ${max}`,
+		nameCountLabel: (left: number) =>
+			left === 1 ? "1 letter left" : `${left} letters left`,
 		divine: "Suggest a name",
 		submit: "Bind",
 		binding: "Binding…",

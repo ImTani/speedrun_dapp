@@ -279,3 +279,8 @@
 		inset 0 0 0 1px var(--c-gilt),
 		0 0 12px #e8c46a33;
 }
+
+/* clip-path cuts an outside outline: the keyboard focus ring is drawn inside the slab. */
+.buy:focus-visible {
+	outline-offset: -6px;
+}

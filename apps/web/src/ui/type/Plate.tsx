@@ -84,6 +84,8 @@ export function Plate({
 		"data-align": align,
 		"data-variant": variant,
 		"data-marked": marked ? "true" : "false",
+		// Long names (up to 24) step the large plate's letters down before the ellipsis.
+		"data-long": name.length > 18 ? 2 : name.length > 12 ? 1 : 0,
 	};
 
 	return animated ? (

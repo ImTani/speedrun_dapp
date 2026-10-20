@@ -17,6 +17,7 @@ import { audio } from "@/lexicon/audio";
 import { shell } from "@/lexicon/shell";
 import { ATTRIBUTION_PATH, MASK_CREDITS } from "@/ui/masks/credits";
 import { pressable, scrim, sheet } from "@/ui/motion/presets";
+import { useBackToClose } from "@/ui/useBackToClose";
 import s from "./title.module.css";
 
 const C = shell.colophon;
@@ -36,6 +37,8 @@ export function Colophon({
 }) {
 	const headId = useId();
 	const closeRef = useRef<HTMLButtonElement>(null);
+	// Android back closes the sheet rather than leaving the app.
+	useBackToClose(open, onClose);
 
 	useEffect(() => {
 		if (!open) return;

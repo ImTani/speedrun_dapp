@@ -29,3 +29,7 @@
 		var(--c-soot-2);
 	will-change: transform, opacity;
 }
+/* iOS lays the keyboard over a fixed layout: let the way scroll its content clear of it. */
+:global(html[data-kb]) .way {
+	padding-bottom: var(--kb, 0px);
+}

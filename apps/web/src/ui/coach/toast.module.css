@@ -12,6 +12,10 @@
 	padding: 0 var(--pad-r) 0 var(--pad-l);
 	pointer-events: none;
 }
+/* Keyboard up (src/ui/appFrame.ts): the tab bar is gone; ride just above the keys instead. */
+:global(html[data-kb]) .dock {
+	bottom: calc(var(--kb, 0px) + 14px);
+}
 
 .toast {
 	max-width: min(340px, 100%);

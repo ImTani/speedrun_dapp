@@ -36,6 +36,7 @@ import {
 	useShake,
 } from "@/ui/motion";
 import { Count, Plate, Rubric, Slam } from "@/ui/type";
+import { useBackToClose } from "@/ui/useBackToClose";
 import s from "./fragment.module.css";
 import { MarksShelf, PushToggle, StandingCard, useHud, VigilCard } from "./Hud";
 import h from "./hud.module.css";
@@ -364,6 +365,18 @@ function RetuneSheet({
 	const changed = (Object.keys(knobs) as (keyof Knobs)[]).some(
 		(k) => knobs[k] !== draft[k],
 	);
+	// Back (Android) and Escape close it, as the scrim does; not while the carving is in flight.
+	const dismiss = () => {
+		if (!busy) onClose();
+	};
+	useBackToClose(true, dismiss);
+	useEffect(() => {
+		const onKey = (e: KeyboardEvent) => {
+			if (e.key === "Escape" && !busy) onClose();
+		};
+		window.addEventListener("keydown", onKey);
+		return () => window.removeEventListener("keydown", onKey);
+	}, [busy, onClose]);
 
 	const carve = async () => {
 		setBusy(true);
@@ -386,7 +399,7 @@ function RetuneSheet({
 			<motion.div
 				className={s.scrim}
 				{...enter(scrim)}
-				onClick={busy ? undefined : onClose}
+				onClick={dismiss}
 				aria-hidden="true"
 			/>
 			<motion.div

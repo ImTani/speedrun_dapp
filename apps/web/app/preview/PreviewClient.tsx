@@ -31,6 +31,7 @@ import { SpireScreen } from "@/screens/spire/SpireScreen";
 import { GameShell } from "@/screens/title/Shell";
 import { TitleScreen } from "@/screens/title/TitleScreen";
 import { VestryScreen } from "@/screens/vestry/VestryScreen";
+import { useAppFrame } from "@/ui/appFrame";
 import { GlassWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
 import { MotionRoot } from "@/ui/motion/MotionRoot";
@@ -254,6 +255,7 @@ export function PreviewClient(p: {
 	if (p.screen === "title")
 		return (
 			<MotionRoot key={key}>
+				<AppFrame />
 				<TitlePreview ready={p.state !== "waking"} />
 			</MotionRoot>
 		);
@@ -263,6 +265,7 @@ export function PreviewClient(p: {
 
 	return (
 		<MotionRoot key={key}>
+			<AppFrame />
 			<Seeded screen={p.screen} state={p.state} aspect={aspect}>
 				<MockApiProvider state={mock}>
 					<MockGameState
@@ -282,6 +285,12 @@ export function PreviewClient(p: {
 			</Seeded>
 		</MotionRoot>
 	);
+}
+
+/** The game screens get /play's frame (locked document, keyboard tracking); the index scrolls. */
+function AppFrame() {
+	useAppFrame();
+	return null;
 }
 
 function clampAspect(v: Opt) {

@@ -575,6 +575,19 @@
 		inset 0 0 0 1px var(--c-gilt),
 		0 0 14px #e3c27c33;
 }
+.nameCount {
+	display: block;
+	margin-top: 6px;
+	font-family: var(--font-num);
+	font-size: var(--fs-micro);
+	font-variant-numeric: lining-nums tabular-nums;
+	letter-spacing: 0.08em;
+	color: var(--c-bone-d);
+	text-align: right;
+}
+.nameCount[data-full] {
+	color: var(--c-gilt-l);
+}
 .divine {
 	display: inline-flex;
 	align-items: center;
@@ -623,6 +636,23 @@
 }
 .pourSlam {
 	width: 100%;
+}
+
+/* While the soft keyboard is up (src/ui/appFrame.ts sets html[data-kb]): the Bind button leaves
+   the screen's foot and sits in the flow right under the field, the cold wax steps aside, and
+   the step scrolls inside the way. Nothing stays pinned where the keyboard rises. */
+:global(html[data-kb]) .ritualBody,
+:global(html[data-kb]) .nameStep {
+	flex: none;
+}
+:global(html[data-kb]) .ritualFoot {
+	position: relative;
+	margin-top: 0;
+	padding-top: 12px;
+	background: none;
+}
+:global(html[data-kb]) .waxWaits {
+	display: none;
 }
 
 /* ---------------------------------------------------------------- wax */
@@ -1000,4 +1030,9 @@
 	.reveal[data-fresh]::after {
 		animation-duration: 0.8s;
 	}
+}
+
+/* clip-path cuts an outside outline: the keyboard focus ring is drawn inside the slab. */
+.back:focus-visible {
+	outline-offset: -6px;
 }

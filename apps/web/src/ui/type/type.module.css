@@ -176,6 +176,7 @@
 	align-items: center;
 	gap: 0.1em;
 	max-width: 30ch;
+	overflow-wrap: anywhere;
 	font-family: var(--slam-sub-font, var(--font-book));
 	font-weight: var(--slam-sub-weight, 400);
 	font-style: var(--slam-sub-style, italic);
@@ -305,6 +306,9 @@
 }
 .plate[data-align="center"] .plateText {
 	align-items: center;
+	/* fill the slab, so a long name meets the ellipsis instead of spilling past the clip */
+	align-self: stretch;
+	max-width: 100%;
 }
 .plate[data-align="start"] .plateText {
 	align-items: flex-start;
@@ -317,7 +321,11 @@
 	font-family: var(--plate-font, var(--font-display));
 	font-weight: var(--plate-weight, 800);
 	font-style: var(--plate-style, normal);
-	font-size: calc(var(--plate-size) * var(--plate-scale, 1));
+	font-size: calc(
+		var(--plate-size) *
+		var(--plate-scale, 1) *
+		var(--plate-long, 1)
+	);
 	line-height: var(--lh-tight);
 	letter-spacing: var(--plate-tracking, 0.015em);
 	text-transform: var(--plate-transform, none);
@@ -329,6 +337,12 @@
 		0 0 2px var(--c-soot),
 		0 4px 10px #000c;
 	padding-bottom: 0.06em;
+}
+.plate[data-size="lg"][data-long="1"] {
+	--plate-long: 0.8;
+}
+.plate[data-size="lg"][data-long="2"] {
+	--plate-long: 0.62;
 }
 .plate[data-marked="true"] .plateName {
 	color: var(--plate-mine-color, var(--c-gilt-hi));

@@ -804,6 +804,11 @@
 		0 0 16px #000;
 	text-wrap: balance;
 }
+/* "<name> devoured <name>": two 24-letter names still wrap inside the column */
+.feedItem > span {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
 .feedItem[data-age="1"] > span,
 .feedItem[data-age="1"]::before {
 	opacity: 0.84;
@@ -973,6 +978,8 @@
 	min-height: 50px;
 	max-width: 100%;
 	padding: 6px 16px 6px 10px;
+	/* the swipe up is ours: without this the browser takes the pan and cancels it */
+	touch-action: none;
 	background: linear-gradient(180deg, #2f2118 0%, #1a110c 60%, #110b08 100%);
 	clip-path: polygon(
 		0 var(--cut),
@@ -1116,7 +1123,8 @@
 	overflow-y: auto;
 	overscroll-behavior: contain;
 	-webkit-overflow-scrolling: touch;
-	padding: 4px var(--pad-r) calc(16px + var(--safe-b)) var(--pad-l);
+	/* the sheet sits above the tab bar, which already clears the home indicator */
+	padding: 4px var(--pad-r) 16px var(--pad-l);
 }
 .row {
 	display: grid;
@@ -1208,4 +1216,9 @@
 	font-family: var(--g-body-font);
 	font-style: italic;
 	color: var(--g-rubric-dim);
+}
+
+/* clip-path cuts an outside outline: the keyboard focus ring is drawn inside the slab. */
+.ledgerBtn:focus-visible {
+	outline-offset: -6px;
 }

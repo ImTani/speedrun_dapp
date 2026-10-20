@@ -149,7 +149,7 @@
 .tocList a {
 	display: flex;
 	gap: 0.6em;
-	min-height: 36px;
+	min-height: var(--tap);
 	align-items: center;
 	color: var(--c-gilt-l);
 	text-decoration: none;
@@ -298,6 +298,11 @@
 	top: calc(var(--safe-t) + 12px);
 	bottom: auto;
 }
+/* In the game, while the soft keyboard is up (src/ui/appFrame.ts), the notice would ride up
+   with it over the field; it waits until the keyboard is down. */
+:global(html[data-kb]) .notice {
+	display: none;
+}
 .noticeText {
 	flex: 1;
 	min-width: 0;
@@ -307,6 +312,9 @@
 	text-decoration: underline;
 	text-underline-offset: 3px;
 	white-space: nowrap;
+	/* a finger-sized hit area without moving the line */
+	padding: 13px 0;
+	margin: -13px 0;
 }
 .noticeDismiss {
 	flex: none;
