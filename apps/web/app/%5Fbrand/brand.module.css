@@ -1,0 +1,394 @@
+/* Brand render pages (dev only). Lettering copied from the title screen
+   (src/screens/title/title.module.css), rebuilt in em so it scales to any size. */
+
+.root {
+	position: relative;
+	overflow: hidden;
+	background: var(--c-void);
+}
+.root[data-clear] {
+	background: transparent;
+}
+
+.index {
+	padding: 24px;
+	font-family: var(--font-text);
+	color: var(--c-bone);
+	line-height: 2;
+}
+.index a {
+	color: var(--c-gilt-l);
+}
+
+/* ---------------------------------------------------------------- wordmark */
+.plate {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+}
+.plate[data-bg="dark"] {
+	background: radial-gradient(
+		60% 70% at 50% 50%,
+		#241912 0%,
+		#120c0a 48%,
+		var(--c-void) 100%
+	);
+}
+
+.mark {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.12em;
+	line-height: 1;
+	text-align: center;
+}
+.mark[data-lay="row"] {
+	flex-direction: row;
+	align-items: center;
+	gap: 0.3em;
+}
+.name {
+	position: relative;
+	display: grid;
+	font-family: var(--font-display);
+	font-weight: 900;
+	font-size: 1em;
+	line-height: 0.86;
+	letter-spacing: 0.01em;
+	white-space: nowrap;
+}
+.nameInk,
+.nameFill {
+	grid-area: 1 / 1;
+	padding: 0 0.08em 0.06em;
+}
+.nameInk {
+	color: var(--c-soot);
+	-webkit-text-stroke: 0.14em var(--c-soot);
+	text-shadow:
+		0 0.06em 0 var(--c-soot),
+		0 0.12em 0.3em #000;
+}
+.nameFill {
+	color: transparent;
+	background: linear-gradient(
+		180deg,
+		var(--c-bone-hi) 0%,
+		var(--c-gilt-l) 46%,
+		var(--c-gilt) 62%,
+		var(--c-gilt-d) 100%
+	);
+	background-clip: text;
+	-webkit-background-clip: text;
+	filter: drop-shadow(0 0 0.19em #e3c27c40);
+}
+
+.sub {
+	display: flex;
+	align-items: center;
+	gap: 0.7em;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: 0.185em;
+	letter-spacing: 0.3em;
+	text-transform: uppercase;
+	color: var(--c-blood-l);
+	text-shadow:
+		0 0.13em 0 var(--c-soot),
+		0 0 0.9em #c7262c66;
+	white-space: nowrap;
+	margin-right: -0.3em;
+}
+.mark[data-lay="row"] .sub {
+	font-size: 0.27em;
+	padding-top: 0.25em;
+}
+.rule {
+	display: block;
+	width: 1.9em;
+	height: 0.13em;
+	min-height: 2px;
+	background: linear-gradient(90deg, transparent, var(--c-blood-l));
+	position: relative;
+}
+.rule:last-child {
+	background: linear-gradient(90deg, var(--c-blood-l), transparent);
+}
+.rule::after {
+	content: "";
+	position: absolute;
+	top: 50%;
+	width: 0.4em;
+	height: 0.4em;
+	background: var(--c-blood-l);
+	transform: translateY(-50%) rotate(45deg);
+}
+.rule:first-child::after {
+	right: -0.2em;
+}
+.rule:last-child::after {
+	left: -0.2em;
+}
+
+/* ---------------------------------------------------------------- logo */
+.logo {
+	position: relative;
+	display: grid;
+	place-items: center;
+	overflow: hidden;
+}
+.logo[data-bg="dark"],
+.logo[data-bg="maskable"] {
+	background: radial-gradient(
+		closest-side,
+		#2a1d14 0%,
+		#120c0a 62%,
+		var(--c-void) 100%
+	);
+}
+.logoRose {
+	position: relative;
+	display: grid;
+	place-items: center;
+	isolation: isolate;
+}
+/* Darkens the hub so the mask reads against the lit glass (as in the picker). */
+.logoShade {
+	position: absolute;
+	inset: 14%;
+	border-radius: 50%;
+	pointer-events: none;
+	background: radial-gradient(
+		closest-side,
+		#0b0807d0 0%,
+		#0b080790 58%,
+		transparent 100%
+	);
+}
+.logoMask {
+	position: relative;
+	line-height: 0;
+	filter: drop-shadow(0 0.02em 0 #0b0807) drop-shadow(0 6px 10px #000d);
+}
+.logoMask > span,
+.logoMask svg {
+	width: 100%;
+	height: auto;
+}
+
+/* ---------------------------------------------------------------- backdrops */
+.nave {
+	position: absolute;
+	max-width: none;
+	user-select: none;
+	pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- cover */
+.cover {
+	position: relative;
+	overflow: hidden;
+	background: var(--c-void);
+	isolation: isolate;
+}
+.coverPool {
+	position: absolute;
+	inset: 0;
+	background:
+		radial-gradient(
+			36% 70% at 50% 52%,
+			#050403e6 0%,
+			#05040399 55%,
+			transparent 100%
+		),
+		linear-gradient(
+			180deg,
+			#05040366 0%,
+			transparent 30%,
+			transparent 70%,
+			#050403aa 100%
+		);
+	pointer-events: none;
+}
+.coverWin {
+	position: absolute;
+}
+.coverMark {
+	position: absolute;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
+/* ---------------------------------------------------------------- key art */
+.key {
+	position: relative;
+	overflow: hidden;
+	background: var(--c-void);
+	isolation: isolate;
+}
+.keyScene {
+	position: absolute;
+	inset: -12px;
+}
+.keyPool {
+	position: absolute;
+	left: 50%;
+	bottom: 0;
+	width: 80%;
+	height: 52%;
+	transform: translateX(-50%);
+	background: radial-gradient(
+		50% 58% at 50% 70%,
+		#050403f0 0%,
+		#050403c0 46%,
+		#05040366 72%,
+		transparent 100%
+	);
+	pointer-events: none;
+}
+.keyMark {
+	position: absolute;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
+/* ---------------------------------------------------------------- mask row */
+.masks {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: space-evenly;
+	padding: 0 24px;
+}
+.masks[data-bg="dark"] {
+	background: radial-gradient(
+		70% 90% at 50% 45%,
+		#241912 0%,
+		#120c0a 55%,
+		var(--c-void) 100%
+	);
+}
+.maskCell {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 14px;
+}
+.maskCell figcaption {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	text-align: center;
+}
+.maskName {
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: 30px;
+	line-height: 1;
+	color: var(--c-gilt-l);
+	text-shadow: var(--sh-ink);
+}
+.maskAspect {
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: 14px;
+	letter-spacing: 0.24em;
+	text-transform: uppercase;
+	color: var(--c-bone-d);
+	margin-right: -0.24em;
+}
+
+/* ---------------------------------------------------------------- listing frame */
+.frame {
+	position: relative;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	background: var(--c-void);
+	isolation: isolate;
+}
+.framePool {
+	position: absolute;
+	inset: 0;
+	background:
+		radial-gradient(60% 40% at 50% 62%, #8e121822 0%, transparent 70%),
+		linear-gradient(
+			180deg,
+			#050403cc 0%,
+			#05040366 22%,
+			#050403aa 60%,
+			#050403ee 100%
+		);
+	pointer-events: none;
+}
+.caption {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 22px;
+	width: 100%;
+	padding: 40px 80px 0;
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: 74px;
+	line-height: 1.02;
+	letter-spacing: 0.005em;
+	text-align: center;
+	color: var(--c-bone-hi);
+	text-shadow:
+		0 4px 0 var(--c-soot),
+		0 0 28px #e3c27c33;
+	text-wrap: balance;
+}
+.capRule {
+	display: block;
+	width: 220px;
+	height: 3px;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		var(--c-gilt) 30%,
+		var(--c-gilt) 70%,
+		transparent
+	);
+	position: relative;
+}
+.capRule::after {
+	content: "";
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 11px;
+	height: 11px;
+	background: var(--c-blood-l);
+	box-shadow: 0 0 0 3px var(--c-soot);
+	transform: translate(-50%, -50%) rotate(45deg);
+}
+.phone {
+	position: relative;
+	margin-top: 40px;
+	border-radius: 52px;
+	padding: 12px;
+	background: linear-gradient(180deg, #2a1d14, #0b0807 40%, #120c0a);
+	box-shadow:
+		inset 0 0 0 2px #0b0807,
+		inset 0 0 0 3px #c9a24f66,
+		0 0 0 2px #0b0807,
+		0 30px 60px #000e,
+		0 0 120px #c9a24f1c;
+	box-sizing: content-box;
+}
+.phone img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	border-radius: 42px;
+	object-fit: cover;
+}
