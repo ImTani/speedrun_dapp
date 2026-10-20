@@ -9,6 +9,7 @@
  *   ...&wordmark=gilded|illuminated|engraved|hybrid (or a-d) on any of them: the lettering
  *   (default: WORDMARK_VARIANT in src/ui/wordmark/config.ts). Side by side: /_brand/wordmarks
  *   /_brand?a=cover                              840 x 300 (capture at DPR 1 and 2)
+ *   /_brand?a=og                                 1200 x 630 share card (app/opengraph-image.png)
  *   /_brand?a=key[&mark=0]                       1920 x 1080 key art (title nave + wordmark)
  *   /_brand?a=logosvg&bg=dark|maskable[&show=1] the logo as one flat SVG, written to #svgout
  *   /_brand?a=masks                              the seven masks in a row
@@ -100,6 +101,8 @@ export function BrandClient({ q }: { q: Q }) {
 					<WordmarkPlate q={q} w={vp.w} h={vp.h} />
 				) : a === "cover" ? (
 					<Cover w={vp.w} h={vp.h} q={q} />
+				) : a === "og" ? (
+					<ShareCard w={vp.w} h={vp.h} q={q} />
 				) : a === "key" ? (
 					<KeyArt w={vp.w} h={vp.h} q={q} />
 				) : a === "masks" ? (
@@ -121,6 +124,7 @@ function Index() {
 		"?a=wordmark&lay=stack&bg=dark",
 		"?a=wordmark&lay=row&bg=dark",
 		"?a=cover",
+		"?a=og",
 		"?a=key",
 		"?a=masks",
 		"?a=frame&cap=Climb%20the%20Spire",
@@ -351,6 +355,66 @@ export function Cover({
 			<Atmosphere floor={floor / h} lean={0} rise={0.7} />
 			<div className={b.coverMark} style={{ top: num(q.my, 0.47) * h }}>
 				<Wordmark variant={mark} size={size} defs={defs} />
+			</div>
+		</div>
+	);
+}
+
+// ---------------------------------------------------------------- share card
+
+/**
+ * The Open Graph / Twitter card (1200 x 630): the cover's face-off, taller, with the pitch and
+ * the address under the name. Every word sits between the windows, inside the centred safe area
+ * that survives the platforms' crops and small previews.
+ */
+function ShareCard({ w, h, q }: { w: number; h: number; q: Q }) {
+	const winW = num(q.win, 232);
+	const floor = num(q.floor, 0.9) * h;
+	const inset = num(q.inset, 40);
+	const winH = (winW * 420) / 300;
+	const mark = markOf(q);
+	const em = wordmarkEm(mark);
+	// The name as big as the column between the windows and its share of the height allow.
+	const room = w - 2 * (inset + winW) - 40;
+	const size = Math.min(
+		num(q.ms, 220),
+		room / em.w,
+		(h * num(q.mh, 0.5)) / em.h,
+	);
+	return (
+		<div className={b.cover} style={{ width: w, height: h }}>
+			<NaveBackdrop
+				w={w}
+				h={h}
+				scale={num(q.ns, 0.95)}
+				cx={0.5}
+				cy={num(q.ny, 0.34)}
+				style={{ opacity: num(q.no, 0.55) }}
+			/>
+			<div className={b.ogPool} />
+			<div
+				className={b.coverWin}
+				style={{ left: inset, top: floor - winH, width: winW }}
+			>
+				<GlassWindow aspect={num(q.al, 2)} width={winW} />
+			</div>
+			<div
+				className={b.coverWin}
+				style={{ right: inset, top: floor - winH, width: winW }}
+			>
+				<GlassWindow aspect={num(q.ar, 5)} width={winW} />
+			</div>
+			{/* Post-processing over the nave and glass, under the words (a later layer). */}
+			<Atmosphere floor={floor / h} lean={0} rise={0.7} preset="balanced" />
+			<div
+				className={b.ogText}
+				style={{ top: num(q.my, 0.5) * h, width: room }}
+			>
+				<Wordmark variant={mark} size={size} />
+				<p className={b.ogPitch} style={{ fontSize: num(q.ps, 32) }}>
+					An idle auto-battler where every move is an on-chain transaction.
+				</p>
+				<p className={b.ogUrl}>sede-vacante.vercel.app</p>
 			</div>
 		</div>
 	);

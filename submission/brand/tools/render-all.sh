@@ -2,7 +2,7 @@
 # Renders every brand and listing asset through the capture server (capture-server.cjs, one
 # Chromium) from the dev-only pages at /_brand and /preview. Needs `next dev -p 3200` running
 # in apps/web and the capture server on 3299. Run from anywhere: bash render-all.sh [only]
-# where `only` is one of: logo wordmark cover key masks shots frames icons (default: all).
+# where `only` is one of: logo wordmark cover og key masks shots frames icons (default: all).
 # APP=http://localhost:<port> points it at a dev server on another port.
 set -euo pipefail
 
@@ -63,6 +63,11 @@ fi
 if want cover; then
 	job "$(j url="$APP/_brand?a=cover" out="$LIST/cover-840x300.png" w=840 h=300 dsf=1 reduce=false ready='[data-ready]' wait=3500)"
 	job "$(j url="$APP/_brand?a=cover" out="$LIST/cover-1680x600@2x.png" w=840 h=300 dsf=2 reduce=false ready='[data-ready]' wait=3500)"
+fi
+
+if want og; then
+	# The share card: written here, then copied over app/opengraph-image.png and twitter-image.png.
+	job "$(j url="$APP/_brand?a=og" out="$BRAND/og-1200x630.png" w=1200 h=630 dsf=1 reduce=false ready='[data-ready]' wait=3500)"
 fi
 
 if want key; then

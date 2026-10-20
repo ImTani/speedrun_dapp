@@ -22,6 +22,7 @@ const SPEC = [
 	["brand/wordmark-horizontal-transparent@2x.png", 2400, 480, 2 * MB, true],
 	["brand/keyart-1920x1080.png", 1920, 1080, 4 * MB],
 	["brand/keyart-clean-1920x1080.png", 1920, 1080, 4 * MB],
+	["brand/og-1200x630.png", 1200, 630, 0.9 * MB],
 	["brand/masks-row.png", 3080, 680, 2 * MB],
 	["listing/cover-840x300.png", 840, 300, 2 * MB],
 	["listing/cover-1680x600@2x.png", 1680, 600, 2 * MB],

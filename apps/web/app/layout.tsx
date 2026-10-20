@@ -7,7 +7,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-	// Absolute URLs for the share cards (app/opengraph-image.tsx) on every route.
+	// Absolute URLs for the share cards (app/opengraph-image.png, app/twitter-image.png) on every route.
 	metadataBase: new URL(SITE_URL),
 	title: "Apostasy: Sede Vacante",
 	description:

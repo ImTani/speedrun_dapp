@@ -124,6 +124,57 @@
 	transform: translate(-50%, -50%);
 }
 
+/* ---------------------------------------------------------------- share card */
+.ogPool {
+	position: absolute;
+	inset: 0;
+	background:
+		radial-gradient(
+			34% 62% at 50% 50%,
+			#050403eb 0%,
+			#050403a6 58%,
+			transparent 100%
+		),
+		linear-gradient(
+			180deg,
+			#05040380 0%,
+			transparent 26%,
+			transparent 78%,
+			#050403b3 100%
+		);
+	pointer-events: none;
+}
+.ogText {
+	position: absolute;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+}
+.ogPitch {
+	margin: 0.55em 0 0;
+	max-width: 15.5em;
+	font-family: var(--font-text);
+	font-weight: 500;
+	line-height: 1.22;
+	color: var(--c-bone-hi);
+	text-wrap: balance;
+	text-shadow:
+		0 1px 2px #050403,
+		0 0 18px #050403;
+}
+.ogUrl {
+	margin: 18px 0 0;
+	font-family: var(--font-num);
+	font-size: 19px;
+	font-weight: 600;
+	letter-spacing: 0.14em;
+	color: var(--c-gilt-l);
+	text-shadow: 0 1px 2px #050403;
+}
+
 /* ---------------------------------------------------------------- key art */
 .key {
 	position: relative;

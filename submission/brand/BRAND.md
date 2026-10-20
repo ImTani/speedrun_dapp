@@ -65,6 +65,7 @@ from glyph tables so it renders the same at 28 px and at 300 px.
 | `keyart-1920x1080.png` | 1920 x 1080 | Video title card, slides, press kit |
 | `keyart-clean-1920x1080.png` | 1920 x 1080 | The same nave without lettering (put your own text over the floor) |
 | `masks-row.png` | 3080 x 680 | The seven masks with their names and Aspects |
+| `og-1200x630.png` | 1200 x 630 | Share card (Open Graph / X): Echo and Inquisitor in lit windows, the name, the pitch and the address between them. Copied to `apps/web/app/opengraph-image.png` and `twitter-image.png` |
 
 ![Key art](keyart-1920x1080.png)
 
@@ -220,16 +221,19 @@ pnpm --filter @arena/web exec next dev -p 3200
 NODE_PATH=<dir>/node_modules node submission/brand/tools/capture-server.cjs 3299
 #   (if that Playwright expects another Chromium revision than the one installed, set
 #   CHROMIUM_PATH to the installed build's chrome.exe)
-# all assets, or one group: logo wordmark cover key masks shots frames icons
+# all assets, or one group: logo wordmark cover og key masks shots frames icons
 # (APP=http://localhost:<port> if the dev server is not on 3200)
 bash submission/brand/tools/render-all.sh [group]
 node submission/brand/tools/verify.cjs     # sizes and byte limits
 curl -s localhost:3299/quit                # close the browser
 ```
 
-The cover and key art are captured with motion on and a 3.5 s wait, so the atmosphere is
+The cover, share card and key art are captured with motion on and a 3.5 s wait, so the atmosphere is
 warmed up (dust, embers, grain) when the shot is taken. It pauses off screen, so the page must
 fill the viewport.
+
+Copy `og-1200x630.png` over `apps/web/app/opengraph-image.png` and `apps/web/app/twitter-image.png`
+(Next's static share-card files; their alt text is in the matching `.alt.txt`).
 
 Copy `icons/icon-192.png`, `icons/icon-512.png` and `icons/icon-maskable-512.png` into
 `apps/web/public/`, and `logo.svg` / `logo-maskable.svg` over `public/icon.svg` /
