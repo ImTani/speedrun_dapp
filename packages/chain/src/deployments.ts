@@ -12,9 +12,10 @@ export interface Deployment {
 	block: number;
 }
 
-/** Deployed contracts by chain id. Mainnet (43114) is added when it is deployed. */
+/** Deployed contracts by chain id: Fuji (daily game) and C-Chain mainnet (the Conclave). */
 export const DEPLOYMENTS: Partial<Record<number, Deployment>> = {
 	43113: fuji as Deployment,
+	43114: mainnet as Deployment,
 };
 
 export function deploymentFor(chainId: number): Deployment {
