@@ -99,7 +99,7 @@ async function announce(wp: WebPush, gathering: string, targets: Target[]) {
 					JSON.stringify({
 						title: M.push.openTitle,
 						body: t.fighter ? M.push.openBodyYours(t.fighter) : M.push.openBody,
-						url: "/?tab=gathering",
+						url: "/play?tab=gathering",
 						tag: `gathering-${gathering}`,
 					}),
 					{ TTL: 30 * 60, urgency: "high", topic: "gathering" },

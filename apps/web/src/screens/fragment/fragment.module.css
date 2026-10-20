@@ -776,11 +776,14 @@
 	justify-content: center;
 }
 /* the speaker, tucked in the corner above the window */
+/* Gear (settings and credits) and speaker, top right of the Stage. */
 .soundCorner {
 	position: absolute;
 	top: 4px;
 	right: calc(var(--gutter) - 10px);
 	z-index: 5;
+	display: flex;
+	gap: 2px;
 }
 .soundList {
 	margin-top: 4px;

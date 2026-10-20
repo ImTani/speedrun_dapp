@@ -1,11 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { SITE_URL } from "@/landing/site";
 import { ServiceWorker } from "@/ui/ServiceWorker";
 import { fontVars } from "./fonts";
 import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
+	// Absolute URLs for the share cards (app/opengraph-image.tsx) on every route.
+	metadataBase: new URL(SITE_URL),
 	title: "Apostasy: Sede Vacante",
 	description:
 		"Bind a Fragment of a devoured god and send it to the Gatherings.",

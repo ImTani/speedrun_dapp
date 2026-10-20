@@ -8,8 +8,10 @@
  * `ready` false shows the doors still groaning (the enter slab is held shut).
  */
 import { motion, useAnimate, useReducedMotion } from "motion/react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { buzz, HAPTIC, useSfx } from "@/audio";
+import { LegalLinks } from "@/legal";
 import { shell } from "@/lexicon/shell";
 import { useShake } from "@/ui/motion/impact";
 import { easeIn, easeOut, pressable, spring } from "@/ui/motion/presets";
@@ -144,16 +146,34 @@ export function TitleScreen({
 					</motion.button>
 				</motion.div>
 
-				<motion.button
-					type="button"
-					className={s.colophonLink}
+				<motion.p
+					className={s.consent}
+					initial={{ opacity: 0 }}
+					animate={{ opacity: struck ? 1 : 0 }}
+					transition={{ duration: 0.6, delay: 0.7 }}
+				>
+					{T.consent.lead} <Link href="/terms">{T.consent.terms}</Link>{" "}
+					{T.consent.and} <Link href="/privacy">{T.consent.privacy}</Link>.
+				</motion.p>
+
+				<motion.div
+					className={s.foot}
 					initial={{ opacity: 0 }}
 					animate={{ opacity: struck ? 1 : 0 }}
 					transition={{ duration: 0.6, delay: 0.9 }}
-					onClick={() => setColophon(true)}
 				>
-					{shell.colophon.open}
-				</motion.button>
+					<LegalLinks className={s.footLegal ?? ""} />
+					<span className={s.footDot} aria-hidden="true">
+						·
+					</span>
+					<button
+						type="button"
+						className={s.colophonLink}
+						onClick={() => setColophon(true)}
+					>
+						{shell.colophon.open}
+					</button>
+				</motion.div>
 			</div>
 
 			<Colophon open={colophon} onClose={() => setColophon(false)} />

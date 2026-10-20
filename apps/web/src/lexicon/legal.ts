@@ -11,7 +11,7 @@ export const legal = {
 	},
 
 	page: {
-		back: "Back to the game",
+		back: "Back",
 		effective: "Effective",
 		contents: "Contents",
 		short: "The short version",

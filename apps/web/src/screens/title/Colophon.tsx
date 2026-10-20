@@ -2,12 +2,17 @@
 
 /**
  * Colophon: the credits, as the last leaf of the book. A sheet that rises from
- * below. Lists every licensed hand in the cathedral (masks, carvings, letters)
- * and links the full roll of sources (CC BY requires the in-app credit).
+ * below. Lists every licensed hand in the cathedral (masks, carvings, letters,
+ * sounds) and links the full roll of sources (CC BY requires the in-app credit),
+ * then the legal documents.
+ *
+ * Opened from inside the game (`inGame`) the same leaf is the settings sheet: the
+ * sound switches lead, and account deletion closes it (DPDP / GDPR erasure in app).
  */
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useId, useRef } from "react";
-import { SOUND_CREDITS } from "@/audio";
+import { SOUND_CREDITS, SoundSettingsList } from "@/audio";
+import { DeleteAccount, LegalLinks } from "@/legal";
 import { audio } from "@/lexicon/audio";
 import { shell } from "@/lexicon/shell";
 import { ATTRIBUTION_PATH, MASK_CREDITS } from "@/ui/masks/credits";
@@ -19,9 +24,15 @@ const C = shell.colophon;
 export function Colophon({
 	open,
 	onClose,
+	inGame = false,
+	onDeleted,
 }: {
 	open: boolean;
 	onClose: () => void;
+	/** Signed in: lead with the sound switches and offer account deletion. */
+	inGame?: boolean;
+	/** After the account is deleted and signed out (e.g. back to the title screen). */
+	onDeleted?: () => void;
 }) {
 	const headId = useId();
 	const closeRef = useRef<HTMLButtonElement>(null);
@@ -72,8 +83,14 @@ export function Colophon({
 					>
 						<div className={s.leafInner}>
 							<h2 id={headId} className={s.leafHead}>
-								{C.heading}
+								{inGame ? C.settings : C.heading}
 							</h2>
+							{inGame ? (
+								<section className={s.leafSection}>
+									<h3 className={s.leafRubric}>{C.sound}</h3>
+									<SoundSettingsList className={s.leafSound ?? ""} />
+								</section>
+							) : null}
 							{sections.map((sec) => (
 								<section key={sec.head} className={s.leafSection}>
 									<h3 className={s.leafRubric}>{sec.head}</h3>
@@ -92,6 +109,15 @@ export function Colophon({
 							>
 								{C.roll}
 							</a>
+							<section className={s.leafSection}>
+								<h3 className={s.leafRubric}>{C.legal}</h3>
+								<LegalLinks />
+							</section>
+							{inGame ? (
+								<div className={s.leafDelete}>
+									<DeleteAccount {...(onDeleted ? { onDeleted } : {})} />
+								</div>
+							) : null}
 							<motion.button
 								ref={closeRef}
 								type="button"

@@ -1,0 +1,669 @@
+/* ======================================================================
+   Landing page. The game's world (ink stone, stained glass, gilt, blood)
+   as a scrolling page that reads at 390 and at 1440. Readability first:
+   Alegreya for reading, Grenze for headings, Grenze Gotisch only for the
+   name, Cinzel only for small labels. Every text colour >= 4.5:1 on its
+   ground (bone 12:1, bone-d 6.4:1, #c2ae88 9:1, gilt-l 11:1, sub red 5.4:1).
+   ====================================================================== */
+
+.page {
+	--measure: 1180px;
+	--red-text: #e8574d;
+	background: var(--c-void);
+	color: var(--c-bone);
+	font-family: var(--font-text);
+	/* the game locks selection for touch play; a page of text gives it back */
+	-webkit-user-select: text;
+	user-select: text;
+	-webkit-touch-callout: default;
+}
+.main {
+	min-height: 0;
+	background:
+		radial-gradient(90% 40% at 50% 100%, #2a1c1466 0%, transparent 70%),
+		var(--c-void);
+}
+
+/* ---------------------------------------------------------------- hero */
+/* Phone: the title screen itself, words on the lit floor. Desktop: words left, nave right. */
+.hero {
+	position: relative;
+	display: grid;
+	min-height: max(620px, 100svh);
+	overflow: hidden;
+	isolation: isolate;
+	background: var(--c-void);
+}
+.heroArt {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+}
+.heroText {
+	position: relative;
+	z-index: 1;
+	align-self: end;
+	justify-self: center;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 14px;
+	width: min(100%, 560px);
+	/* room at the foot for the one-time storage notice, so it never sits on the call */
+	padding: 0 var(--pad-r) calc(76px + var(--safe-b)) var(--pad-l);
+	text-align: center;
+}
+/* Ink pool under the words so they read over the lit floor. */
+.heroText::before {
+	content: "";
+	position: absolute;
+	z-index: -1;
+	left: 50%;
+	bottom: 0;
+	width: min(170vw, 900px);
+	height: calc(100% + 140px);
+	transform: translateX(-50%);
+	background: radial-gradient(
+		50% 60% at 50% 66%,
+		#050403f2 0%,
+		#050403cc 48%,
+		#05040370 74%,
+		transparent 100%
+	);
+	pointer-events: none;
+}
+
+.wordmark {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.2em;
+	margin: 0;
+}
+.name {
+	font-family: var(--font-display);
+	font-weight: 900;
+	font-size: clamp(64px, 19vw, 132px);
+	line-height: 0.86;
+	letter-spacing: 0.01em;
+	padding: 0 0.08em 0.06em;
+	color: transparent;
+	background: linear-gradient(
+		180deg,
+		var(--c-bone-hi) 0%,
+		var(--c-gilt-l) 46%,
+		var(--c-gilt) 62%,
+		var(--c-gilt-d) 100%
+	);
+	background-clip: text;
+	-webkit-background-clip: text;
+	filter: drop-shadow(0 3px 0 var(--c-soot)) drop-shadow(0 0 22px #e3c27c33);
+}
+.sub {
+	display: flex;
+	align-items: center;
+	gap: 0.7em;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: clamp(13px, 3.9vw, 19px);
+	letter-spacing: 0.3em;
+	text-transform: uppercase;
+	color: var(--red-text);
+	text-shadow: 0 2px 0 var(--c-soot);
+	white-space: nowrap;
+	margin-right: -0.3em;
+}
+.rule {
+	display: block;
+	width: clamp(18px, 6vw, 40px);
+	height: 2px;
+	background: linear-gradient(90deg, transparent, var(--red-text));
+}
+.rule:last-child {
+	background: linear-gradient(90deg, var(--red-text), transparent);
+}
+
+.line {
+	max-width: 30ch;
+	font-family: var(--font-text);
+	font-size: clamp(18px, 4.9vw, 26px);
+	line-height: 1.3;
+	color: var(--c-bone-hi);
+	text-shadow: 0 1px 0 var(--c-soot);
+	text-wrap: balance;
+}
+
+.ctaRow {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	margin-top: 4px;
+}
+/* The game's red slab: chamfered, lit from above, ink-shadowed. */
+.play {
+	position: relative;
+	display: inline-grid;
+	place-items: center;
+	width: min(100%, 320px);
+	min-height: 60px;
+	padding: 10px 28px 12px;
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: clamp(24px, 6.4vw, 30px);
+	line-height: 1;
+	letter-spacing: 0.03em;
+	color: var(--c-bone-hi);
+	text-decoration: none;
+	text-shadow: 0 2px 0 var(--c-soot);
+	background:
+		radial-gradient(120% 90% at 50% 0%, #ffffff24, transparent 55%),
+		linear-gradient(180deg, #b01c24 0%, #8e1218 45%, #5a0b10 100%);
+	clip-path: polygon(
+		var(--cut) 0,
+		calc(100% - var(--cut)) 0,
+		100% var(--cut),
+		100% calc(100% - var(--cut)),
+		calc(100% - var(--cut)) 100%,
+		var(--cut) 100%,
+		0 calc(100% - var(--cut)),
+		0 var(--cut)
+	);
+	box-shadow:
+		inset 0 0 0 2px var(--c-soot),
+		inset 0 0 0 3px #e3c27c55;
+	transition:
+		filter var(--dur-2) var(--ease-out),
+		transform var(--dur-1) var(--ease-out);
+}
+.play:hover {
+	filter: brightness(1.12);
+}
+.play:active {
+	transform: translateY(1px) scale(0.99);
+}
+/* clip-path hides an outline: draw the focus ring inside the slab instead. */
+.play:focus-visible {
+	outline: none;
+	box-shadow:
+		inset 0 0 0 2px var(--c-soot),
+		inset 0 0 0 5px var(--c-gilt-hi);
+}
+.note {
+	font-size: var(--fs-small);
+	color: #c2ae88;
+	text-shadow: 0 1px 0 var(--c-soot);
+}
+
+/* The QR only helps someone on a computer; phones are already there. */
+.qr {
+	display: none;
+}
+
+/* ---------------------------------------------------------------- sections */
+.section {
+	width: min(100% - var(--pad-l) - var(--pad-r), var(--measure));
+	margin: 0 auto;
+	padding: clamp(56px, 9vw, 112px) 0 0;
+}
+.h2 {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	margin-bottom: clamp(20px, 3vw, 36px);
+	font-family: var(--font-roman);
+	font-weight: 600;
+	font-size: clamp(30px, 7.4vw, 46px);
+	line-height: var(--lh-snug);
+	color: var(--c-bone-hi);
+	letter-spacing: 0.01em;
+}
+/* a gilt rule running out from the heading, as in the game's rubrics */
+.h2::after {
+	content: "";
+	flex: 1;
+	height: 1px;
+	background: linear-gradient(90deg, #c9a24f99, transparent);
+}
+.h3 {
+	font-family: var(--font-roman);
+	font-weight: 600;
+	font-size: clamp(21px, 5.4vw, 25px);
+	line-height: var(--lh-snug);
+	color: var(--c-bone-hi);
+}
+.body {
+	font-size: clamp(16px, 4.3vw, 18px);
+	line-height: 1.5;
+	color: var(--c-bone);
+}
+.lead {
+	max-width: 46ch;
+	margin: -8px 0 28px;
+	font-size: clamp(18px, 4.6vw, 22px);
+	line-height: 1.45;
+	color: var(--c-bone);
+}
+
+/* ---- How it plays ---- */
+.steps {
+	display: grid;
+	gap: 18px;
+	list-style: none;
+}
+.step {
+	display: flex;
+	flex-direction: column;
+	background: linear-gradient(
+		180deg,
+		var(--c-umber-d) 0%,
+		var(--c-soot-2) 100%
+	);
+	box-shadow:
+		inset 0 1px 0 #ffffff12,
+		inset 0 0 0 1px var(--c-umber);
+}
+.vis {
+	position: relative;
+	display: grid;
+	place-items: center;
+	height: 210px;
+	overflow: hidden;
+	background:
+		radial-gradient(60% 70% at 50% 45%, #e3c27c1f 0%, transparent 70%),
+		var(--c-soot);
+	box-shadow: inset 0 -1px 0 var(--c-umber);
+}
+.visMasks {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+.visMasks > :not(:nth-child(2)) {
+	opacity: 0.9;
+}
+.visDuel {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.vs {
+	display: grid;
+	place-items: center;
+	width: 34px;
+	height: 34px;
+	border-radius: 50%;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: 13px;
+	color: var(--c-gilt-l);
+	background: var(--c-soot-2);
+	box-shadow:
+		inset 0 0 0 1px var(--c-gilt-d),
+		0 0 0 3px var(--c-soot);
+}
+.visShot img {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	max-width: none;
+	object-fit: cover;
+	object-position: 50% 38%;
+}
+.stepText {
+	display: grid;
+	gap: 6px;
+	padding: 18px 20px 22px;
+}
+.stepNum {
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: 13px;
+	letter-spacing: 0.2em;
+	color: var(--c-gilt-l);
+}
+
+/* ---- On-chain ---- */
+.stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+	gap: 12px;
+	margin: 0;
+}
+.stat {
+	display: flex;
+	flex-direction: column-reverse;
+	justify-content: flex-end;
+	gap: 6px;
+	padding: 20px 20px 18px;
+	background: var(--c-soot-2);
+	box-shadow:
+		inset 0 1px 0 #ffffff10,
+		inset 0 0 0 1px var(--c-umber);
+}
+.statValue {
+	margin: 0;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: clamp(38px, 10vw, 56px);
+	line-height: 1;
+	font-variant-numeric: lining-nums tabular-nums;
+	color: var(--c-gilt-hi);
+	text-shadow: 0 0 22px #e3c27c33;
+}
+.statPending {
+	color: #c2ae88;
+}
+.statLabel {
+	font-size: var(--fs-body);
+	color: var(--c-bone);
+}
+.statNote {
+	display: block;
+	font-size: var(--fs-small);
+	color: #c2ae88;
+}
+.statsDown {
+	margin-top: 10px;
+	font-size: var(--fs-small);
+	color: #c2ae88;
+}
+.facts {
+	display: grid;
+	gap: 10px;
+	margin: 28px 0 0;
+	list-style: none;
+	font-size: clamp(16px, 4.3vw, 18px);
+	line-height: 1.45;
+}
+.facts li {
+	position: relative;
+	padding-left: 24px;
+}
+.facts li::before {
+	content: "";
+	position: absolute;
+	left: 3px;
+	top: 0.55em;
+	width: 7px;
+	height: 7px;
+	background: var(--c-gilt);
+	transform: rotate(45deg);
+}
+.explorer {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px 10px;
+	min-height: var(--tap);
+	margin-top: 18px;
+	font-size: var(--fs-body);
+	color: var(--c-gilt-l);
+	text-decoration: underline;
+	text-decoration-color: #e3c27c80;
+	text-underline-offset: 4px;
+}
+.explorer:hover {
+	color: var(--c-gilt-hi);
+}
+.addr {
+	font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+	font-size: 0.85em;
+	color: #c2ae88;
+}
+
+/* ---- Screens: phone frames, a swipe row on phones ---- */
+.shots {
+	display: flex;
+	gap: 18px;
+	margin: 0 calc(-1 * var(--pad-r)) 0 calc(-1 * var(--pad-l));
+	padding: 6px var(--pad-r) 18px var(--pad-l);
+	list-style: none;
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	scroll-padding-inline: var(--pad-l);
+	overscroll-behavior-x: contain;
+	scrollbar-width: thin;
+	scrollbar-color: var(--c-umber-l) transparent;
+}
+.shots:focus-visible {
+	outline-offset: -2px;
+}
+.shot {
+	flex: 0 0 auto;
+	width: min(62vw, 230px);
+	scroll-snap-align: start;
+}
+.phone {
+	position: relative;
+	/* a taller top and bottom bezel: the camera pill sits in it, never over the screen */
+	padding: 22px 8px 20px;
+	border-radius: 34px;
+	background: linear-gradient(160deg, #2a201a, #0d0907 60%);
+	box-shadow:
+		inset 0 0 0 1px #5a463288,
+		inset 0 0 0 2px #000,
+		0 18px 40px #000c,
+		0 0 0 1px #000;
+}
+/* the camera pill */
+.phone::after {
+	content: "";
+	position: absolute;
+	top: 8px;
+	left: 50%;
+	width: 24%;
+	height: 7px;
+	border-radius: 999px;
+	transform: translateX(-50%);
+	background: #000;
+}
+.phone img {
+	width: 100%;
+	height: auto;
+	aspect-ratio: 390 / 844;
+	border-radius: 6px;
+	background: var(--c-soot);
+}
+.caption {
+	margin-top: 12px;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: 12.5px;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	text-align: center;
+	color: var(--c-gilt-l);
+}
+.swipe {
+	font-size: var(--fs-small);
+	font-style: italic;
+	color: #c2ae88;
+	text-align: center;
+}
+
+/* ---- Built with ---- */
+.chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	list-style: none;
+}
+.chip {
+	padding: 9px 16px;
+	font-size: var(--fs-body);
+	color: var(--c-bone-hi);
+	background: var(--c-soot-2);
+	box-shadow: inset 0 0 0 1px var(--c-umber-l);
+}
+
+/* ---- Closing call ---- */
+.close {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 18px;
+	padding: clamp(72px, 11vw, 128px) var(--pad-r) clamp(56px, 8vw, 96px)
+		var(--pad-l);
+	text-align: center;
+}
+.closeLine {
+	font-family: var(--font-roman);
+	font-weight: 600;
+	font-size: clamp(26px, 6.4vw, 38px);
+	line-height: var(--lh-snug);
+	color: var(--c-bone-hi);
+}
+
+/* ---- Footer ---- */
+.footer {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	padding: 24px var(--pad-r) calc(96px + var(--safe-b)) var(--pad-l);
+	border-top: 1px solid var(--c-umber);
+	background: var(--c-soot);
+	font-size: var(--fs-small);
+	color: #c2ae88;
+	text-align: center;
+}
+.footNav {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 0 18px;
+}
+.footNav a {
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--tap);
+	color: var(--c-gilt-l);
+	text-decoration: none;
+}
+.footNav a:hover,
+.footNav a:focus-visible {
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+.copy {
+	margin-top: 4px;
+}
+
+/* ---------------------------------------------------------------- wider */
+@media (min-width: 720px) {
+	.steps {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+	.vis {
+		height: 230px;
+	}
+	.swipe {
+		display: none;
+	}
+	.shots {
+		justify-content: center;
+		margin: 0;
+		padding: 6px 0 18px;
+		overflow-x: visible;
+	}
+	.shot {
+		flex: 1 1 0;
+		width: auto;
+		max-width: 230px;
+	}
+}
+
+@media (min-width: 960px) {
+	.hero {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		min-height: clamp(640px, 100svh, 940px);
+	}
+	.heroArt {
+		position: relative;
+		inset: auto;
+		grid-column: 2;
+		grid-row: 1;
+		/* the nave melts into the dark on its inner edge and its foot */
+		-webkit-mask-image:
+			linear-gradient(90deg, transparent 0%, #000 22%),
+			linear-gradient(180deg, #000 78%, transparent 100%);
+		-webkit-mask-composite: source-in;
+		mask-image:
+			linear-gradient(90deg, transparent 0%, #000 22%),
+			linear-gradient(180deg, #000 78%, transparent 100%);
+		mask-composite: intersect;
+	}
+	.heroText {
+		grid-column: 1;
+		grid-row: 1;
+		align-self: center;
+		justify-self: end;
+		align-items: flex-start;
+		gap: 18px;
+		width: min(100%, 600px);
+		padding: 64px 24px 64px max(48px, var(--pad-l));
+		text-align: left;
+	}
+	.heroText::before {
+		display: none;
+	}
+	.wordmark {
+		align-items: flex-start;
+	}
+	.name {
+		margin-left: -0.08em;
+	}
+	.sub .rule:first-child {
+		display: none;
+	}
+	.ctaRow {
+		flex-direction: row;
+		align-items: center;
+		gap: 20px;
+		width: auto;
+	}
+	.play {
+		width: auto;
+		min-width: 220px;
+	}
+	.note {
+		max-width: 22ch;
+	}
+	.qr {
+		display: flex;
+		align-items: center;
+		gap: 18px;
+		margin-top: 14px;
+		padding: 12px 18px 12px 12px;
+		background: var(--c-soot-2);
+		box-shadow:
+			inset 0 1px 0 #ffffff10,
+			inset 0 0 0 1px var(--c-umber);
+	}
+	.qrCode {
+		flex: none;
+	}
+	.qrText {
+		display: grid;
+		gap: 4px;
+		font-size: var(--fs-body);
+		color: var(--c-bone);
+	}
+	.qrUrl {
+		font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+		font-size: 15px;
+		color: var(--c-gilt-l);
+		text-decoration: underline;
+		text-decoration-color: #e3c27c80;
+		text-underline-offset: 3px;
+	}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	html:has(.page) {
+		scroll-behavior: smooth;
+	}
+}

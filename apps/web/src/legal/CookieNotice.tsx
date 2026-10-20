@@ -9,6 +9,8 @@ import s from "./legal.module.css";
 export interface CookieNoticeProps {
 	/** Sit above the tab bar (default). Pass false on screens without one, e.g. the title screen. */
 	aboveTabBar?: boolean;
+	/** Sit at the top of the screen instead (screens whose own call to action holds the foot). */
+	top?: boolean;
 }
 
 function seen(): boolean {
@@ -23,7 +25,10 @@ function seen(): boolean {
  * One-line storage notice, shown until dismissed (remembered in localStorage). Non-blocking:
  * no focus trap, no overlay, never takes focus. Renders nothing on the server and once dismissed.
  */
-export function CookieNotice({ aboveTabBar = true }: CookieNoticeProps) {
+export function CookieNotice({
+	aboveTabBar = true,
+	top = false,
+}: CookieNoticeProps) {
 	const [open, setOpen] = useState(false);
 
 	useEffect(() => {
@@ -42,7 +47,7 @@ export function CookieNotice({ aboveTabBar = true }: CookieNoticeProps) {
 	return (
 		<aside
 			aria-label={legal.notice.label}
-			className={`${s.notice} ${aboveTabBar ? "" : s.noticeLow}`}
+			className={`${s.notice} ${top ? s.noticeTop : aboveTabBar ? "" : s.noticeLow}`}
 		>
 			<p className={s.noticeText}>
 				{legal.notice.text} <Link href="/cookies">{legal.notice.link}</Link>

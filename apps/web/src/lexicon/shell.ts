@@ -7,6 +7,13 @@ export const shell = {
 		sub: "Sede Vacante",
 		enter: "Enter",
 		entering: "Opening…",
+		/** Shown by the sign-in button (consent at the point of collection, as DPDP asks). */
+		consent: {
+			lead: "By continuing you agree to the",
+			terms: "Terms",
+			and: "and",
+			privacy: "Privacy Policy",
+		},
 	},
 
 	/** Accessible name of the tab bar. */
@@ -47,6 +54,11 @@ export const shell = {
 			"Grenze and Grenze Gotisch by Renata Polastri (Omnibus-Type), Alegreya by Juan Pablo del Peral (Huerta Tipográfica), IM Fell English by Igino Marini, Cinzel by Natanael Gama. SIL Open Font License 1.1.",
 		roll: "All sources",
 		close: "Close",
+		/** In the game the same leaf is the settings sheet (the gear by the speaker). */
+		settings: "Settings",
+		openSettings: "Settings and credits",
+		sound: "Sound",
+		legal: "Legal",
 	},
 } as const;
 

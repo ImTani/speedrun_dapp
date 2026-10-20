@@ -6,7 +6,11 @@ export default function manifest(): MetadataRoute.Manifest {
 		short_name: "Apostasy",
 		description:
 			"Bind a Fragment of a devoured god and send it to the Gatherings.",
-		start_url: "/",
+		// The installed app opens straight into the game; "/" is the public landing page. The id
+		// stays "/" so apps installed before the move keep their identity and pick up the new start.
+		id: "/",
+		start_url: "/play",
+		scope: "/play",
 		display: "standalone",
 		orientation: "portrait",
 		background_color: "#050403",

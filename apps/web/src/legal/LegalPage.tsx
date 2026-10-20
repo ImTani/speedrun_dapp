@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { legal } from "@/lexicon/legal.ts";
+import { BackLink } from "./BackLink.tsx";
 import {
 	CONTACT_EMAIL,
 	EFFECTIVE_DATE,
@@ -13,16 +13,14 @@ import { LegalLinks } from "./LegalLinks.tsx";
 import s from "./legal.module.css";
 import type { LegalDoc } from "./types.ts";
 
-/** One legal document: back link, title, effective date, short version, contents, sections. */
+/** One legal document: Back (to wherever the reader came from), title, effective date, short version, contents, sections. */
 export function LegalPage({ doc }: { doc: LegalDoc }) {
 	warnUnfilledLegalFields();
 	const draft = showDraftBanner();
 	return (
 		<main className={s.page}>
 			<div className={s.column}>
-				<Link href="/" className={s.back}>
-					<span aria-hidden="true">←</span> {legal.page.back}
-				</Link>
+				<BackLink />
 				{draft ? (
 					<p className={s.draft} role="note">
 						{legal.page.draft}

@@ -314,20 +314,54 @@
 	}
 }
 
+/* Consent at the point of sign-in: one quiet line under the button (bone-d on the ink pool, 7:1). */
+.consent {
+	max-width: 34ch;
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	line-height: 1.35;
+	color: var(--c-bone-d);
+	text-shadow: 0 1px 0 var(--c-soot);
+	text-wrap: balance;
+}
+.consent a {
+	color: var(--c-gilt-l);
+	text-decoration: underline;
+	text-decoration-color: #e3c27c80;
+	text-underline-offset: 3px;
+	/* a taller hit area without moving the line */
+	padding: 10px 0;
+	margin: -10px 0;
+}
+
+/* Terms · Privacy · Cookies · Credits along the foot. */
+.foot {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	margin-top: -6px;
+	text-shadow: 0 1px 0 var(--c-soot);
+}
+.foot .footLegal {
+	font-size: var(--fs-micro);
+}
+.footDot {
+	font-size: var(--fs-micro);
+	color: #c2ae88;
+}
 .colophonLink {
 	min-height: var(--tap);
 	min-width: var(--tap);
-	padding: 0 14px;
-	font-family: var(--font-num);
-	font-weight: 600;
+	padding: 0 6px;
+	font-family: var(--font-text);
 	font-size: var(--fs-micro);
-	letter-spacing: 0.22em;
-	text-transform: uppercase;
-	color: var(--c-bone-dd);
-	text-shadow: 0 1px 0 var(--c-soot);
+	color: var(--c-gilt-l);
 }
-.colophonLink:active {
-	color: var(--c-bone-d);
+.colophonLink:hover,
+.colophonLink:focus-visible {
+	text-decoration: underline;
+	text-underline-offset: 3px;
 }
 
 /* ---------------------------------------------------------------- colophon */
@@ -421,6 +455,43 @@
 	text-decoration: underline;
 	text-decoration-color: #c9a24f66;
 	text-underline-offset: 4px;
+}
+/* The gear beside the speaker (SettingsEntry): the same 44 px, same bone, as the speaker. */
+.gear {
+	display: inline-grid;
+	place-items: center;
+	inline-size: 44px;
+	block-size: 44px;
+	border-radius: 999px;
+	color: var(--c-bone-d);
+	transition:
+		color 160ms ease,
+		transform 120ms ease;
+}
+.gear:hover {
+	color: var(--c-bone);
+}
+.gear:active {
+	transform: scale(0.92);
+	color: var(--c-gilt-l);
+}
+.gear svg {
+	inline-size: 22px;
+	block-size: 22px;
+	fill: currentColor;
+	filter: drop-shadow(0 1px 0 #0008);
+}
+
+/* Settings rows and the deletion block read left-aligned inside the centred leaf. */
+.leafSound {
+	width: 100%;
+	text-align: start;
+}
+.leafDelete {
+	width: 100%;
+	padding: 14px 4px 4px;
+	border-top: 1px solid #5a463266;
+	text-align: start;
 }
 .leafClose {
 	width: min(100%, 300px);

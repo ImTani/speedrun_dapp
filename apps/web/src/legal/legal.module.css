@@ -294,6 +294,10 @@
 .noticeLow {
 	bottom: calc(var(--safe-b) + 12px);
 }
+.noticeTop {
+	top: calc(var(--safe-t) + 12px);
+	bottom: auto;
+}
 .noticeText {
 	flex: 1;
 	min-width: 0;

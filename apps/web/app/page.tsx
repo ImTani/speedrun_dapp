@@ -1,35 +1,30 @@
-"use client";
+import type { Metadata, Viewport } from "next";
+import { Landing } from "@/landing/Landing";
+import { READING_VIEWPORT } from "@/landing/site";
+import { landing } from "@/lexicon/landing";
 
-import { usePrivy } from "@privy-io/react-auth";
-import { useState } from "react";
-import { GameStateProvider } from "@/client/state";
-import { GameShell } from "@/screens/title/Shell";
-import { TitleScreen } from "@/screens/title/TitleScreen";
-import { MotionRoot } from "@/ui/motion/MotionRoot";
-import { TAB_ORDER, type Tab } from "@/ui/TabBar";
+// The public front door. The game itself lives at /play (and the installed app opens there).
 
-/** `?tab=gathering` (notification taps) opens on that tab. */
-function tabFromUrl(): Tab {
-	if (typeof window === "undefined") return "fragment";
-	const t = new URLSearchParams(window.location.search).get("tab");
-	return TAB_ORDER.find((x) => x === t) ?? "fragment";
-}
+export const metadata: Metadata = {
+	title: landing.meta.title,
+	description: landing.meta.description,
+	alternates: { canonical: "/" },
+	openGraph: {
+		type: "website",
+		url: "/",
+		siteName: "Apostasy: Sede Vacante",
+		title: landing.meta.title,
+		description: landing.meta.description,
+	},
+	twitter: {
+		card: "summary_large_image",
+		title: landing.meta.title,
+		description: landing.meta.description,
+	},
+};
+
+export const viewport: Viewport = READING_VIEWPORT;
 
 export default function Home() {
-	const { ready, authenticated, login } = usePrivy();
-	const [initialTab] = useState(tabFromUrl);
-
-	return (
-		<MotionRoot>
-			{!ready || !authenticated ? (
-				<TitleScreen ready={ready} onEnter={() => login()} />
-			) : (
-				// One shared read of the game state for the whole signed-in shell; the
-				// onboarding guide lives inside the shell.
-				<GameStateProvider>
-					<GameShell initialTab={initialTab} />
-				</GameStateProvider>
-			)}
-		</MotionRoot>
-	);
+	return <Landing />;
 }

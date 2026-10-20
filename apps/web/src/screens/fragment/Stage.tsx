@@ -21,6 +21,7 @@ import { L } from "@/lexicon";
 import { hud as hudText } from "@/lexicon/hud";
 import { titleText } from "@/lexicon/reliquary";
 import { DressedMask } from "@/screens/reliquary/ItemSwatch";
+import { SettingsEntry } from "@/screens/title/SettingsEntry";
 import { GlassWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
 import {
@@ -104,7 +105,10 @@ export function Stage({
 		<div className={s.stage}>
 			<canvas ref={floor} className={s.floor} />
 			<div className={s.stageTop} ref={shaker.ref}>
-				<SoundToggle className={s.soundCorner ?? ""} />
+				<div className={s.soundCorner}>
+					<SettingsEntry />
+					<SoundToggle />
+				</div>
 				<div className={s.windowWrap} ref={glass}>
 					<GlassWindow
 						aspect={aspect}

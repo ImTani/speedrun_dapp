@@ -4,10 +4,11 @@
 //  - /_next/static/* (hashed chunks, CSS, self-hosted fonts): cache-first. Only responses the server
 //    marks immutable are kept, so a development server (unhashed, no-store) is never cached.
 //  - /masks/*, /audio/*: served from cache at once and refreshed behind (stale-while-revalidate).
-//  - page navigations: network-first; the last good copy answers when the network is gone.
+//  - page navigations: network-first; the last good copy answers when the network is gone (the
+//    game at /play falls back to the cached /play, every other page to the cached landing /).
 //  - /api/* and everything else (other origins, non-GET): never touched, never cached.
 // Bump VERSION to drop every cache on the next activation.
-const VERSION = "v2";
+const VERSION = "v3";
 const STATIC = `apostasy-static-${VERSION}`;
 const PAGES = `apostasy-pages-${VERSION}`;
 const KEEP = [STATIC, PAGES];
@@ -88,10 +89,16 @@ async function networkFirst(e, req) {
 	} catch {
 		return (
 			(await cache.match(req, { ignoreSearch: true })) ||
-			(await cache.match("/")) ||
+			(await cache.match(gameNav(req) ? "/play" : "/")) ||
 			Response.error()
 		);
 	}
+}
+
+/** A navigation inside the game (/play and below). */
+function gameNav(req) {
+	const p = new URL(req.url).pathname;
+	return p === "/play" || p.startsWith("/play/");
 }
 
 async function trim(cache) {
@@ -116,16 +123,22 @@ self.addEventListener("push", (e) => {
 			badge: "/icon.svg",
 			tag: data.tag || "apostasy",
 			renotify: Boolean(data.tag),
-			data: { url: data.url || "/" },
+			data: { url: data.url || "/play" },
 		}),
 	);
 });
 
+/** The game moved from / to /play: payloads from older runners say "/?tab=gathering". */
+function gameUrl(raw) {
+	const u = new URL(raw || "/play", self.location.origin);
+	if (u.pathname === "/" && u.searchParams.has("tab")) u.pathname = "/play";
+	return u.href;
+}
+
 // Tapping a notification focuses an open window of the app, or opens one, at the payload's url.
 self.addEventListener("notificationclick", (e) => {
 	e.notification.close();
-	const target = new URL(e.notification.data?.url || "/", self.location.origin)
-		.href;
+	const target = gameUrl(e.notification.data?.url);
 	e.waitUntil(
 		self.clients
 			.matchAll({ type: "window", includeUncontrolled: true })
