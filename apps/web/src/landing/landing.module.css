@@ -101,6 +101,10 @@
 	margin-top: 4px;
 }
 /* The game's red slab: chamfered, lit from above, ink-shadowed. */
+/* layout only, shared by every PrimaryButton look */
+.playFit {
+	width: min(100%, 320px);
+}
 .play {
 	position: relative;
 	display: inline-grid;
@@ -578,7 +582,8 @@
 		gap: 20px;
 		width: auto;
 	}
-	.play {
+	.play,
+	.playFit {
 		width: auto;
 		min-width: 220px;
 	}

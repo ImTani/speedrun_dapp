@@ -1,0 +1,778 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: rules are grouped by look (each look's
+   states sit with the look), not by specificity; no two rules here compete for one element. */
+/* =====================================================================
+   PrimaryButton faces: enamel, glass, arch, wax ("current" uses each call
+   site's own class and never touches this file).
+
+   Layers, back to front: .body (the look's own pieces, then .fill for
+   loading and .sheen for the hero) under .label; .focus sits outside the
+   body so the drop shadow never doubles the ring. Everything is static CSS
+   and inline SVG; the only loops are the hero sheen (gated by data-sheen,
+   set only on screen) and the indeterminate loading pour.
+   ===================================================================== */
+
+/* Layout defaults at zero specificity: a call site's layout class (width, margins) wins. */
+:where(.btn) {
+	display: grid;
+	width: 100%;
+	margin: 0;
+}
+.btn {
+	--K: 12px; /* corner cut size */
+	--S: 5px; /* corner step */
+	--shadow: drop-shadow(0 3px 0 #050403) drop-shadow(0 8px 12px #000000a8);
+	--shadow-in: drop-shadow(0 1px 0 #050403) drop-shadow(0 3px 5px #000000a0);
+	position: relative;
+	isolation: isolate;
+	place-items: center;
+	min-height: 58px;
+	padding: 12px 28px 13px;
+	border: 0;
+	border-radius: 0;
+	background: none;
+	color: var(--c-bone-hi);
+	font: inherit;
+	text-decoration: none;
+	cursor: pointer;
+	user-select: none;
+	-webkit-tap-highlight-color: transparent;
+	touch-action: manipulation;
+}
+.btn[data-size="md"] {
+	--K: 9px;
+	--S: 4px;
+	min-height: 48px;
+	padding: 9px 16px 10px;
+}
+.btn[data-inline] {
+	display: inline-grid;
+	width: auto;
+	min-width: 9em;
+}
+.btn:disabled {
+	opacity: 1; /* globals dim every disabled button; these desaturate instead */
+	cursor: default;
+}
+.btn:focus-visible {
+	outline: none;
+}
+
+.label {
+	position: relative;
+	z-index: 2;
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-h3);
+	line-height: 1.05;
+	letter-spacing: 0.035em;
+	text-align: center;
+	text-wrap: balance;
+	transition: transform var(--dur-1) var(--ease-out);
+}
+.btn[data-size="md"] .label {
+	font-size: var(--fs-lead);
+}
+
+.body {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	filter: var(--shadow);
+	transition: filter var(--dur-2) var(--ease-out);
+}
+.body > span {
+	position: absolute;
+	inset: 0;
+}
+
+/* ---- shared geometry: the gothic cut (a chamfer with a small square step) ----
+   --i inset, --k corner size, --s step; .ring adds an inner outline at --j / --k2 / --s2
+   and fills only between them (evenodd). */
+.cut,
+.ring {
+	--a: var(--i);
+	--b: calc(var(--i) + var(--s));
+	--c: calc(var(--i) + var(--k));
+	--A: calc(100% - var(--i));
+	--B: calc(100% - var(--i) - var(--s));
+	--C: calc(100% - var(--i) - var(--k));
+}
+.cut {
+	clip-path: polygon(
+		var(--a) var(--c),
+		var(--b) var(--c),
+		var(--c) var(--b),
+		var(--c) var(--a),
+		var(--C) var(--a),
+		var(--C) var(--b),
+		var(--B) var(--c),
+		var(--A) var(--c),
+		var(--A) var(--C),
+		var(--B) var(--C),
+		var(--C) var(--B),
+		var(--C) var(--A),
+		var(--c) var(--A),
+		var(--c) var(--B),
+		var(--b) var(--C),
+		var(--a) var(--C)
+	);
+}
+.ring {
+	--d: var(--j);
+	--e: calc(var(--j) + var(--s2));
+	--f: calc(var(--j) + var(--k2));
+	--D: calc(100% - var(--j));
+	--E: calc(100% - var(--j) - var(--s2));
+	--F: calc(100% - var(--j) - var(--k2));
+	clip-path: polygon(
+		evenodd,
+		var(--a) var(--c),
+		var(--b) var(--c),
+		var(--c) var(--b),
+		var(--c) var(--a),
+		var(--C) var(--a),
+		var(--C) var(--b),
+		var(--B) var(--c),
+		var(--A) var(--c),
+		var(--A) var(--C),
+		var(--B) var(--C),
+		var(--C) var(--B),
+		var(--C) var(--A),
+		var(--c) var(--A),
+		var(--c) var(--B),
+		var(--b) var(--C),
+		var(--a) var(--C),
+		var(--a) var(--c),
+		var(--d) var(--f),
+		var(--d) var(--f),
+		var(--e) var(--f),
+		var(--f) var(--e),
+		var(--f) var(--d),
+		var(--F) var(--d),
+		var(--F) var(--e),
+		var(--E) var(--f),
+		var(--D) var(--f),
+		var(--D) var(--F),
+		var(--E) var(--F),
+		var(--F) var(--E),
+		var(--F) var(--D),
+		var(--f) var(--D),
+		var(--f) var(--E),
+		var(--e) var(--F),
+		var(--d) var(--F),
+		var(--d) var(--f)
+	);
+}
+
+/* ---- loading: light pours in from the leading end ---- */
+.fill {
+	overflow: hidden;
+	opacity: 0;
+	transition: opacity var(--dur-2) var(--ease-out);
+}
+.fill::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	transform-origin: 0 50%;
+	transform: scaleX(var(--p, 0));
+	background:
+		linear-gradient(180deg, #ffb27a00 0%, #ffb27a1c 55%, #ffb27a40 100%),
+		linear-gradient(
+			90deg,
+			#ff6a4a00 0%,
+			#ffb27a24 72%,
+			#ffd9a050 97%,
+			#ffe6b099 100%
+		);
+	mix-blend-mode: screen;
+	transition: transform 0.4s var(--ease-out);
+}
+.btn[data-busy] .fill {
+	opacity: 1;
+}
+.btn[data-indeterminate] .fill::before {
+	animation: pour 1.9s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes pour {
+	0% {
+		transform: scaleX(0);
+		opacity: 1;
+	}
+	80% {
+		transform: scaleX(1);
+		opacity: 1;
+	}
+	100% {
+		transform: scaleX(1);
+		opacity: 0;
+	}
+}
+
+/* ---- hero: one slow gilt sheen, only while data-sheen is set (on screen, tab visible) ---- */
+.sheen {
+	display: none;
+	overflow: hidden;
+}
+.btn[data-hero] .sheen {
+	display: block;
+}
+.sheen::before {
+	content: "";
+	position: absolute;
+	top: -20%;
+	bottom: -20%;
+	left: 0;
+	width: 42%;
+	background: linear-gradient(
+		100deg,
+		#f5dfa000 0%,
+		#f5dfa000 22%,
+		#f5dfa044 50%,
+		#f5dfa000 78%,
+		#f5dfa000 100%
+	);
+	mix-blend-mode: screen;
+	transform: translateX(-130%) skewX(-14deg);
+}
+.btn[data-sheen] .sheen::before {
+	animation: sheen 7.5s cubic-bezier(0.45, 0, 0.25, 1) 1.2s infinite;
+}
+@keyframes sheen {
+	0% {
+		transform: translateX(-130%) skewX(-14deg);
+	}
+	24%,
+	100% {
+		transform: translateX(345%) skewX(-14deg);
+	}
+}
+
+/* ---- focus ring (drawn per look below) ---- */
+.focus {
+	position: absolute;
+	inset: -5px;
+	z-index: 1;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity var(--dur-1) var(--ease-out);
+}
+.btn:focus-visible .focus,
+.btn[data-focused] .focus {
+	opacity: 1;
+}
+
+/* ---- shared states ---- */
+@media (hover: hover) {
+	.btn:hover:not(:disabled) .body {
+		filter: brightness(1.1) var(--shadow);
+	}
+}
+.btn:active:not(:disabled) .body,
+.btn[data-pressed] .body {
+	filter: var(--shadow-in);
+}
+.btn:active:not(:disabled) .label,
+.btn[data-pressed] .label {
+	transform: translateY(1.5px);
+}
+.btn:disabled:not([data-busy]) .body {
+	filter: grayscale(0.88) brightness(0.55) drop-shadow(0 2px 0 #050403);
+}
+.btn:disabled:not([data-busy]) .label {
+	color: #b5a27e;
+	text-shadow: 0 1px 0 #050403;
+}
+
+/* =====================================================================
+   1. ENAMEL: oxblood enamel plaque in a bevelled gilt frame
+   ===================================================================== */
+.btn[data-look="enamel"] .frame {
+	--i: 0px;
+	--k: var(--K);
+	--s: var(--S);
+	background:
+		linear-gradient(90deg, #ffffff2a, #fff0 14%, #fff0 86%, #0000003a),
+		linear-gradient(
+			180deg,
+			#fff3cf 0%,
+			#f5dfa0 10%,
+			#c9a24f 32%,
+			#8a6a2c 60%,
+			#b8913f 80%,
+			#5e4619 100%
+		);
+}
+.btn[data-look="enamel"] .key {
+	--i: 3px;
+	--k: var(--K);
+	--s: max(0px, calc(var(--S) - 1.8px));
+	background: #120203;
+}
+.btn[data-look="enamel"] .face,
+.btn[data-look="enamel"] .fill,
+.btn[data-look="enamel"] .sheen {
+	--i: 4px;
+	--k: var(--K);
+	--s: max(0px, calc(var(--S) - 2.4px));
+	transition:
+		transform var(--dur-1) var(--ease-out),
+		box-shadow var(--dur-1) var(--ease-out),
+		filter var(--dur-2) var(--ease-out),
+		opacity var(--dur-2) var(--ease-out);
+}
+.btn[data-look="enamel"] .face {
+	background:
+		linear-gradient(180deg, #ffe7d61f 0%, #ffe7d608 42%, #fff0 46%),
+		radial-gradient(130% 170% at 50% 0%, #8e1218 0%, #6a0d12 48%, #3a0709 100%);
+	box-shadow: inset 0 0 14px #1a0204d0;
+}
+.btn[data-look="enamel"] .line,
+.btn[data-look="enamel"] .lip {
+	--k: var(--K);
+	--s: 0px;
+	--k2: var(--K);
+	--s2: 0px;
+	transition: transform var(--dur-1) var(--ease-out);
+}
+.btn[data-look="enamel"] .line {
+	--i: 8px;
+	--j: 9px;
+	background: #12020399;
+}
+.btn[data-look="enamel"] .lip {
+	--i: 9px;
+	--j: 10px;
+	background: #e3c27c5c;
+}
+.btn[data-look="enamel"][data-size="md"] .line {
+	--i: 7px;
+	--j: 8px;
+}
+.btn[data-look="enamel"][data-size="md"] .lip {
+	--i: 8px;
+	--j: 9px;
+}
+.btn[data-look="enamel"] .label {
+	/* embossed gilt: lit top edge, dark keyline below */
+	color: #f0d48c;
+	text-shadow:
+		0 -1px 0 #fff3cc40,
+		0 1.5px 0 #1a0204,
+		0 0 1px #1a0204,
+		0 2px 4px #00000080;
+}
+/* press: the plaque sinks into the frame */
+.btn[data-look="enamel"]:active:not(:disabled) :is(.face, .line, .lip, .fill),
+.btn[data-look="enamel"][data-pressed] :is(.face, .line, .lip, .fill) {
+	transform: translateY(1.5px);
+}
+.btn[data-look="enamel"]:active:not(:disabled) .face,
+.btn[data-look="enamel"][data-pressed] .face {
+	box-shadow:
+		inset 0 3px 7px #000000d0,
+		inset 0 0 14px #1a0204d0;
+	filter: brightness(0.9);
+}
+.btn[data-look="enamel"] .focus {
+	--i: 0px;
+	--k: calc(var(--K) + 2px);
+	--s: var(--S);
+	--j: 2px;
+	--k2: calc(var(--K) + 2px);
+	--s2: max(0px, calc(var(--S) - 1.2px));
+	background: var(--c-gilt-hi);
+}
+
+/* =====================================================================
+   2. GLASS: red stained-glass panes in lead cames, backlit
+   ===================================================================== */
+.btn[data-look="glass"] {
+	--K: 7px;
+	--gt: 4px; /* quarry border: top / height */
+	--gs: 6px;
+	--gf: 12px; /* main pane inset from top and bottom */
+	--ge: 22px; /* end pane width */
+	padding-inline: calc(var(--gt) + var(--ge) + 8px);
+}
+.btn[data-look="glass"][data-size="md"] {
+	--K: 6px;
+	--gt: 3px;
+	--gs: 5px;
+	--gf: 10px;
+	--ge: 15px;
+}
+.btn[data-look="glass"] .frame {
+	--i: 0px;
+	--k: var(--K);
+	--s: 0px;
+	background: linear-gradient(
+		180deg,
+		#2a221e 0%,
+		#0b0807 30%,
+		#0b0807 72%,
+		#1d1714 100%
+	);
+}
+.btn[data-look="glass"] .strip {
+	left: var(--gt);
+	right: var(--gt);
+	height: var(--gs);
+	background:
+		linear-gradient(180deg, #fff2 0%, #fff0 45%, #0005 100%),
+		repeating-linear-gradient(
+			90deg,
+			#8f5a1c 0 15px,
+			#0b0807 15px 17px,
+			#5e0b10 17px 32px,
+			#0b0807 32px 34px
+		);
+}
+.btn[data-look="glass"] .strip[data-edge="top"] {
+	top: var(--gt);
+	bottom: auto;
+}
+.btn[data-look="glass"] .strip[data-edge="bottom"] {
+	top: auto;
+	bottom: var(--gt);
+}
+.btn[data-look="glass"] .end {
+	top: var(--gf);
+	bottom: var(--gf);
+	width: var(--ge);
+	background: radial-gradient(90% 70% at 50% 40%, #a3171e, #5a0b10);
+}
+.btn[data-look="glass"] .end[data-edge="start"] {
+	left: var(--gt);
+	right: auto;
+}
+.btn[data-look="glass"] .end[data-edge="end"] {
+	left: auto;
+	right: var(--gt);
+}
+/* a lozenge of amber in each end pane, leaded */
+.btn[data-look="glass"] .end::before,
+.btn[data-look="glass"] .end::after {
+	content: "";
+	position: absolute;
+	clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.btn[data-look="glass"] .end::before {
+	inset: 2px 1px;
+	background: #0b0807;
+}
+.btn[data-look="glass"] .end::after {
+	inset: 4.5px 3.5px;
+	background: radial-gradient(circle at 45% 38%, #ffe2a0, #d8942e 55%, #7a4a14);
+}
+.btn[data-look="glass"] .face {
+	top: var(--gf);
+	bottom: var(--gf);
+	left: calc(var(--gt) + var(--ge) + 2px);
+	right: calc(var(--gt) + var(--ge) + 2px);
+	background:
+		linear-gradient(
+			104deg,
+			#fff0 18%,
+			#ffffff12 30%,
+			#fff0 42%,
+			#fff0 58%,
+			#ffffff0d 68%,
+			#fff0 80%
+		),
+		radial-gradient(110% 150% at 28% 10%, #9e1820 0%, #9e182000 62%),
+		linear-gradient(180deg, #84111a 0%, #6c0d13 55%, #560a0f 100%);
+	transition: filter var(--dur-2) var(--ease-out);
+}
+.btn[data-look="glass"] .glow,
+.btn[data-look="glass"] .fill,
+.btn[data-look="glass"] .sheen {
+	--i: 2px;
+	--k: var(--K);
+	--s: 0px;
+}
+.btn[data-look="glass"] .glow {
+	clip-path: inset(2px round 3px);
+	background: radial-gradient(
+		85% 95% at 50% 118%,
+		#ff8a4ab0 0%,
+		#ff6a4a40 38%,
+		#ff6a4a00 72%
+	);
+	mix-blend-mode: screen;
+	opacity: 0.5;
+	transition: opacity var(--dur-2) var(--ease-out);
+}
+.btn[data-look="glass"] .fill,
+.btn[data-look="glass"] .sheen {
+	clip-path: inset(2px round 3px);
+}
+.btn[data-look="glass"] .label {
+	color: var(--c-bone-hi);
+	text-shadow:
+		0 1px 0 #0b0807,
+		0 -1px 0 #0b0807,
+		1px 0 0 #0b0807,
+		-1px 0 0 #0b0807,
+		0 2px 4px #000000cc;
+}
+@media (hover: hover) {
+	.btn[data-look="glass"]:hover:not(:disabled) .glow {
+		opacity: 0.8;
+	}
+}
+.btn[data-look="glass"]:active:not(:disabled) .glow,
+.btn[data-look="glass"][data-pressed] .glow,
+.btn[data-look="glass"][data-busy] .glow {
+	opacity: 1;
+}
+.btn[data-look="glass"]:active:not(:disabled) .face,
+.btn[data-look="glass"][data-pressed] .face {
+	filter: brightness(1.12) saturate(1.1);
+}
+.btn[data-look="glass"] .focus {
+	--i: 0px;
+	--k: calc(var(--K) + 2px);
+	--s: 0px;
+	--j: 2px;
+	--k2: calc(var(--K) + 1px);
+	--s2: 0px;
+	background: var(--c-bone-hi);
+}
+
+/* =====================================================================
+   3. ARCH: umber stone tablet under an ogee crest, gilt trim, a red jewel
+   ===================================================================== */
+.btn[data-look="arch"] {
+	--crest: 15.5px; /* where the tablet's top edge sits under the crest */
+	min-height: calc(56px + var(--crest));
+	padding-top: calc(12px + var(--crest));
+	padding-inline: 32px;
+}
+.btn[data-look="arch"][data-size="md"] {
+	--crest: 12.5px;
+	min-height: calc(46px + var(--crest));
+	padding-top: calc(9px + var(--crest));
+	padding-inline: 26px;
+}
+.btn[data-look="arch"] .face,
+.btn[data-look="arch"] .fill,
+.btn[data-look="arch"] .sheen {
+	top: var(--crest);
+	border-radius: 3px;
+}
+.btn[data-look="arch"] .face {
+	background: radial-gradient(
+		120% 130% at 50% 0%,
+		#4a3829 0%,
+		#2c2017 52%,
+		#17100c 100%
+	);
+	box-shadow:
+		0 0 0 1.4px #0b0807,
+		inset 0 1px 0 #ffffff1c,
+		inset 0 -2px 0 #00000080,
+		inset 0 0 10px #00000070;
+	outline: 1px solid #c9a24f;
+	outline-offset: -5px;
+	transition:
+		box-shadow var(--dur-1) var(--ease-out),
+		outline-color var(--dur-2) var(--ease-out);
+}
+.btn[data-look="arch"] .bead {
+	left: 14px;
+	right: 14px;
+	height: 3px;
+	background:
+		radial-gradient(circle at 1.5px 1.5px, #d9b66a 0 1.05px, #d9b66a00 1.45px) 0
+		0 / 6px 3px repeat-x;
+	opacity: 0.85;
+}
+.btn[data-look="arch"] .bead[data-edge="top"] {
+	top: calc(var(--crest) + 8px);
+	bottom: auto;
+}
+.btn[data-look="arch"] .bead[data-edge="bottom"] {
+	top: auto;
+	bottom: 8px;
+}
+.btn[data-look="arch"] .fleuron {
+	position: absolute;
+	top: calc(50% + var(--crest) / 2 - 9px);
+	width: 14px;
+	height: 18px;
+}
+.btn[data-look="arch"] .fleuron[data-edge="start"] {
+	left: 9px;
+}
+.btn[data-look="arch"] .fleuron[data-edge="end"] {
+	right: 9px;
+}
+.btn[data-look="arch"][data-size="md"] .fleuron {
+	transform: scale(0.82);
+	top: calc(50% + var(--crest) / 2 - 9px);
+}
+.btn[data-look="arch"][data-size="md"] .fleuron[data-edge="start"] {
+	left: 6px;
+}
+.btn[data-look="arch"][data-size="md"] .fleuron[data-edge="end"] {
+	right: 6px;
+}
+.btn[data-look="arch"] .crest {
+	position: absolute;
+	top: 0;
+	left: 50%;
+	width: 84px;
+	height: 17.5px;
+	transform: translateX(-50%);
+	overflow: visible;
+}
+.btn[data-look="arch"][data-size="md"] .crest {
+	width: 67px;
+	height: 14px;
+}
+.btn[data-look="arch"] .jewel {
+	transition: filter var(--dur-2) var(--ease-out);
+}
+@media (hover: hover) {
+	.btn[data-look="arch"]:hover:not(:disabled) .jewel {
+		filter: drop-shadow(0 0 3px #ff6a4a);
+	}
+	.btn[data-look="arch"]:hover:not(:disabled) .face {
+		outline-color: #e3c27c;
+	}
+}
+.btn[data-look="arch"]:active:not(:disabled) .jewel,
+.btn[data-look="arch"][data-pressed] .jewel,
+.btn[data-look="arch"][data-busy] .jewel {
+	filter: drop-shadow(0 0 4px #ff6a4a) brightness(1.25);
+}
+.btn[data-look="arch"]:active:not(:disabled) .face,
+.btn[data-look="arch"][data-pressed] .face {
+	box-shadow:
+		0 0 0 1.4px #0b0807,
+		inset 0 3px 7px #000000c0,
+		inset 0 0 10px #00000070;
+}
+.btn[data-look="arch"] .label {
+	color: #ecd08e;
+	text-shadow:
+		0 -1px 0 #fff3cc33,
+		0 1.5px 0 #0b0807,
+		0 0 1px #0b0807;
+}
+.btn[data-look="arch"] .focus {
+	inset: calc(var(--crest) - 5px) -5px -5px;
+	border: 2px solid var(--c-gilt-hi);
+	border-radius: 6px;
+}
+
+/* =====================================================================
+   4. WAX: a bar of red sealing wax, the seal at the leading end
+   ===================================================================== */
+.btn[data-look="wax"] {
+	--seal: 60px;
+	padding-inline: 56px 18px;
+}
+.btn[data-look="wax"][data-size="md"] {
+	--seal: 48px;
+	padding-inline: 44px 14px;
+}
+.btn[data-look="wax"] .face,
+.btn[data-look="wax"] .fill,
+.btn[data-look="wax"] .sheen {
+	inset: 4px 2px 4px 14px;
+	border-radius: 14px 11px 12px 9px / 12px 14px 10px 13px;
+}
+.btn[data-look="wax"] .face {
+	background:
+		radial-gradient(70% 60% at 30% 12%, #c4323866, #c4323800 70%),
+		linear-gradient(180deg, #a3171e 0%, #82101a 38%, #5e0b10 84%, #45080c 100%);
+	box-shadow:
+		inset 0 -3px 5px #2a0406b0,
+		inset 0 2px 1px #ff9a8a30,
+		inset 0 0 0 1px #2a040660;
+	transform-origin: 50% 100%;
+	transition: transform var(--dur-1) var(--ease-out);
+}
+.btn[data-look="wax"] .gloss {
+	position: absolute;
+	left: 20%;
+	right: 9%;
+	top: 12%;
+	height: 12%;
+	border-radius: 99px;
+	background: linear-gradient(180deg, #ffd2c438, #ffd2c400);
+	transition: opacity var(--dur-1) var(--ease-out);
+}
+.btn[data-look="wax"] .defs {
+	position: absolute;
+	width: 0;
+	height: 0;
+	overflow: hidden;
+}
+.btn[data-look="wax"] .seal {
+	position: absolute;
+	left: -7px;
+	top: 50%;
+	width: var(--seal);
+	height: var(--seal);
+	margin-top: calc(var(--seal) / -2);
+	transform-origin: 50% 85%;
+	transition:
+		transform 0.5s var(--ease-out),
+		filter 0.5s var(--ease-out);
+}
+.btn[data-look="wax"] .label {
+	color: var(--c-bone-hi);
+	text-shadow:
+		0 1px 0 #2a0406,
+		0 0 2px #2a0406,
+		0 2px 3px #00000099;
+}
+/* press: the wax flattens under the stamp */
+.btn[data-look="wax"]:active:not(:disabled) .face,
+.btn[data-look="wax"][data-pressed] .face {
+	transform: scaleY(0.94) scaleX(1.006);
+}
+.btn[data-look="wax"]:active:not(:disabled) .gloss,
+.btn[data-look="wax"][data-pressed] .gloss {
+	opacity: 0.3;
+}
+.btn[data-look="wax"]:active:not(:disabled) .seal,
+.btn[data-look="wax"][data-pressed] .seal {
+	transform: scale(0.95) translateY(1px);
+	transition-duration: var(--dur-1);
+}
+/* loading: the seal softens and slumps */
+.btn[data-look="wax"][data-busy] .seal {
+	transform: scaleY(0.86) scaleX(1.06) translateY(4px);
+	filter: brightness(1.3) saturate(1.15);
+}
+.btn[data-look="wax"][data-busy] .rose {
+	opacity: 0.45;
+}
+.btn[data-look="wax"] .rose {
+	transition: opacity 0.5s var(--ease-out);
+}
+.btn[data-look="wax"] .focus {
+	inset: -1px -3px -1px 9px;
+	border: 2px solid var(--c-bone-hi);
+	border-radius: 17px 14px 15px 12px / 15px 17px 13px 16px;
+}
+
+/* ---- reduced motion: no pour, no sheen; loading shows as a steady glow ---- */
+@media (prefers-reduced-motion: reduce) {
+	.btn[data-hero] .sheen {
+		display: none;
+	}
+	.btn[data-indeterminate] .fill::before {
+		animation: none;
+		transform: scaleX(1);
+		opacity: 0.55;
+	}
+	.btn[data-look="wax"][data-busy] .seal {
+		transform: none;
+	}
+}

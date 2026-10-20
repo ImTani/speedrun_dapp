@@ -13,8 +13,9 @@ import { useEffect, useState } from "react";
 import { buzz, HAPTIC, useSfx } from "@/audio";
 import { LegalLinks } from "@/legal";
 import { shell } from "@/lexicon/shell";
+import { PrimaryButton } from "@/ui/button";
 import { useShake } from "@/ui/motion/impact";
-import { easeIn, easeOut, pressable, spring } from "@/ui/motion/presets";
+import { easeIn, easeOut, spring } from "@/ui/motion/presets";
 import { Wordmark } from "@/ui/wordmark";
 import { Colophon } from "./Colophon";
 import { useTapSounds } from "./juice";
@@ -114,22 +115,24 @@ export function TitleScreen({
 					animate={struck ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
 					transition={{ ...spring.settle, delay: 0.55 }}
 				>
-					<motion.button
-						type="button"
-						className={s.cta}
+					<PrimaryButton
+						hero
+						legacy={s.cta}
+						legacyLabel={s.ctaLabel}
 						data-ready={ready || undefined}
 						data-sfx="off"
 						disabled={!ready}
+						loading={!ready}
+						haptic={false}
 						onClick={() => {
 							// The first touch is this one: give the bell time to arrive.
 							sfx.play("toll", { maxLate: 1500 });
 							buzz(HAPTIC.seal);
 							onEnter();
 						}}
-						{...pressable}
 					>
-						<span className={s.ctaLabel}>{ready ? T.enter : T.entering}</span>
-					</motion.button>
+						{ready ? T.enter : T.entering}
+					</PrimaryButton>
 				</motion.div>
 
 				<motion.p

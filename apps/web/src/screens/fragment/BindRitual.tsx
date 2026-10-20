@@ -19,6 +19,7 @@ import { buzz, HAPTIC, play } from "@/audio";
 import { fx } from "@/fx";
 import { L } from "@/lexicon";
 import { useKeepAboveKeyboard } from "@/ui/appFrame";
+import { PrimaryButton } from "@/ui/button";
 import { coachAct } from "@/ui/coach/signal";
 import { Mask } from "@/ui/Mask";
 import { IMPACT, impact, pressable, spring, useShake } from "@/ui/motion";
@@ -283,33 +284,31 @@ export function BindRitual({
 			<footer className={s.ritualFoot}>
 				{err && <p className="banner">{err}</p>}
 				{step < 2 ? (
-					<motion.button
+					<PrimaryButton
 						key="next"
-						type="button"
-						className="btn btn-blood"
+						legacy="btn btn-blood"
 						onClick={() => {
 							// Moving on counts as having chosen (the coach marks follow).
 							coachAct(step === 0 ? "mask" : "sigil");
 							goto((step + 1) as Step);
 						}}
-						{...pressable}
 					>
 						{step === 0 ? L.bind.wear : L.bind.carve}
-					</motion.button>
+					</PrimaryButton>
 				) : (
 					// Keyed apart from "Next": motion binds its ref once, at mount.
-					<motion.button
+					<PrimaryButton
 						key="bind"
 						ref={bindRef}
-						type="button"
-						className="btn btn-blood"
+						legacy="btn btn-blood"
+						burst
 						onClick={bind}
 						data-coach="bind"
 						disabled={!nameOk || !!pour}
-						{...pressable}
+						loading={!!pour}
 					>
 						{pour ? L.bind.binding : L.bind.submit}
-					</motion.button>
+					</PrimaryButton>
 				)}
 			</footer>
 		</div>

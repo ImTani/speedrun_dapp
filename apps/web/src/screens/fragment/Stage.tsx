@@ -23,6 +23,7 @@ import { titleText } from "@/lexicon/reliquary";
 import { Atmosphere } from "@/scene/AtmosphereLayer";
 import { DressedMask } from "@/screens/reliquary/ItemSwatch";
 import { SettingsEntry } from "@/screens/title/SettingsEntry";
+import { PrimaryButton } from "@/ui/button";
 import { GlassWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
 import {
@@ -449,15 +450,15 @@ function RetuneSheet({
 					>
 						{L.hero.cancel}
 					</motion.button>
-					<motion.button
-						type="button"
-						className="btn btn-blood"
+					<PrimaryButton
+						legacy="btn btn-blood"
+						size="md"
 						disabled={busy || !changed}
+						loading={busy}
 						onClick={carve}
-						{...pressable}
 					>
 						{busy ? L.hero.retuning : L.hero.retuneApply}
-					</motion.button>
+					</PrimaryButton>
 				</div>
 			</motion.div>
 		</>

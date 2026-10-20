@@ -23,8 +23,9 @@ import { buzz, play as cue, HAPTIC, useSfx } from "@/audio";
 import { FX, fx, PALETTES } from "@/fx";
 import { remnantAt, remnantConfig } from "@/game/spire";
 import { onboarding as T } from "@/lexicon/onboarding";
+import { PrimaryButton } from "@/ui/button";
 import { Mask } from "@/ui/Mask";
-import { IMPACT, impact, pressable, spring, useShake } from "@/ui/motion";
+import { IMPACT, impact, spring, useShake } from "@/ui/motion";
 import { Count, Rubric } from "@/ui/type";
 import s from "./practice.module.css";
 
@@ -297,15 +298,13 @@ export function Practice({
 			</div>
 
 			<div className={s.foot}>
-				<motion.button
+				<PrimaryButton
 					ref={go}
-					type="button"
-					className="btn btn-blood"
+					legacy="btn btn-blood"
 					onClick={over ? onDone : unveil}
-					{...pressable}
 				>
 					{over ? T.practice.go : T.practice.unveil}
-				</motion.button>
+				</PrimaryButton>
 			</div>
 		</motion.div>,
 		document.body,

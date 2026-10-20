@@ -23,7 +23,8 @@ import {
 import { FX, fx } from "@/fx";
 import { itemById, type Rarity, type ScryResult } from "@/game/reliquary";
 import { itemName, reliquary as T } from "@/lexicon/reliquary";
-import { hitStop, IMPACT, impact, pressable, useShake } from "@/ui/motion";
+import { PrimaryButton } from "@/ui/button";
+import { hitStop, IMPACT, impact, useShake } from "@/ui/motion";
 import { Count, Rubric } from "@/ui/type";
 import { DressedMask, ItemSwatch, useFragmentLook } from "./ItemSwatch";
 import s from "./reliquary.module.css";
@@ -254,20 +255,22 @@ export function ReliquaryScreen() {
 			</div>
 
 			<div className={s.actions}>
-				<motion.button
-					type="button"
-					className={s.cta}
+				<PrimaryButton
+					hero
+					burst
+					legacy={s.cta}
+					className={s.ctaFit}
 					data-sfx="off"
 					disabled={!state || busy || short}
+					loading={busy}
 					onClick={doScry}
-					{...pressable}
 				>
 					{busy
 						? T.scrying
 						: card.state === "shown"
 							? T.again(state?.cost ?? 100)
 							: T.scry(state?.cost ?? 100)}
-				</motion.button>
+				</PrimaryButton>
 				{state ? (
 					<p className={s.note}>
 						{short ? T.errors.notEnoughAsh : T.pity(state.pityLeft)}

@@ -4,11 +4,11 @@
  * shared lens pauses it off screen), the masks and glass, the live numbers, the storage notice.
  */
 import { deploymentFor } from "@arena/chain";
-import Link from "next/link";
 import { CookieNotice, LegalLinks } from "@/legal";
 import { landing as L } from "@/lexicon/landing";
 import { TitleScene } from "@/screens/title/TitleScene";
 import t from "@/screens/title/title.module.css";
+import { PrimaryLink } from "@/ui/button";
 import { GlassWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
 import { Wordmark } from "@/ui/wordmark";
@@ -38,9 +38,9 @@ export function Landing() {
 				<BuiltWith />
 				<section className={s.close} aria-label={L.hero.play}>
 					<p className={s.closeLine}>{L.close.line}</p>
-					<Link href="/play" className={s.play}>
+					<PrimaryLink href="/play" legacy={s.play} className={s.playFit}>
 						{L.hero.play}
-					</Link>
+					</PrimaryLink>
 				</section>
 			</main>
 			<Footer />
@@ -64,9 +64,9 @@ function Hero() {
 				</h1>
 				<p className={s.line}>{L.hero.line}</p>
 				<div className={s.ctaRow}>
-					<Link href="/play" className={s.play}>
+					<PrimaryLink href="/play" hero legacy={s.play} className={s.playFit}>
 						{L.hero.play}
-					</Link>
+					</PrimaryLink>
 					<p className={s.note}>{L.hero.note}</p>
 				</div>
 				<div className={s.qr}>

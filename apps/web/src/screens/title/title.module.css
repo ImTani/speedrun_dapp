@@ -155,6 +155,10 @@
 	margin-top: clamp(6px, 1.8dvh, 16px);
 	filter: drop-shadow(0 6px 0 var(--c-soot)) drop-shadow(0 14px 22px #000c);
 }
+/* the PrimaryButton looks cast their own shadow */
+.ctaWrap:has(> [data-look]) {
+	filter: none;
+}
 .cta {
 	position: relative;
 	display: grid;

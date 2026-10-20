@@ -242,6 +242,11 @@
 	align-items: center;
 	gap: 6px;
 }
+/* layout only, shared by every PrimaryButton look */
+.ctaFit {
+	width: 100%;
+	max-width: 340px;
+}
 .cta {
 	width: 100%;
 	max-width: 340px;

@@ -11,15 +11,9 @@ import { turnLight } from "@/game/spire";
 import { roman } from "@/lexicon/gathering";
 import { spire as T } from "@/lexicon/spire";
 import { promoteMoment } from "@/screens/title/Moments";
+import { PrimaryButton } from "@/ui/button";
 import { Mask } from "@/ui/Mask";
-import {
-	easeOut,
-	IMPACT,
-	impact,
-	pressable,
-	spring,
-	useShake,
-} from "@/ui/motion";
+import { easeOut, IMPACT, impact, spring, useShake } from "@/ui/motion";
 import { Count, Slam } from "@/ui/type";
 import s from "./spire.module.css";
 
@@ -336,9 +330,8 @@ export function ClimbView({
 
 			<div className={s.duelActions}>
 				{settled ? (
-					<motion.button
-						type="button"
-						className={`btn btn-blood ${s.climbBtn}`}
+					<PrimaryButton
+						legacy={`btn btn-blood ${s.climbBtn}`}
 						onClick={onDone}
 						initial={{ opacity: 0, y: 8 }}
 						animate={{
@@ -346,10 +339,9 @@ export function ClimbView({
 							y: 0,
 							transition: { delay: reduce ? 0 : 0.6 },
 						}}
-						{...pressable}
 					>
 						{T.duel.continue}
-					</motion.button>
+					</PrimaryButton>
 				) : (
 					<button
 						type="button"

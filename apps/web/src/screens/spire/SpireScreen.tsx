@@ -17,7 +17,7 @@ import {
 } from "@/client/spire";
 import { ATTEMPTS_MAX } from "@/game/spire";
 import { spire as T } from "@/lexicon/spire";
-import { pressable } from "@/ui/motion";
+import { PrimaryButton } from "@/ui/button";
 import { ClimbView } from "./ClimbView";
 import s from "./spire.module.css";
 import { Tower } from "./Tower";
@@ -216,12 +216,13 @@ export function SpireScreen() {
 												{T.reward(target.reward.ash, target.reward.resonance)}
 											</span>
 										</p>
-										<motion.button
-											type="button"
-											className={`btn btn-blood ${s.climbBtn}`}
+										<PrimaryButton
+											hero
+											burst
+											legacy={`btn btn-blood ${s.climbBtn}`}
 											disabled={left < 1 || view.kind === "asking"}
+											loading={view.kind === "asking"}
 											onClick={climb}
-											{...pressable}
 										>
 											{view.kind === "asking"
 												? T.climbing
@@ -230,7 +231,7 @@ export function SpireScreen() {
 													: target.status === "cleared"
 														? T.climbAgain(target.floor)
 														: T.climb(target.floor)}
-										</motion.button>
+										</PrimaryButton>
 									</>
 								) : (
 									<p className={s.note}>{T.pick}</p>

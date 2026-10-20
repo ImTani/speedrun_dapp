@@ -4,7 +4,6 @@
  * The Vestry: three fixed packs of cosmetics for test USDC, and the wardrobe to wear them.
  * Paying is a player op; the pack is added once the payment lands.
  */
-import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { HAPTIC, play, useSfx } from "@/audio";
 import { useApi } from "@/client/api";
@@ -23,7 +22,7 @@ import { itemById } from "@/game/reliquary";
 import { PACKS, type Pack, type PackId } from "@/game/vestry";
 import { itemName, reliquary as R } from "@/lexicon/reliquary";
 import { vestry as T } from "@/lexicon/vestry";
-import { pressable } from "@/ui/motion";
+import { PrimaryButton } from "@/ui/button";
 import { DressedMask, useFragmentLook } from "../reliquary/ItemSwatch";
 import s from "./vestry.module.css";
 import { Wardrobe } from "./Wardrobe";
@@ -208,16 +207,17 @@ function PackCard({
 				{owned ? (
 					<span className={s.owned}>{T.owned}</span>
 				) : (
-					<motion.button
-						type="button"
-						className={s.buy}
+					<PrimaryButton
+						legacy={s.buy}
+						className={s.buyFit}
+						size="md"
 						disabled={!ready || short || buying !== null}
 						aria-busy={mine}
+						loading={mine}
 						onClick={onBuy}
-						{...pressable}
 					>
 						{label}
-					</motion.button>
+					</PrimaryButton>
 				)}
 			</div>
 		</li>

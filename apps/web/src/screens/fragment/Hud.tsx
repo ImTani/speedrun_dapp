@@ -42,6 +42,7 @@ import { roman } from "@/lexicon/gathering";
 import { hud } from "@/lexicon/hud";
 import { marks as M } from "@/lexicon/marks";
 import { promoteMoment } from "@/screens/title/Moments";
+import { PrimaryButton } from "@/ui/button";
 import { easeOut, pressable, spring } from "@/ui/motion";
 import { Count, Rubric } from "@/ui/type";
 import h from "./hud.module.css";
@@ -412,17 +413,18 @@ export function VigilCard({
 			</p>
 			{v.full ? <p className={h.note}>{hud.fullHint}</p> : null}
 			<div className={h.claimWrap}>
-				<motion.button
+				<PrimaryButton
 					ref={btn}
-					type="button"
-					className={h.claim}
+					legacy={h.claim}
+					size="md"
+					haptic={false}
 					disabled={busy || empty}
+					loading={busy}
 					onClick={collect}
 					data-coach="collect"
-					{...pressable}
 				>
 					{busy ? economy.vigil.claiming : economy.vigil.claim}
-				</motion.button>
+				</PrimaryButton>
 				<AnimatePresence>
 					{burst ? (
 						<motion.div

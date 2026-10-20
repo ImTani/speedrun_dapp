@@ -135,6 +135,11 @@
 	color: var(--c-bone);
 	opacity: 0.8;
 }
+/* layout only, shared by every PrimaryButton look */
+.buyFit {
+	align-self: stretch;
+	margin-top: 4px;
+}
 .buy {
 	align-self: stretch;
 	min-height: 48px;
