@@ -12,6 +12,8 @@ const config: NextConfig = {
 	transpilePackages: ["@arena/chain", "@arena/strategies"],
 	turbopack: { root },
 	poweredByHeader: false,
+	// Vercel preview deployments are the staging site: they keep the review tools (src/devTools.ts).
+	env: { NEXT_PUBLIC_STAGING: process.env.VERCEL_ENV === "preview" ? "1" : "" },
 	async headers() {
 		return [
 			{

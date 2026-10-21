@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { devTools } from "@/devTools";
 import { PreviewClient } from "./PreviewClient";
 
 // Dev-only screen harness: every screen state on fixtures, no login, no database.
@@ -18,7 +19,7 @@ export default async function PreviewPage({
 }: {
 	searchParams: Promise<Search>;
 }) {
-	if (process.env.NODE_ENV === "production") notFound();
+	if (!devTools) notFound();
 	const q = await searchParams;
 	return (
 		<PreviewClient

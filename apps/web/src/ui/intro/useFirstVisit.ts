@@ -1,5 +1,7 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
+import { type GameState, type UnlockId, useGameState } from "@/client/state";
 /**
  * When to show a tab's first-visit card: once per tab on this device (localStorage), and only
  * when nothing else is teaching. It waits while onboarding runs, while a coach mark is up, while
@@ -11,8 +13,7 @@
  * In development `?intro` in the address shows every card again (for review captures); the
  * /preview harness shows none unless `?intro` is there.
  */
-import { useCallback, useEffect, useState } from "react";
-import { type GameState, type UnlockId, useGameState } from "@/client/state";
+import { devTools } from "@/devTools";
 import type { IntroTab } from "@/lexicon/codex";
 import coach from "@/ui/coach/coach.module.css";
 
@@ -58,7 +59,7 @@ function markSeen(tab: IntroTab) {
 	} catch {}
 }
 
-const dev = process.env.NODE_ENV !== "production";
+const dev = devTools;
 const hasIntroParam = () =>
 	new URLSearchParams(window.location.search).has("intro");
 /** Development: `?intro` shows every card again, seen or not. */

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { devTools } from "@/devTools";
 import {
 	HERO_NAMES,
 	HERO_VARIANT,
@@ -38,7 +39,7 @@ export default async function HeroSheet({
 }: {
 	searchParams: Promise<Search>;
 }) {
-	if (process.env.NODE_ENV === "production") notFound();
+	if (!devTools) notFound();
 	const q = await searchParams;
 	const only = [q.only].flat()[0];
 	const list = isHeroVariant(only)

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { devTools } from "@/devTools";
 import { ButtonsClient } from "./ButtonsClient";
 
 // Dev-only: the four primary-button directions (enamel, glass, arch, wax) beside the shipped
@@ -12,6 +13,6 @@ export const metadata: Metadata = {
 };
 
 export default function ButtonsPage() {
-	if (process.env.NODE_ENV === "production") notFound();
+	if (!devTools) notFound();
 	return <ButtonsClient />;
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { devTools } from "@/devTools";
 import { ControlsClient } from "./ControlsClient";
 import { SystemClient } from "./SystemClient";
 
@@ -20,7 +21,7 @@ export default async function ControlsPage({
 }: {
 	searchParams: Promise<Search>;
 }) {
-	if (process.env.NODE_ENV === "production") notFound();
+	if (!devTools) notFound();
 	const q = await searchParams;
 	const before = [q.before].flat().includes("1");
 	return before ? <ControlsClient /> : <SystemClient />;

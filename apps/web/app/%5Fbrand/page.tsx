@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { devTools } from "@/devTools";
 import { BrandClient } from "./BrandClient";
 
 // Dev-only render pages for the submission's brand and listing assets (logo, wordmark,
@@ -20,7 +21,7 @@ export default async function BrandPage({
 }: {
 	searchParams: Promise<Search>;
 }) {
-	if (process.env.NODE_ENV === "production") notFound();
+	if (!devTools) notFound();
 	const q = await searchParams;
 	const params: Record<string, string> = {};
 	for (const [k, v] of Object.entries(q)) {

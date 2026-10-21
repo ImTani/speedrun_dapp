@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { devTools } from "@/devTools";
 import { WordmarksClient } from "./WordmarksClient";
 
 // Dev-only: the B family (b1-b3: the illuminated lettering, three capital As) side by side, on
@@ -18,7 +19,7 @@ export default async function WordmarksPage({
 }: {
 	searchParams: Promise<Search>;
 }) {
-	if (process.env.NODE_ENV === "production") notFound();
+	if (!devTools) notFound();
 	const q = await searchParams;
 	const live = [q.live].flat().includes("1");
 	return <WordmarksClient live={live} />;
