@@ -8,6 +8,8 @@
  * --until: stop for good at that time. It finishes the Gathering in progress, then exits 0. Started
  * after it, the service exits 0 at once, so a Docker `--restart on-failure` container stays down.
  * SIGINT/SIGTERM exit 143 instead, so the same container comes back after a host reboot.
+ * NTFY_URL (an ntfy topic URL, e.g. http://host.docker.internal:8081/server-alerts): when set,
+ * reaching --until posts a short notice there before exiting.
  *
  * Docker (build from the repo root; secrets are mounted at runtime, never baked into the image):
  *   docker build -f apps/runner/Dockerfile -t arena-runner .
@@ -94,13 +96,29 @@ const shutdown = async (code: number) => {
 process.on("SIGINT", () => shutdown(130));
 process.on("SIGTERM", () => shutdown(143));
 
+/** Posts to the ntfy topic in NTFY_URL, if set. Never throws: the stop goes ahead regardless. */
+async function notifyStop(text: string) {
+	const url = process.env.NTFY_URL;
+	if (!url) return;
+	await fetch(url, {
+		method: "POST",
+		body: text,
+		headers: { Title: "Apostasy runner stopped", Tags: "checkered_flag" },
+		signal: AbortSignal.timeout(10_000),
+	}).catch((e) => console.error(`ntfy: ${(e as Error).message}`));
+}
+
 const arena = rt.net.deployment.arena;
 const client = rt.net.publicClient;
 const gapMs = Number(values["gap-min"]) * 60_000;
 let lastClose = 0;
+let closed = 0;
 while (!stopping) {
 	if (Date.now() >= until) {
 		console.log(`reached --until ${values.until}`);
+		await notifyStop(
+			`Reached ${values.until} on ${values.net}. ${closed} Gatherings run since the last start. ${rt.sender.budget.summary()}`,
+		);
 		await shutdown(0);
 	}
 	try {
@@ -134,6 +152,7 @@ while (!stopping) {
 			matches: Number(values.matches),
 		});
 		lastClose = Date.now();
+		closed++;
 		console.log(rt.sender.budget.summary());
 	} catch (e) {
 		console.error(
