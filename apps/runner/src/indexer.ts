@@ -1,6 +1,6 @@
 import { arenaAbi } from "@arena/chain";
 import { decodeEventLog, type Log } from "viem";
-import { CHAIN_ID, sql } from "./db.ts";
+import { sql } from "./db.ts";
 import type { Runtime } from "./runtime.ts";
 
 const CHUNK = 100n;
@@ -21,7 +21,7 @@ export async function indexTick(rt: Runtime) {
 	const client = rt.net.publicClient;
 	const arena = rt.net.deployment.arena;
 	const st =
-		(await sql`select last_block from indexer_state where chain_id = ${CHAIN_ID}`) as {
+		(await sql`select last_block from indexer_state where chain_id = ${rt.net.chain.id}`) as {
 			last_block: string;
 		}[];
 	const from = st[0]
@@ -61,12 +61,12 @@ export async function indexTick(rt: Runtime) {
 		const round = args.round === undefined ? null : Number(args.round);
 		const agent = typeof args.agent === "string" ? args.agent : null;
 		await sql`insert into arena_events (chain_id, block, log_index, tx, name, gathering, round, agent, data)
-			values (${CHAIN_ID}, ${String(log.blockNumber)}, ${log.logIndex}, ${log.transactionHash},
+			values (${rt.net.chain.id}, ${String(log.blockNumber)}, ${log.logIndex}, ${log.transactionHash},
 				${ev.eventName}, ${gathering}, ${round}, ${agent}, ${JSON.stringify(plain(args))}::jsonb)
 			on conflict do nothing`;
 	}
 	const last = (ranges.at(-1) as [bigint, bigint])[1];
-	await sql`insert into indexer_state (chain_id, last_block) values (${CHAIN_ID}, ${String(last)})
+	await sql`insert into indexer_state (chain_id, last_block) values (${rt.net.chain.id}, ${String(last)})
 		on conflict (chain_id) do update set last_block = excluded.last_block`;
 	if (logs.length)
 		console.log(`indexer: ${logs.length} events through block ${last}`);

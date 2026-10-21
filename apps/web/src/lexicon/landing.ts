@@ -43,11 +43,11 @@ export const landing = {
 	chain: {
 		head: "On-chain, invisible",
 		lead: "Every commit and every reveal is a real transaction. Players never see a wallet.",
-		moves: "Sponsored moves",
-		movesNote: "Commits and reveals on Fuji",
+		moves: "Sponsored transactions",
+		movesNote: "On Fuji testnet",
 		gatherings: "Gatherings played",
 		fragments: "Fragments bound",
-		mainnet: "Moves on Avalanche mainnet",
+		mainnet: "Transactions on Avalanche mainnet",
 		loading: "Counting",
 		down: "Live numbers are resting. The contract below has them all.",
 		facts: [

@@ -1,6 +1,8 @@
 /** Shape of GET /api/stats (app/api/stats/route.ts), read by the landing page. */
 export type ChainStats = {
-	/** Committed + Revealed events: every one a gas-sponsored transaction. */
+	/** Distinct transactions behind the indexed Arena events: every game action, gas-sponsored. */
+	transactions: number;
+	/** Committed + Revealed events. */
 	moves: number;
 	/** BoutClosed events. */
 	gatherings: number;

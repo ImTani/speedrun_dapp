@@ -48,7 +48,7 @@ interface Row {
 export async function syncHouse(rt: Runtime) {
 	for (const m of rt.house) {
 		await sql`insert into fragments (chain_id, owner_account, agent, config, name, house, status, registered_at, confirmed_at)
-			values (${CHAIN_ID}, ${m.owner.account}, ${m.agent.account}, ${encodeConfig(m.config).toString()},
+			values (${rt.net.chain.id}, ${m.owner.account}, ${m.agent.account}, ${encodeConfig(m.config).toString()},
 				${houseName(m.index)}, true, 'confirmed', now(), now())
 			on conflict (chain_id, owner_account) do update set agent = excluded.agent, config = excluded.config,
 				house = true, status = 'confirmed'`;

@@ -47,13 +47,13 @@ export function Stats() {
 				<Stat
 					label={L.moves}
 					note={L.movesNote}
-					value={n(fuji?.moves)}
+					value={n(fuji?.transactions)}
 					run={seen}
 				/>
 				<Stat label={L.gatherings} value={n(fuji?.gatherings)} run={seen} />
 				<Stat label={L.fragments} value={n(fuji?.fragments)} run={seen} />
-				{main && main.moves > 0 ? (
-					<Stat label={L.mainnet} value={main.moves} run={seen} />
+				{main && main.transactions > 0 ? (
+					<Stat label={L.mainnet} value={main.transactions} run={seen} />
 				) : null}
 			</dl>
 			{phase.kind === "down" ? (

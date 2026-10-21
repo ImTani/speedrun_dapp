@@ -8,10 +8,13 @@ export const dynamic = "force-dynamic";
 /**
  * Public totals for the landing page. No sign-in, nothing per player.
  *
- *   GET /api/stats -> { chains: { "43113": { moves, gatherings, fragments } , "43114"?: {...} } }
+ *   GET /api/stats -> { chains: { "43113": { transactions, moves, gatherings, fragments }, "43114"?: {...} } }
  *
- * moves: Committed + Revealed events (each one a sponsored UserOp); gatherings: BoutClosed events;
- * fragments: Fragments whose binding is confirmed on-chain. A chain appears once it has any.
+ * transactions: distinct transaction hashes among indexed Arena events. Every game action
+ * (register, confirm, retune, open, start, seal, unveil, finalize, close) is one sponsored UserOp
+ * in its own transaction, so this is the on-chain transaction count. moves: Committed + Revealed
+ * events; gatherings: BoutClosed events; fragments: Fragments whose binding is confirmed on-chain.
+ * A chain appears once it has any.
  */
 
 /** Shared by every visitor: the CDN holds it a minute and serves it stale while it refreshes. */
@@ -38,7 +41,7 @@ export const GET = handle(async () => {
 
 async function read(): Promise<Stats> {
 	const sql = db();
-	const [events, fragments] = (await Promise.all([
+	const [events, fragments, txs] = (await Promise.all([
 		// (chain_id, name) leads the arena_events_name index.
 		sql`select chain_id, name, count(*)::text as n
 			from arena_events
@@ -48,8 +51,13 @@ async function read(): Promise<Stats> {
 			from fragments
 			where chain_id in (43113, 43114) and status = 'confirmed'
 			group by chain_id`,
+		sql`select chain_id, count(distinct tx)::text as n
+			from arena_events
+			where chain_id in (43113, 43114)
+			group by chain_id`,
 	])) as [
 		{ chain_id: number; name: string; n: string }[],
+		{ chain_id: number; n: string }[],
 		{ chain_id: number; n: string }[],
 	];
 
@@ -57,7 +65,7 @@ async function read(): Promise<Stats> {
 	const of = (id: number): ChainStats | null => {
 		if (id !== 43113 && id !== 43114) return null;
 		const key = `${id}` as const;
-		chains[key] ??= { moves: 0, gatherings: 0, fragments: 0 };
+		chains[key] ??= { transactions: 0, moves: 0, gatherings: 0, fragments: 0 };
 		return chains[key];
 	};
 	for (const r of events) {
@@ -69,6 +77,10 @@ async function read(): Promise<Stats> {
 	for (const r of fragments) {
 		const c = of(Number(r.chain_id));
 		if (c) c.fragments += Number(r.n);
+	}
+	for (const r of txs) {
+		const c = of(Number(r.chain_id));
+		if (c) c.transactions += Number(r.n);
 	}
 	return { chains };
 }
