@@ -16,6 +16,39 @@ export const landing = {
 		play: "Play",
 		note: "Free in your browser. Sign in with email or Google.",
 		qr: "Scan to play on your phone",
+
+		// ---- the hero directions (src/landing/hero, picked in src/landing/heroConfig.ts)
+		/** The short line under Play. */
+		free: "Free · plays in your browser · sign in with email",
+		/** The cue at the foot of the hero, down to "How it plays". */
+		scroll: "How it plays",
+
+		/** B, The Face-off: two Fragments, a toll, a verdict, on a loop. */
+		faceoff: {
+			/** The two Fragments: Vesper wears Inquisitor (night blue), Marrow wears Rancour (blood red). */
+			left: "Vesper",
+			right: "Marrow",
+			/** The rule, in plain words, under the windows. */
+			rule: "Each toll of the bell, both choose in secret: Kindle (share) or Devour (steal). Light is the score.",
+			/** Under each mask before the unveiling. */
+			sealed: "Choosing",
+			/** The unit on each Fragment's running score. */
+			light: "Light",
+			/** Read to screen readers in place of the moving picture. */
+			aria: "Two masked Fragments duel. Both kindle: 3 Light each. One devours: it takes 5, the other gets 0. Both devour: 1 Light each.",
+			/** The lines under a verdict: the Light it moved. */
+			each: (n: number) => `+${n} Light each`,
+			took: (name: string, n: number) => `${name} +${n} Light`,
+			got: (name: string) => `${name} +0`,
+		},
+
+		/** C, The Rose: the seven masks riding in a turning rose window. */
+		rose: {
+			/** Above the mask that is passing the top of the rose. */
+			kicker: "Seven masks, seven ways to fight",
+			/** Read to screen readers in place of the turning rose. */
+			aria: "A rose window turning slowly, with the seven masks in its panes.",
+		},
 	},
 
 	how: {

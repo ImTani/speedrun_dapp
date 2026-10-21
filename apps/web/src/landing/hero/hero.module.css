@@ -1,0 +1,475 @@
+/* ======================================================================
+   The hero directions (A The Nave, B The Face-off, C The Rose). Full
+   viewport at 390 x 844 and at 1440 x 900; the scene is drawn behind,
+   the words sit on an ink pool in front. Readability first: every text
+   colour >= 4.5:1 on the ink it sits on (bone-hi 15:1, bone 12:1,
+   #c2ae88 9:1, bone-d 6.4:1, gilt-l 11:1, #ff8a7a 8:1).
+   ====================================================================== */
+
+.hero {
+	position: relative;
+	display: grid;
+	min-height: max(640px, 100svh);
+	overflow: hidden;
+	isolation: isolate;
+	background: var(--c-void);
+	color: var(--c-bone);
+}
+
+/* ---------------------------------------------------------------- scene */
+.scene {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	overflow: hidden;
+	pointer-events: none;
+}
+/* the parallax dust rides above the scene, under the words */
+.scene + .scene {
+	z-index: 1;
+	background: none;
+}
+.nave {
+	position: absolute;
+	left: 0;
+	top: 0;
+	max-width: none;
+	user-select: none;
+	pointer-events: none;
+}
+.overlay {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	max-width: none;
+	overflow: visible;
+	pointer-events: none;
+}
+.caustic {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	mix-blend-mode: screen;
+}
+
+/* Ink pool under the words, so they read over the lit floor and the glass. */
+.pool {
+	position: absolute;
+	z-index: 1;
+	left: 50%;
+	bottom: 0;
+	width: min(180vw, 1240px);
+	height: 62%;
+	transform: translateX(-50%);
+	background: radial-gradient(
+		50% 62% at 50% 74%,
+		#050403f2 0%,
+		#050403d0 46%,
+		#05040370 74%,
+		transparent 100%
+	);
+	pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- words */
+.mark {
+	display: block;
+	max-width: 100%;
+	margin: 0;
+	font-size: clamp(64px, 19vw, 132px);
+	line-height: 0;
+}
+.pitch {
+	max-width: 30ch;
+	font-family: var(--font-text);
+	font-size: clamp(18px, 4.9vw, 26px);
+	line-height: 1.3;
+	color: var(--c-bone-hi);
+	text-shadow:
+		0 1px 0 var(--c-soot),
+		0 0 14px var(--c-void);
+	text-wrap: balance;
+}
+.play {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	margin-top: 4px;
+}
+.free {
+	font-size: var(--fs-small);
+	color: #c2ae88;
+	text-shadow: 0 1px 0 var(--c-soot);
+}
+
+/* A and C: the words centred on the floor, Play at the foot. */
+.naveWords,
+.roseWords {
+	position: relative;
+	z-index: 2;
+	align-self: end;
+	justify-self: center;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 14px;
+	width: min(100%, 820px);
+	/* room at the foot for the cue down the page */
+	padding: 0 var(--pad-r) calc(84px + var(--safe-b)) var(--pad-l);
+	text-align: center;
+}
+
+/* The QR only helps someone on a computer; phones are already there. */
+.qr {
+	display: none;
+}
+
+/* The cue down to "How it plays". */
+.scroll {
+	position: absolute;
+	z-index: 3;
+	left: 50%;
+	bottom: calc(10px + var(--safe-b));
+	transform: translateX(-50%);
+	display: inline-flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0;
+	min-width: var(--tap);
+	min-height: var(--tap);
+	padding: 4px 14px;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: var(--fs-micro);
+	letter-spacing: var(--track-rubric);
+	text-transform: uppercase;
+	color: var(--c-bone-d);
+	text-decoration: none;
+	text-shadow: 0 1px 0 var(--c-soot);
+	transition: color var(--dur-2, 0.2s) var(--ease-out);
+}
+.scroll:hover {
+	color: var(--c-gilt-l);
+}
+.scroll:focus-visible {
+	outline: 2px solid var(--c-gilt-hi);
+	outline-offset: 2px;
+}
+.chevron {
+	display: block;
+}
+
+.srOnly {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- A: The Nave */
+.naveMark {
+	font-size: clamp(64px, 19vw, 132px);
+}
+
+/* ---------------------------------------------------------------- B: The Face-off */
+.duelHero {
+	grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.duelTop {
+	position: relative;
+	z-index: 2;
+	display: flex;
+	justify-content: center;
+	padding: calc(14px + var(--safe-t)) var(--pad-r) 0 var(--pad-l);
+}
+.duelMark {
+	font-size: clamp(44px, 12.5vw, 64px);
+}
+.duelWin {
+	position: absolute;
+}
+.duelStage {
+	position: relative;
+	z-index: 2;
+	min-height: 380px;
+}
+.bell {
+	position: absolute;
+	transform: translateX(-50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0;
+}
+.bellArt {
+	width: 34px;
+	transform-origin: 50% 3px;
+	filter: drop-shadow(0 3px 6px #000c);
+}
+.bellArt svg {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+.tollMark {
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: 14px;
+	letter-spacing: 0.08em;
+	color: var(--c-gilt-l);
+	text-shadow:
+		0 1px 0 var(--c-soot),
+		0 0 6px var(--c-void);
+}
+.duelSide {
+	position: absolute;
+	transform: translateX(-50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+	text-align: center;
+}
+.stampBox {
+	display: grid;
+	place-items: center;
+	height: 30px;
+	perspective: 300px;
+}
+.stamp {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 3px 12px 4px;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: 12.5px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--c-bone);
+	background: #0b0807e6;
+	box-shadow: inset 0 0 0 1px var(--c-umber-l);
+}
+.stamp[data-move="kindle"] {
+	color: var(--c-gilt-hi);
+	box-shadow:
+		inset 0 0 0 1px var(--c-gilt),
+		0 0 16px #e3c27c55;
+}
+.stamp[data-move="devour"] {
+	color: #ff8a7a;
+	box-shadow:
+		inset 0 0 0 1px var(--c-blood-l),
+		0 0 16px #c7262c77;
+}
+.duelName {
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: clamp(19px, 5vw, 26px);
+	line-height: 1.1;
+	color: var(--c-bone-hi);
+	text-shadow:
+		0 2px 0 var(--c-soot),
+		0 0 10px var(--c-void);
+}
+/* The verdict: the Gathering's own lettering (Grenze roman, ivory names, the verb in its tone). */
+.verdict {
+	position: absolute;
+	z-index: 3;
+	display: grid;
+	align-items: center;
+	justify-items: center;
+	pointer-events: none;
+	--slam-font: var(--font-roman);
+	--slam-weight: 800;
+	--slam-name-hi: #fffaf0;
+	--slam-name-mid: var(--c-bone-hi);
+	--slam-name-lo: var(--c-bone);
+}
+.verdictIn {
+	display: grid;
+	justify-items: center;
+	width: 100%;
+}
+.duelWords {
+	position: relative;
+	z-index: 2;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	padding: 6px var(--pad-r) calc(80px + var(--safe-b)) var(--pad-l);
+	text-align: center;
+}
+.rule {
+	max-width: 36ch;
+	font-family: var(--font-text);
+	font-style: italic;
+	font-size: var(--fs-body);
+	line-height: 1.35;
+	color: var(--c-bone);
+	text-shadow: 0 1px 0 var(--c-soot);
+	text-wrap: balance;
+}
+.duelHero .pitch {
+	font-size: clamp(17px, 4.6vw, 22px);
+}
+
+/* ---------------------------------------------------------------- C: The Rose */
+.rose {
+	position: absolute;
+}
+.roseTurn {
+	position: absolute;
+	inset: 0;
+}
+.roseMask {
+	position: absolute;
+	line-height: 0;
+	filter: drop-shadow(0 4px 10px #000d);
+}
+.temper {
+	display: grid;
+	gap: 4px;
+	max-width: 40ch;
+	min-height: 3.6em;
+	align-content: start;
+}
+.temperKick {
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: var(--fs-micro);
+	letter-spacing: var(--track-rubric);
+	text-transform: uppercase;
+	color: var(--c-gilt-l);
+	text-shadow: 0 1px 0 var(--c-soot);
+}
+.temperLine {
+	font-family: var(--font-text);
+	font-style: italic;
+	font-size: var(--fs-body);
+	line-height: 1.35;
+	color: var(--c-bone-hi);
+	text-shadow:
+		0 1px 0 var(--c-soot),
+		0 0 10px var(--c-void);
+}
+.temperLine b {
+	font-family: var(--font-roman);
+	font-style: normal;
+	font-weight: 700;
+	color: var(--c-gilt-hi);
+}
+
+/* ---------------------------------------------------------------- motion */
+@media (prefers-reduced-motion: no-preference) {
+	.chevron {
+		animation: bob 2.4s var(--ease-out) infinite;
+	}
+}
+@keyframes bob {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(4px);
+	}
+}
+
+/* ---------------------------------------------------------------- wider */
+@media (min-width: 640px) {
+	.bellArt {
+		width: 44px;
+	}
+	.tollMark {
+		font-size: 16px;
+	}
+	.duelStage {
+		min-height: 440px;
+	}
+}
+
+@media (min-width: 960px) {
+	.hero {
+		min-height: clamp(640px, 100svh, 1000px);
+	}
+	.pitch {
+		max-width: 42ch;
+	}
+	.naveMark {
+		font-size: min(156px, 10.5vw, 17svh);
+	}
+	.roseMark {
+		font-size: min(140px, 9.5vw, 15svh);
+	}
+	/* the name stands at the head of the aisle between the two windows */
+	.duelHero {
+		grid-template-rows: minmax(0, 1fr) auto;
+	}
+	.duelTop {
+		position: absolute;
+		z-index: 3;
+		top: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		padding: calc(26px + var(--safe-t)) 0 0;
+	}
+	.duelMark {
+		font-size: min(80px, 5.6vw, 9.5svh);
+	}
+	.duelStage {
+		min-height: 520px;
+	}
+	.duelWords {
+		gap: 14px;
+		padding-bottom: calc(76px + var(--safe-b));
+	}
+	.verdict {
+		--slam-scale: 1.25;
+	}
+	.stamp {
+		font-size: 14px;
+		padding: 4px 14px 5px;
+	}
+	.temperLine {
+		font-size: var(--fs-lead);
+	}
+	/* the QR card waits in the corner, out of the way of Play */
+	.qr {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 8px;
+		width: 176px;
+		padding: 12px 12px 10px;
+		background: var(--c-soot-2, #120c0a);
+		box-shadow:
+			inset 0 1px 0 #ffffff10,
+			inset 0 0 0 1px var(--c-umber),
+			0 10px 30px #000a;
+	}
+	.qrCorner {
+		position: absolute;
+		z-index: 3;
+		right: max(28px, var(--pad-r));
+		bottom: 28px;
+	}
+	.qrText {
+		display: grid;
+		gap: 2px;
+		font-size: 14px;
+		line-height: 1.3;
+		text-align: center;
+		color: var(--c-bone);
+	}
+}

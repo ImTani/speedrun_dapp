@@ -26,6 +26,7 @@ import { itemById, type Rarity, type ScryResult } from "@/game/reliquary";
 import { itemName, reliquary as T } from "@/lexicon/reliquary";
 import { PrimaryButton } from "@/ui/button";
 import { ControlNote, SecondaryButton } from "@/ui/controls";
+import { TabIntro } from "@/ui/intro";
 import { hitStop, IMPACT, impact, useShake } from "@/ui/motion";
 import { Count, Rubric } from "@/ui/type";
 import { DressedMask, ItemSwatch, useFragmentLook } from "./ItemSwatch";
@@ -229,6 +230,7 @@ export function ReliquaryScreen() {
 
 	return (
 		<section className={s.screen}>
+			<TabIntro tab="reliquary" ready={!!state} />
 			<header className={s.head}>
 				<h1 className={s.title}>{T.name}</h1>
 				<div className={s.purse} ref={purseRef}>

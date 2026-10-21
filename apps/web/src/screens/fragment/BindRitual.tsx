@@ -176,7 +176,10 @@ export function BindRitual({
 					>
 						{step === 0 && (
 							<>
-								<p className={s.lead}>{L.bind.chooseAspect}</p>
+								<div className={s.leadBox}>
+									<p className={s.lead}>{L.bind.chooseAspect}</p>
+									<p className={s.leadHint}>{L.bind.chooseAspectHint}</p>
+								</div>
 								<AspectCarousel
 									aspect={aspect}
 									dir={aspectDir}
@@ -193,7 +196,7 @@ export function BindRitual({
 									<Mask aspect={aspect} size={56} glow />
 									<div>
 										<h2 className={s.h2}>{L.bind.sigilsHeading}</h2>
-										<p className={s.hint}>{a.name}</p>
+										<p className={s.hint}>{L.bind.sigilsHint(a.name)}</p>
 									</div>
 								</div>
 								<SigilEditor

@@ -42,6 +42,19 @@
 	text-wrap: balance;
 	text-shadow: 0 1px 0 var(--c-soot);
 }
+/* the mask step's heading and what the choice means */
+.leadBox {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+}
+.leadHint {
+	font-size: var(--fs-small);
+	color: var(--c-bone-d);
+	text-align: center;
+	text-wrap: balance;
+}
 .hint {
 	font-style: italic;
 	font-size: var(--fs-small);
@@ -193,7 +206,7 @@
 	justify-self: center;
 	width: clamp(
 		180px,
-		min(74vw, 300px, calc(100dvh - var(--tabbar-h) - 350px)),
+		min(74vw, 300px, calc(100dvh - var(--tabbar-h) - 400px)),
 		300px
 	);
 	aspect-ratio: 1;
@@ -233,7 +246,15 @@
 	height: auto;
 }
 .aspectText {
-	min-height: calc(var(--fs-h1) + var(--fs-small) * 1.6 + var(--fs-body) * 3);
+	min-height: calc(
+		var(--fs-h1) +
+		var(--fs-small) *
+		1.6 +
+		var(--fs-body) *
+		3 +
+		var(--fs-small) *
+		2.9
+	);
 	text-align: center;
 	width: 100%;
 }
@@ -259,6 +280,26 @@
 	text-wrap: balance;
 	max-width: 30ch;
 	margin-inline: auto;
+}
+/* the mask in play: one example line under the temperament */
+.playsLike {
+	margin: 6px auto 0;
+	max-width: 32ch;
+	font-style: italic;
+	font-size: var(--fs-small);
+	line-height: 1.45;
+	color: var(--c-gilt-l);
+	text-align: center;
+	text-wrap: balance;
+}
+.playsLikeTag {
+	font-family: var(--font-roman);
+	font-style: normal;
+	font-weight: 700;
+	font-size: var(--fs-micro);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--c-bone-d);
 }
 .strip {
 	display: grid;

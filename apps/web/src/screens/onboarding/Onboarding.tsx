@@ -3,11 +3,13 @@
 /**
  * The first sitting, taught by doing. Driven by the shared onboarding step and the Fragment's
  * status, one coach mark (or the practice duel) at a time:
+ *   (premise) before the first mask, once per device: three beats on what this world is and
+ *             what you do in it (./Premise). Remembered in localStorage, not as a step.
  *   mask      the mask rose          advances on a pick (swipe, arrow, strip) or "Choose"
  *   sigil     the first Sigil        advances on a change or "Next" (skipped for Madness)
  *   name      the name field         advances on typing or a suggested name
  *   bind      the Bind button        advances on the tap
- *   practice  while it wakes: three tolls by hand against a Remnant
+ *   practice  while it wakes: the rule card (four outcomes), then three tolls against a Remnant
  *   seal      the wax, once it can be sealed
  *   gathering the Gathering tab, once bound: then onboarding is done
  * Every step is saved (setStep); Skip ends it (finish). A returning player (done) sees nothing.
@@ -32,10 +34,26 @@ import { findAnchor, useAnchorPresent } from "@/ui/coach/useAnchor";
 import type { Tab } from "@/ui/TabBar";
 import { sealMoment, unlockMoment } from "./juice";
 import { Practice } from "./Practice";
+import { Premise } from "./Premise";
 
 const WARM = ["seal", "unlock", "light"] as const;
 
 const at = (s: OnboardingStep | null) => (s ? ONBOARDING_STEPS.indexOf(s) : -1);
+
+/** Remembers that this device has seen the premise ("Hints" in the storage policy). */
+const PREMISE_KEY = "apostasy.hints.premise";
+function premiseSeen(): boolean {
+	try {
+		return localStorage.getItem(PREMISE_KEY) === "1";
+	} catch {
+		return false;
+	}
+}
+function rememberPremise() {
+	try {
+		localStorage.setItem(PREMISE_KEY, "1");
+	} catch {}
+}
 
 /**
  * The step to show now, from the saved step and where the Fragment really is. The status
@@ -109,6 +127,14 @@ function Script({
 	const step = effectiveStep(saved, f?.status ?? null);
 	const onFragment = tab === "fragment";
 	useSfx(WARM);
+	// The premise opens the first sitting: at the mask, before anything is bound. (State is
+	// read on the client only, so the stored flag can be read at once.)
+	const [premise, setPremise] = useState(() => !premiseSeen());
+	const showPremise = premise && step === "mask" && !f && onFragment;
+	const closePremise = useCallback(() => {
+		rememberPremise();
+		setPremise(false);
+	}, []);
 
 	// Each move is sent once, however many signals ask for it.
 	const sent = useRef<OnboardingStep | "done" | null>(saved);
@@ -176,7 +202,7 @@ function Script({
 		round: boolean;
 		above?: boolean;
 	} | null = null;
-	if (step && onFragment) {
+	if (step && onFragment && !showPremise) {
 		if (
 			step === "mask" ||
 			step === "sigil" ||
@@ -222,6 +248,9 @@ function Script({
 					onSkip={end}
 				/>
 			) : null}
+			<AnimatePresence>
+				{showPremise ? <Premise key="premise" onDone={closePremise} /> : null}
+			</AnimatePresence>
 			<AnimatePresence>
 				{step === "practice" && onFragment && waking && config && f ? (
 					<Practice

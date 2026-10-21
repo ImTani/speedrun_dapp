@@ -14,6 +14,11 @@ import link from "@/ui/controls/link.module.css";
 import { GlassWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
 import { Wordmark } from "@/ui/wordmark";
+import { HeroFaceoff } from "./hero/HeroFaceoff";
+import { HeroNave } from "./hero/HeroNave";
+import { HeroRose } from "./hero/HeroRose";
+import { HeroSwitch } from "./hero/HeroSwitch";
+import { HERO_VARIANT } from "./heroConfig";
 import { LegacyTab } from "./LegacyTab";
 import s from "./landing.module.css";
 import { QrCode } from "./QrCode";
@@ -52,7 +57,29 @@ export function Landing() {
 	);
 }
 
+/**
+ * The hero: HERO_VARIANT (heroConfig.ts), or `?hero=a|b|c|current` to compare in place.
+ * The directions live in ./hero; the shipped one is CurrentHero below.
+ */
 function Hero() {
+	const configured =
+		HERO_VARIANT === "a" ? (
+			<HeroNave />
+		) : HERO_VARIANT === "b" ? (
+			<HeroFaceoff />
+		) : HERO_VARIANT === "c" ? (
+			<HeroRose />
+		) : (
+			<CurrentHero />
+		);
+	return (
+		<HeroSwitch current={HERO_VARIANT === "current" ? null : <CurrentHero />}>
+			{configured}
+		</HeroSwitch>
+	);
+}
+
+function CurrentHero() {
 	return (
 		<header className={s.hero}>
 			<div className={s.heroArt} aria-hidden="true">

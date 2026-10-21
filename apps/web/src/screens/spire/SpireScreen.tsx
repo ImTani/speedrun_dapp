@@ -19,6 +19,7 @@ import { ATTEMPTS_MAX } from "@/game/spire";
 import { spire as T } from "@/lexicon/spire";
 import { PrimaryButton } from "@/ui/button";
 import { ControlNote, SecondaryButton } from "@/ui/controls";
+import { TabIntro } from "@/ui/intro";
 import { ClimbView } from "./ClimbView";
 import s from "./spire.module.css";
 import { Tower } from "./Tower";
@@ -127,6 +128,7 @@ export function SpireScreen() {
 
 	return (
 		<section className={s.screen}>
+			<TabIntro tab="spire" />
 			<div className={s.column}>
 				<header className={s.head}>
 					<div className={s.titleBlock}>

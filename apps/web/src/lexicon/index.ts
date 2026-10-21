@@ -1,44 +1,12 @@
 // Every player-facing string lives here. No technical words.
 export { gathering } from "./gathering.ts";
 
-const NUM = [
-	"no",
-	"one",
-	"two",
-	"three",
-	"four",
-	"five",
-	"six",
-	"seven",
-	"eight",
-	"nine",
-	"ten",
-	"eleven",
-	"twelve",
-	"thirteen",
-	"fourteen",
-	"fifteen",
-	"sixteen",
-	"seventeen",
-	"eighteen",
-	"nineteen",
-	"twenty",
-];
-const BIG: Record<number, string> = {
-	25: "twenty-five",
-	50: "fifty",
-	100: "a hundred",
-};
-const num = (n: number) => NUM[n] ?? BIG[n] ?? String(n);
-const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
-/** A chance in hundredths, said the old way: "one in five", "three in ten". */
-function oneIn(pct: number): string {
-	const n = 100 / pct;
-	if (pct === 50) return "half the";
-	if (Number.isInteger(n)) return `one in ${num(n)}`;
-	if (pct % 10 === 0) return `${num(pct / 10)} in ten`;
-	if (pct % 5 === 0) return `${num(pct / 5)} in twenty`;
-	return `${num(pct)} in a hundred`;
+/** A chance in hundredths, as a plain fraction in digits: (30, "Devour", "Devours") -> "3 Devours in 10". */
+function inN(pct: number, one: string, many: string): string {
+	const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+	const g = gcd(pct, 100);
+	const n = pct / g;
+	return `${n} ${n === 1 ? one : many} in ${100 / g}`;
 }
 
 export const L = {
@@ -61,42 +29,49 @@ export const L = {
 			name: "Mercy",
 			mask: "Volto",
 			blurb: "Always kindles.",
+			plays: "Kind to everyone, so easy prey for anyone who devours.",
 		},
 		{
 			key: "hunger",
 			name: "Hunger",
 			mask: "Bauta",
 			blurb: "Always devours.",
+			plays: "Takes 5 from the trusting, but only 1 from its own kind.",
 		},
 		{
 			key: "echo",
 			name: "Echo",
 			mask: "Colombina",
-			blurb: "Does what its rival did last toll.",
+			blurb: "Copies what its rival did last toll.",
+			plays: "Kind to the kind, cruel to the cruel.",
 		},
 		{
 			key: "rancour",
 			name: "Rancour",
 			mask: "Pantalone",
-			blurb: "Kindles until devoured once, then always devours.",
+			blurb: "Kindles until devoured once, then devours for good.",
+			plays: "A loyal friend who never forgives.",
 		},
 		{
 			key: "appetite",
 			name: "Appetite",
 			mask: "Arlecchino",
-			blurb: "Repeats a choice that paid off, changes one that didn't.",
+			blurb: "Keeps a choice that paid off, switches after one that didn't.",
+			plays: "If it worked, again. If it hurt, change.",
 		},
 		{
 			key: "inquisitor",
 			name: "Inquisitor",
 			mask: "Medico della Peste",
-			blurb: "Tests a new rival, then preys on the meek or copies the rest.",
+			blurb: "Tests a new rival for 4 tolls, then acts on what it learned.",
+			plays: "Preys on rivals who never strike back. Copies the rest.",
 		},
 		{
 			key: "madness",
 			name: "Madness",
 			mask: "Jolly",
 			blurb: "Chooses at random.",
+			plays: "Half Kindle, half Devour. No one can read it.",
 		},
 	],
 
@@ -124,41 +99,40 @@ export const L = {
 	},
 	firstGesture: ["Kindle", "Devour", "Fate"],
 
-	/** Live readings of a Sigil as it is set: what the Fragment will do. */
+	/** Live readings of a Sigil as it is set: what the Fragment will do, in numbers. */
 	reading: {
 		forgiveness: (v: number) =>
 			v <= 0
-				? "Never forgives."
+				? "Never forgives a Devour."
 				: v >= 100
-					? "Always forgives."
-					: v === 50
-						? "Forgives half the time."
-						: `Forgives ${oneIn(v)} times.`,
+					? "Forgives every Devour."
+					: `Forgives ${inN(v, "Devour", "Devours")}.`,
 		retaliation: (v: number) =>
 			v <= 1
-				? "Strikes back for one toll."
-				: `Strikes back for ${num(v)} tolls.`,
+				? "After a Devour, strikes back for 1 toll."
+				: `After a Devour, strikes back for ${v} tolls.`,
 		memory: (v: number) =>
 			v <= 1
-				? "Remembers only the last toll."
-				: `Remembers the last ${num(v)} tolls.`,
+				? "Remembers only its rival's last toll."
+				: `Remembers its rival's last ${v} tolls.`,
 		opening: (v: number) =>
 			[
-				"Kindles at the first toll.",
-				"Devours at the first toll.",
-				"Leaves the first toll to chance.",
+				"Kindles at the first toll with a new rival.",
+				"Devours at the first toll with a new rival.",
+				"Leaves the first toll with a new rival to chance.",
 			][v] ?? "",
 		noise: (v: number) =>
-			v <= 0 ? "Never slips." : `Slips ${oneIn(v)} tolls.`,
+			v <= 0
+				? "Never slips. Always does what it means to."
+				: `Does the opposite by mistake ${inN(v, "toll", "tolls")}.`,
 	},
 	/** The same readings, short enough for an engraved tile. */
 	short: {
-		forgiveness: (v: number) =>
-			v <= 0 ? "None" : v >= 100 ? "All" : v === 50 ? "Half" : cap(oneIn(v)),
-		retaliation: (v: number) => (v <= 1 ? "One toll" : `${cap(num(v))} tolls`),
-		memory: (v: number) => (v <= 1 ? "One toll" : `${cap(num(v))} tolls`),
+		forgiveness: (v: number) => `${v}%`,
+		retaliation: (v: number) => (v <= 1 ? "1 toll" : `${v} tolls`),
+		memory: (v: number) => (v <= 1 ? "1 toll" : `${v} tolls`),
 		opening: (v: number) => ["Kindle", "Devour", "Fate"][v] ?? "",
-		noise: (v: number) => (v <= 0 ? "Steady" : cap(oneIn(v))),
+		noise: (v: number) => (v <= 0 ? "Steady" : `${v}%`),
 	},
 
 	bind: {
@@ -166,11 +140,18 @@ export const L = {
 		steps: ["Mask", "Sigils", "Name"],
 		stepMark: ["I", "II", "III"],
 		chooseAspect: "Choose a mask",
+		/** Under the heading: what the choice means. */
+		chooseAspectHint: "The mask decides how your Fragment plays.",
+		/** Before the "plays like" line under each mask. */
+		playsLike: "Plays like",
 		swipe: "Swipe for another mask",
 		prevMask: "Previous mask",
 		nextMask: "Next mask",
 		wear: "Choose this mask",
 		sigilsHeading: "Set its Sigils",
+		/** Under the heading, with the Aspect's name. */
+		sigilsHint: (aspect: string) =>
+			`Fine-tune how ${aspect} plays. The defaults work fine.`,
 		noSigils: "Madness has no Sigils.",
 		noSigilsHint: "It chooses at random.",
 		carve: "Next",

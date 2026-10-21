@@ -1,13 +1,14 @@
 "use client";
 
-// The banner over the vault: which toll of the bell, what the masked are doing, and how long remains.
+// The banner over the vault: which toll of the bell, what the masked are doing (in plain words,
+// with one line under it saying what that means), and how long remains.
 import { AnimatePresence, motion } from "motion/react";
 import { type Ref, useEffect, useState } from "react";
 import { gathering as T } from "@/lexicon/gathering.ts";
 import { easeIn, easeOut } from "@/ui/motion";
 import { Rubric } from "@/ui/type";
 import css from "./gathering.module.css";
-import { fmtClock } from "./model.ts";
+import { fmtClock, low, num } from "./model.ts";
 import type { GatheringResponse } from "./types.ts";
 
 type Phase = "commit" | "reveal" | "between" | "closed";
@@ -34,6 +35,18 @@ export function Hud({
 			: 0;
 	const rounds = g?.rounds ?? 0;
 	const current = g ? Math.min(g.round + 1, g.rounds) : 0;
+	// Choices sealed so far in this toll (for "All choices sealed").
+	const of = g?.participants.length ?? 0;
+	const sealed =
+		phase === "commit" && g
+			? new Set(
+					(data?.events ?? [])
+						.filter((e) => e.name === "Committed" && num(e.round) === g.round)
+						.map((e) => low(e.agent)),
+				).size
+			: 0;
+	const hint =
+		phase === "commit" ? T.phaseHint.commit(sealed, of) : T.phaseHint[phase];
 
 	return (
 		<div ref={ref} className={css.hud}>
@@ -79,25 +92,27 @@ export function Hud({
 					{T.phase[phase]}
 				</motion.p>
 			</AnimatePresence>
-			{deadline > 0 && phase !== "closed" && phase !== "between" && (
-				<Countdown deadline={deadline} />
+			{!vision && <p className={css.phaseHint}>{hint}</p>}
+			{deadline > 0 && (phase === "commit" || phase === "reveal") && (
+				<Countdown deadline={deadline} left={T.clockLeft[phase]} />
 			)}
 			{vision && <p className={css.vision}>{T.vision}</p>}
 		</div>
 	);
 }
 
-function Countdown({ deadline }: { deadline: number }) {
+function Countdown({ deadline, left }: { deadline: number; left: string }) {
 	const [now, setNow] = useState(() => Date.now() / 1000);
 	useEffect(() => {
 		const id = setInterval(() => setNow(Date.now() / 1000), 1000);
 		return () => clearInterval(id);
 	}, []);
-	const left = deadline - now;
-	if (left <= 0) return null;
+	const remain = deadline - now;
+	if (remain <= 0) return null;
 	return (
 		<p className={css.clock}>
-			<span className={css.clockNum}>{fmtClock(left)}</span>
+			<span className={css.clockNum}>{fmtClock(remain)}</span>
+			{left}
 		</p>
 	);
 }

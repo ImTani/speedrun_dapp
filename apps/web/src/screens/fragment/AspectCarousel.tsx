@@ -166,6 +166,10 @@ export function AspectCarousel({
 							{a.mask}
 						</Rubric>
 						<p className={s.temperament}>{a.blurb}</p>
+						<p className={s.playsLike}>
+							<span className={s.playsLikeTag}>{L.bind.playsLike}</span>{" "}
+							{a.plays}
+						</p>
 					</motion.div>
 				</AnimatePresence>
 			</div>

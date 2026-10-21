@@ -24,6 +24,14 @@
 	min-height: var(--tap);
 }
 
+/* the duel, after the rule card */
+.phase {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
 .body {
 	flex: 1;
 	display: flex;
@@ -213,24 +221,40 @@
 	color: var(--c-bone-d);
 }
 
+/* the rule the toll just showed, then what happens next */
 .lineBox {
-	display: grid;
-	place-items: center;
-	min-height: 56px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	min-height: 112px;
 	padding: 0 8px;
 	text-align: center;
 }
-.explain,
-.end {
+.explain {
 	font-family: var(--font-roman);
-	font-weight: 600;
+	font-weight: 700;
 	font-size: var(--fs-lead);
 	line-height: 1.25;
 	color: var(--c-bone-hi);
 	text-wrap: balance;
+	text-shadow: 0 2px 0 var(--c-soot);
+}
+.explain[data-tone="kindle"] {
+	color: var(--c-gilt-hi);
+}
+.explain[data-tone="devour"] {
+	color: #ff9a8a;
 }
 .end {
+	max-width: 32ch;
+	padding-top: 10px;
+	border-top: 1px solid var(--c-umber-l);
+	font-style: italic;
+	font-size: var(--fs-body);
+	line-height: 1.35;
 	color: var(--c-gilt-hi);
+	text-wrap: balance;
 }
 
 .foot {

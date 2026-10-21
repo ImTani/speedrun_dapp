@@ -39,8 +39,10 @@ const ITEMS: StorageItem[] = [
 	},
 	{
 		name: "Hints",
+		key: "apostasy.hints.*, apostasy.intro.seen",
 		kind: "Local storage",
-		purpose: "Remembers which introduction hints you have already seen.",
+		purpose:
+			"Remembers which introductions and hints you have already seen, so they show once.",
 		lasts: "Until you clear it",
 	},
 	{

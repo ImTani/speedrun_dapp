@@ -279,7 +279,8 @@ export function TitleScene({
 
 			<div ref={lightRef} className={s.stage} style={stageStyle}>
 				<Candles reduce={!!reduce} glow={!rays} />
-				{!reduce && !rays && <Motes />}
+				{/* after the first measure, so the server and the first client pass agree (useReducedMotion is null on the server) */}
+				{layout && !reduce && !rays && <Motes />}
 			</div>
 
 			{/* Post-processing over the nave, under the title's words (they sit in a higher layer). */}

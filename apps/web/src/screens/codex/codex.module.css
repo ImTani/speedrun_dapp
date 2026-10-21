@@ -1,0 +1,331 @@
+/* How to play: a tall leaf rising from below. Head (title, close, section links) stays put;
+   the body scrolls. Readability first: Alegreya for every running line, Grenze roman for
+   names, Cinzel rubrics, blackletter only for the big title. */
+
+.layer {
+	position: fixed;
+	inset: 0;
+	z-index: calc(var(--z-modal) + 2);
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+}
+.scrim {
+	position: absolute;
+	inset: 0;
+	background: #050403d9;
+}
+.sheet {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	width: min(100%, var(--column));
+	height: min(92dvh, 860px);
+	background:
+		radial-gradient(120% 40% at 50% 0%, #3a2a1d 0%, transparent 70%),
+		linear-gradient(180deg, #241912 0%, #120c0a 100%);
+	box-shadow:
+		var(--sh-sheet),
+		inset 0 3px 0 var(--c-soot),
+		inset 0 4px 0 #e3c27c33;
+	clip-path: polygon(
+		0 14px,
+		14px 0,
+		calc(100% - 14px) 0,
+		100% 14px,
+		100% 100%,
+		0 100%
+	);
+}
+
+/* ---------------------------------------------------------------- head */
+.head {
+	position: relative;
+	flex: none;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 4px var(--pad-r) 2px var(--pad-l);
+	border-bottom: 1px solid #5a463266;
+	box-shadow: 0 8px 14px -10px #000c;
+}
+.grip {
+	margin-top: 2px;
+}
+.title {
+	font-family: var(--font-display);
+	font-weight: 900;
+	font-size: var(--fs-h2);
+	line-height: 1;
+	color: var(--c-bone-hi);
+	text-shadow: var(--sh-ink);
+}
+.close {
+	position: absolute;
+	top: 8px;
+	right: max(6px, calc(var(--pad-r) - 10px));
+}
+.nav {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	column-gap: 0;
+	margin-top: 2px;
+}
+.nav .navLink {
+	padding-inline: 4px;
+	letter-spacing: 0.06em; /* five links on one line at 390 */
+	font-size: var(--fs-micro);
+}
+
+/* ---------------------------------------------------------------- body */
+.body {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 22px;
+	padding: 14px var(--pad-r) calc(20px + var(--safe-b)) var(--pad-l);
+	-webkit-user-select: text;
+	user-select: text;
+}
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	scroll-margin-top: 8px;
+}
+.rubric {
+	align-self: stretch;
+	justify-content: center;
+}
+.subRubric {
+	margin-top: 4px;
+	text-align: center;
+}
+.lead,
+.line,
+.note {
+	font-family: var(--font-text);
+	font-size: var(--fs-body);
+	line-height: var(--lh-book);
+	color: var(--c-bone);
+	text-wrap: pretty;
+}
+.lead {
+	color: var(--c-bone-hi);
+	font-weight: 600;
+}
+.note {
+	font-size: var(--fs-small);
+	font-style: italic;
+	color: var(--c-bone-d);
+}
+
+/* ---- the premise: the shattered rose beside two lines */
+.premise {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+.premise > svg {
+	flex: none;
+	filter: drop-shadow(0 6px 10px #000c) drop-shadow(0 0 16px #e3c27c22);
+}
+.premiseText {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+/* ---- the seven masks: mask, name, what it does */
+.masks {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.maskRow {
+	display: grid;
+	grid-template-columns: 44px 1fr;
+	grid-template-rows: auto auto;
+	column-gap: 10px;
+	align-items: center;
+	padding: 5px 4px;
+	border-bottom: 1px solid #5a463233;
+}
+.maskArt {
+	grid-row: 1 / span 2;
+	display: grid;
+	place-items: center;
+}
+.maskName {
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-body);
+	line-height: 1.1;
+	color: var(--c-gilt-l);
+}
+.maskLine {
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	line-height: 1.3;
+	color: var(--c-bone);
+}
+
+/* ---- Sigils and the glossary: a term, then its plain meaning */
+.terms,
+.words {
+	display: flex;
+	flex-direction: column;
+	margin: 0;
+}
+.term,
+.word {
+	display: grid;
+	grid-template-columns: minmax(96px, 34%) 1fr;
+	column-gap: 12px;
+	align-items: baseline;
+	padding: 6px 4px;
+	border-bottom: 1px solid #5a463233;
+}
+.term dt,
+.word dt {
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-body);
+	color: var(--c-gilt-l);
+}
+.term dd,
+.word dd {
+	margin: 0;
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	line-height: 1.35;
+	color: var(--c-bone);
+}
+
+/* ---- the three beats of a toll */
+.steps {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.step {
+	display: grid;
+	grid-template-columns: 26px 64px 1fr;
+	align-items: center;
+	column-gap: 10px;
+	padding: 8px 10px 8px 6px;
+	border-radius: 10px;
+	background: linear-gradient(180deg, #2a1d14, #160f0b);
+	box-shadow:
+		inset 0 0 0 1px #5a463288,
+		0 4px 10px #0008;
+}
+.stepNum {
+	display: grid;
+	place-items: center;
+	width: 26px;
+	height: 26px;
+	border-radius: 50%;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: var(--fs-micro);
+	color: var(--c-soot);
+	background: radial-gradient(circle at 40% 35%, #f5dfa0, #c9a24f 60%, #9a7a35);
+	box-shadow: 0 0 0 2px var(--c-soot);
+}
+.stepArt {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+}
+.stepText {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	min-width: 0;
+}
+.stepHead {
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-body);
+	line-height: 1.1;
+	color: var(--c-bone-hi);
+}
+.stepLine {
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	line-height: 1.35;
+	color: var(--c-bone);
+}
+
+/* ---- between Gatherings: one row per place, its carving at the start */
+.places {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.place {
+	display: grid;
+	grid-template-columns: 40px 1fr;
+	column-gap: 12px;
+	align-items: start;
+	padding: 8px 4px;
+	border-bottom: 1px solid #5a463233;
+}
+.placeIcon {
+	display: grid;
+	place-items: center;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	color: var(--c-gilt-l);
+	background: var(--ctl-stone, #1f1612);
+	box-shadow:
+		0 0 0 1px var(--c-umber-l),
+		0 0 0 3px var(--c-soot);
+}
+.placeIcon > svg {
+	width: 22px;
+	height: 22px;
+}
+.placeText {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding-top: 2px;
+}
+.placeName {
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-body);
+	line-height: 1.1;
+	color: var(--c-gilt-l);
+}
+.placeLine {
+	font-family: var(--font-text);
+	font-size: var(--fs-small);
+	line-height: 1.35;
+	color: var(--c-bone);
+}
+
+.done {
+	align-self: center;
+	width: min(100%, 300px);
+	margin-top: 4px;
+}

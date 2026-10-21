@@ -24,6 +24,7 @@ import { itemName, reliquary as R } from "@/lexicon/reliquary";
 import { vestry as T } from "@/lexicon/vestry";
 import { PrimaryButton } from "@/ui/button";
 import { ControlNote } from "@/ui/controls";
+import { TabIntro } from "@/ui/intro";
 import { DressedMask, useFragmentLook } from "../reliquary/ItemSwatch";
 import s from "./vestry.module.css";
 import { Wardrobe } from "./Wardrobe";
@@ -109,6 +110,7 @@ export function VestryScreen() {
 
 	return (
 		<section className={s.screen}>
+			<TabIntro tab="vestry" ready={!!shop || down} />
 			<header className={s.head}>
 				<h1 className={s.title}>{T.name}</h1>
 				{shop?.usdc != null ? (

@@ -1,0 +1,17 @@
+/* The ways into How to play: the link under Enter on the title, the row in Settings. */
+
+/* Under Enter: a quiet TextButton, tucked up to the wax so the title column barely grows. */
+.titleLink {
+	margin-top: calc(clamp(8px, 1.6dvh, 14px) * -0.6);
+	margin-bottom: calc(clamp(8px, 1.6dvh, 14px) * -0.6);
+	font-size: var(--fs-small);
+	text-shadow:
+		0 1px 0 var(--c-soot),
+		0 0 8px var(--c-soot);
+}
+
+/* In Settings: a full-width SecondaryButton in its own section. */
+.settingsButton {
+	width: min(100%, 300px);
+	align-self: center;
+}

@@ -1,9 +1,11 @@
 "use client";
 
 /**
- * The practice duel: while the new Fragment wakes, the player plays three tolls against a
- * Remnant by hand. Each tap on Unveil turns both cards: Kindle or Devour, and the Light each
- * side draws. The moves are the real rules (@arena/strategies decide()) with the player's own
+ * The practice duel: while the new Fragment wakes, first the rule (./Rule: the four outcomes of
+ * a toll, tapped through on a card), then three tolls against a Remnant. The player does not
+ * choose: each tap on Unveil turns both cards (what the Fragment chose by its mask, and what
+ * the Remnant chose) and the Light each side draws, with the rule that toll showed spelled out
+ * under it. The moves are the real rules (@arena/strategies decide()) with the player's own
  * Aspect and Sigils against a fixed Remnant, simulated here; nothing is sent anywhere.
  */
 import {
@@ -28,7 +30,9 @@ import { TextButton } from "@/ui/controls";
 import { Mask } from "@/ui/Mask";
 import { IMPACT, impact, spring, useShake } from "@/ui/motion";
 import { Count, Rubric } from "@/ui/type";
+import { MoveGlyph } from "./MoveGlyph";
 import s from "./practice.module.css";
+import { outcomeOf, Rule, toneOf } from "./Rule";
 
 const TOLLS = 3;
 /** The verdict strikes as the cards finish turning (ms after the tap). */
@@ -99,6 +103,7 @@ export function Practice({
 	onDone: () => void;
 }) {
 	const tolls = useMemo(() => practiceDuel(config), [config]);
+	const [phase, setPhase] = useState<"rule" | "duel">("rule");
 	const [shown, setShown] = useState(0);
 	const reduce = useReducedMotion() ?? false;
 	const shaker = useShake<HTMLDivElement>();
@@ -112,12 +117,15 @@ export function Practice({
 	useSfx(WARM);
 
 	useEffect(() => {
-		go.current?.focus();
 		const ts = timers.current;
 		return () => {
 			for (const t of ts) clearTimeout(t);
 		};
 	}, []);
+	// The rule takes the focus first; the duel's button once it opens.
+	useEffect(() => {
+		if (phase === "duel") go.current?.focus();
+	}, [phase]);
 
 	/** The verdict of one toll: sound, particles, the shake, and the Light flown home. */
 	const strike = (t: PracticeToll) => {
@@ -206,111 +214,145 @@ export function Practice({
 		>
 			<div className={s.top}>
 				<Rubric tone="dim" size="xs">
-					{T.practice.heading}
+					{phase === "rule" ? T.rule.heading : T.practice.heading}
 				</Rubric>
-				<TextButton onClick={onDone}>{T.skip}</TextButton>
-			</div>
-
-			<div className={s.body} ref={shaker.ref}>
-				<p className={s.toll} aria-live="polite">
-					{T.practice.toll(Math.max(1, shown), TOLLS)}
-				</p>
-				<ol className={s.history} aria-hidden="true">
-					{tolls.map((t, i) => (
-						<li
-							// biome-ignore lint/suspicious/noArrayIndexKey: three fixed tolls
-							key={i}
-							className={s.hpair}
-							data-on={i < shown || undefined}
-							data-now={i === shown || undefined}
-						>
-							<span data-move={i < shown ? moveKey(t.mine) : undefined} />
-							<span data-move={i < shown ? moveKey(t.theirs) : undefined} />
-						</li>
-					))}
-				</ol>
-
-				<div className={s.sides}>
-					<Side
-						who={name}
-						mask={<Mask aspect={config.strategy} size={84} glow />}
-						move={last?.mine ?? null}
-						gain={last?.light[0] ?? 0}
-						total={totals[0]}
-						turn={shown}
-						reduce={reduce}
-					/>
-					<span className={s.vs} aria-hidden="true" data-vs>
-						✠
-					</span>
-					<Side
-						who={REMNANT.name}
-						mask={
-							<Mask aspect={REMNANT.aspect} size={84} variant="grisaille" />
-						}
-						move={last?.theirs ?? null}
-						gain={last?.light[1] ?? 0}
-						total={totals[1]}
-						turn={shown}
-						reduce={reduce}
-						them
-					/>
-				</div>
-
-				{last ? (
-					<p className="sr-only" aria-live="polite">
-						{T.practice.said(
-							last.mine === Move.Defect,
-							last.theirs === Move.Defect,
-							last.light[0],
-							last.light[1],
-						)}
-					</p>
-				) : null}
-
-				<div className={s.lineBox}>
-					<AnimatePresence mode="wait" initial={false}>
-						{over ? (
-							<motion.p
-								key="end"
-								className={s.end}
-								initial={{ opacity: 0, y: 8 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{ ...spring.settle, delay: 0.35 }}
-							>
-								{T.practice.end}
-							</motion.p>
-						) : shown >= 1 ? (
-							<motion.p
-								key="explain"
-								className={s.explain}
-								initial={{ opacity: 0, y: 8 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0, transition: { duration: 0.12 } }}
-								transition={{ ...spring.settle, delay: 0.3 }}
-							>
-								{T.practice.explain}
-							</motion.p>
-						) : null}
-					</AnimatePresence>
-				</div>
-			</div>
-
-			<div className={s.foot}>
-				<PrimaryButton
-					ref={go}
-					legacy="btn btn-blood"
-					onClick={over ? onDone : unveil}
+				{/* Skipping the rule lands on the duel, which still labels each outcome. */}
+				<TextButton
+					onClick={phase === "rule" ? () => setPhase("duel") : onDone}
 				>
-					{over ? T.practice.go : T.practice.unveil}
-				</PrimaryButton>
+					{T.skip}
+				</TextButton>
 			</div>
+
+			<AnimatePresence mode="wait" initial={false}>
+				{phase === "rule" ? (
+					<Rule key="rule" onDone={() => setPhase("duel")} />
+				) : (
+					<motion.div
+						key="duel"
+						className={s.phase}
+						initial={{ opacity: 0, y: 10 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={spring.settle}
+					>
+						<div className={s.body} ref={shaker.ref}>
+							<p className={s.toll} aria-live="polite">
+								{T.practice.toll(Math.max(1, shown), TOLLS)}
+							</p>
+							<ol className={s.history} aria-hidden="true">
+								{tolls.map((t, i) => (
+									<li
+										// biome-ignore lint/suspicious/noArrayIndexKey: three fixed tolls
+										key={i}
+										className={s.hpair}
+										data-on={i < shown || undefined}
+										data-now={i === shown || undefined}
+									>
+										<span data-move={i < shown ? moveKey(t.mine) : undefined} />
+										<span
+											data-move={i < shown ? moveKey(t.theirs) : undefined}
+										/>
+									</li>
+								))}
+							</ol>
+
+							<div className={s.sides}>
+								<Side
+									who={name}
+									mask={<Mask aspect={config.strategy} size={84} glow />}
+									move={last?.mine ?? null}
+									gain={last?.light[0] ?? 0}
+									total={totals[0]}
+									turn={shown}
+									reduce={reduce}
+								/>
+								<span className={s.vs} aria-hidden="true" data-vs>
+									✠
+								</span>
+								<Side
+									who={REMNANT.name}
+									mask={
+										<Mask
+											aspect={REMNANT.aspect}
+											size={84}
+											variant="grisaille"
+										/>
+									}
+									move={last?.theirs ?? null}
+									gain={last?.light[1] ?? 0}
+									total={totals[1]}
+									turn={shown}
+									reduce={reduce}
+									them
+								/>
+							</div>
+
+							{last ? (
+								<p className="sr-only" aria-live="polite">
+									{T.practice.said(
+										last.mine === Move.Defect,
+										last.theirs === Move.Defect,
+										last.light[0],
+										last.light[1],
+									)}
+								</p>
+							) : null}
+
+							<div className={s.lineBox}>
+								<AnimatePresence mode="wait" initial={false}>
+									<motion.p
+										key={`o${shown}`}
+										className={s.explain}
+										data-tone={
+											last
+												? toneOf(outcomeOf(last.mine, last.theirs))
+												: undefined
+										}
+										initial={{ opacity: 0, y: 8 }}
+										animate={{ opacity: 1, y: 0 }}
+										exit={{ opacity: 0, transition: { duration: 0.12 } }}
+										transition={{ ...spring.settle, delay: last ? 0.3 : 0 }}
+									>
+										{last
+											? T.practice.outcome[outcomeOf(last.mine, last.theirs)]
+											: T.practice.intro}
+									</motion.p>
+								</AnimatePresence>
+								<AnimatePresence>
+									{over ? (
+										<motion.p
+											key="end"
+											className={s.end}
+											initial={{ opacity: 0, y: 8 }}
+											animate={{ opacity: 1, y: 0 }}
+											transition={{ ...spring.settle, delay: 1.1 }}
+										>
+											{T.practice.end}
+										</motion.p>
+									) : null}
+								</AnimatePresence>
+							</div>
+						</div>
+
+						<div className={s.foot}>
+							<PrimaryButton
+								ref={go}
+								legacy="btn btn-blood"
+								onClick={over ? onDone : unveil}
+							>
+								{over ? T.practice.go : T.practice.unveil}
+							</PrimaryButton>
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
 		</motion.div>,
 		document.body,
 	);
 }
 
 const moveKey = (m: Move) => (m === Move.Defect ? "devour" : "kindle");
+
 type Who = "me" | "them";
 
 function Side({
@@ -363,7 +405,7 @@ function Side({
 							</span>
 						) : (
 							<>
-								<MoveGlyph devour={move === Move.Defect} />
+								<MoveGlyph devour={move === Move.Defect} className={s.glyph} />
 								<span className={s.moveName}>
 									{move === Move.Defect ? T.practice.devour : T.practice.kindle}
 								</span>
@@ -394,34 +436,5 @@ function Side({
 				<span className={s.unit}>{T.practice.light}</span>
 			</div>
 		</div>
-	);
-}
-
-/** Kindle: a candle flame. Devour: a fanged maw. */
-function MoveGlyph({ devour }: { devour: boolean }) {
-	return devour ? (
-		<svg viewBox="0 0 40 40" className={s.glyph} aria-hidden="true">
-			<path
-				d="M5 12 Q20 4 35 12 L31 18 L27 13 L24 19 L20 13 L16 19 L13 13 L9 18 Z M7 28 Q20 37 33 28 L29 23 L25 28 L22 22 L18 22 L15 28 L11 23 Z"
-				fill="#c7262c"
-				stroke="#0b0807"
-				strokeWidth="2.4"
-				strokeLinejoin="round"
-			/>
-		</svg>
-	) : (
-		<svg viewBox="0 0 40 40" className={s.glyph} aria-hidden="true">
-			<path
-				d="M20 3 C26 12 31 17 31 25 A11 11 0 0 1 9 25 C9 18 14 15 16 9 C18 14 21 15 20 3 Z"
-				fill="#f2c25a"
-				stroke="#0b0807"
-				strokeWidth="2.4"
-				strokeLinejoin="round"
-			/>
-			<path
-				d="M20 17 C23 22 25 24 25 28 A5 5 0 0 1 15 28 C15 24 18 22 20 17 Z"
-				fill="#fff1c8"
-			/>
-		</svg>
 	);
 }

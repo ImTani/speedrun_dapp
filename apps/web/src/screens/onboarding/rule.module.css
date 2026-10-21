@@ -1,0 +1,284 @@
+/* The rule card: four squares, one per outcome of a toll, inside the practice veil. */
+
+.phase {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.body {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	width: 100%;
+	max-width: 440px;
+	margin-inline: auto;
+}
+
+.heading {
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-lead);
+	line-height: 1.25;
+	color: var(--c-bone-hi);
+	text-align: center;
+	text-wrap: balance;
+	text-shadow: 0 2px 0 var(--c-soot);
+}
+
+/* Kindle = share, Devour = steal */
+.legend {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 8px;
+}
+.key {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 12px 4px 6px;
+	border: 2px solid var(--c-soot);
+	border-radius: 999px;
+	background: #140d09;
+	box-shadow: 0 0 0 1px var(--c-umber-l);
+	font-size: var(--fs-body);
+}
+.key b {
+	font-family: var(--font-roman);
+	font-weight: 700;
+}
+.key[data-move="kindle"] b {
+	color: var(--c-gilt-hi);
+}
+.key[data-move="devour"] b {
+	color: #ff8a7a;
+}
+.means {
+	font-style: italic;
+	color: var(--c-bone);
+}
+.keyGlyph {
+	width: 24px;
+	height: 24px;
+	filter: drop-shadow(0 1px 0 #000);
+}
+
+/* the four squares */
+.card {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 10px;
+	width: 100%;
+}
+.cell {
+	appearance: none;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	min-height: var(--tap);
+	padding: 8px 6px 8px;
+	border: 2px solid var(--c-soot);
+	border-radius: 12px;
+	background: linear-gradient(180deg, #241912, #120c09);
+	box-shadow:
+		0 0 0 1px var(--c-umber-l),
+		0 8px 16px #000a;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+	transition:
+		box-shadow 0.2s ease,
+		background 0.3s ease;
+}
+.cell:focus-visible {
+	outline: 2px solid var(--ctl-ring);
+	outline-offset: 2px;
+}
+/* the next square to try breathes a little gold */
+.cell[data-next] {
+	animation: beckon 1.6s ease-in-out infinite;
+}
+@keyframes beckon {
+	50% {
+		box-shadow:
+			0 0 0 1px var(--c-gilt),
+			0 0 18px #f2c25a55,
+			0 8px 16px #000a;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.cell[data-next] {
+		animation: none;
+		box-shadow:
+			0 0 0 1px var(--c-gilt),
+			0 8px 16px #000a;
+	}
+}
+.cell[data-shown][data-tone="kindle"] {
+	background:
+		radial-gradient(90% 70% at 50% 40%, #f2c25a26, transparent 70%),
+		linear-gradient(180deg, #2f2216, #140d09);
+}
+.cell[data-shown][data-tone="devour"] {
+	background:
+		radial-gradient(90% 70% at 50% 40%, #c7262c26, transparent 70%),
+		linear-gradient(180deg, #2a1012, #120809);
+}
+.cell[data-shown][data-tone="ash"] {
+	background:
+		radial-gradient(90% 70% at 50% 40%, #8a827926, transparent 70%),
+		linear-gradient(180deg, #1e1a17, #0f0c0a);
+}
+.cell[data-now] {
+	box-shadow:
+		0 0 0 2px var(--c-gilt-l),
+		0 0 22px #f2c25a33,
+		0 8px 16px #000a;
+}
+
+.cellTitle {
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-small);
+	letter-spacing: 0.04em;
+	color: var(--c-bone-d);
+}
+.cell[data-shown] .cellTitle {
+	color: var(--c-bone-hi);
+}
+
+.pair {
+	display: grid;
+	grid-template-columns: 1fr auto 1fr;
+	align-items: start;
+	width: 100%;
+}
+/* where shared Light rises from */
+.pool {
+	align-self: center;
+	width: 8px;
+	height: 8px;
+	margin-top: -16px;
+	border-radius: 50%;
+	background: radial-gradient(circle, #f5dfa0, #c9a24f 55%, transparent 72%);
+	opacity: 0.45;
+}
+.cell[data-shown][data-tone="kindle"] .pool {
+	opacity: 1;
+}
+
+.face {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+	min-width: 0;
+}
+.tile {
+	display: grid;
+	place-items: center;
+	width: 48px;
+	height: 50px;
+	perspective: 400px;
+}
+.tileFace {
+	grid-area: 1 / 1;
+	display: grid;
+	place-items: center;
+	width: 44px;
+	height: 48px;
+	border: 2px solid var(--c-soot);
+	border-radius: 8px;
+	background: linear-gradient(180deg, #2a1d14, #120c09);
+	box-shadow: 0 0 0 1px var(--c-umber-l);
+}
+.tileFace[data-move="kindle"] {
+	box-shadow:
+		0 0 0 1px var(--c-gilt),
+		0 0 12px #f2c25a44;
+}
+.tileFace[data-move="devour"] {
+	box-shadow:
+		0 0 0 1px var(--c-blood-l),
+		0 0 12px #c7262c44;
+}
+.glyph {
+	width: 30px;
+	height: 30px;
+	filter: drop-shadow(0 1px 0 #000);
+}
+.veil {
+	font-family: var(--font-display);
+	font-size: 28px;
+	line-height: 1;
+	color: var(--c-umber-l);
+	text-shadow: 0 2px 0 var(--c-soot);
+}
+.who {
+	font-size: var(--fs-micro);
+	color: var(--c-bone-d);
+}
+.gain {
+	min-height: 1.3em;
+	font-family: var(--font-num);
+	font-weight: 700;
+	font-size: var(--fs-body);
+	line-height: 1.3;
+	color: var(--c-gilt-hi);
+	text-shadow: 0 1px 0 var(--c-soot);
+}
+.gain[data-zero] {
+	color: var(--c-bone-dd);
+}
+
+/* what the square just showed, then the moral */
+.lineBox {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	min-height: 104px;
+	padding: 0 6px;
+	text-align: center;
+}
+.says {
+	font-family: var(--font-roman);
+	font-weight: 600;
+	font-size: var(--fs-body);
+	line-height: 1.3;
+	color: var(--c-bone);
+	text-wrap: balance;
+}
+.says[data-tone="kindle"] {
+	color: var(--c-gilt-hi);
+}
+.says[data-tone="devour"] {
+	color: #ff9a8a;
+}
+.says[data-tone="ash"] {
+	color: var(--c-bone-hi);
+}
+.moral {
+	max-width: 34ch;
+	padding-top: 8px;
+	border-top: 1px solid var(--c-umber-l);
+	font-style: italic;
+	font-size: var(--fs-body);
+	line-height: 1.35;
+	color: var(--c-bone-hi);
+	text-wrap: balance;
+}
+
+.foot {
+	display: grid;
+	width: 100%;
+	max-width: 440px;
+	margin-inline: auto;
+}

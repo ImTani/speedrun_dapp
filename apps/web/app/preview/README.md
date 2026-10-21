@@ -196,3 +196,12 @@ fixtures. The provider is keyed on the URL params, so each link gets a fresh fix
 
 The preview route still sits under the root layout, which wraps everything in `PrivyProvider`;
 the mock never calls Privy, but Privy itself still initialises on the page.
+
+## Teaching surfaces
+
+- `?screen=onboarding&state=fresh` opens the three-beat premise first, once per browser. Clear
+  `apostasy.hints.premise` in localStorage to see it again.
+- `?screen=onboarding&state=stirring` goes straight to practice, which opens on the rule card
+  (the 2x2 Light lesson) before the duel. Add `&aspect=1` (Hunger) or `&aspect=6` (Madness) to vary it.
+- First-visit tab cards are hidden in /preview unless the URL has `&intro`; with it they show even
+  if already seen (e.g. `?screen=spire&state=mid&intro`).

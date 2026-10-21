@@ -29,6 +29,7 @@ import {
 import { play, useSfx } from "@/audio";
 import { readGathering, readStandings, useApi } from "@/client/api";
 import { usePoll } from "@/client/poll.ts";
+import { codex } from "@/lexicon/codex";
 import { gathering as T } from "@/lexicon/gathering.ts";
 import { Atmosphere } from "@/scene/AtmosphereLayer.tsx";
 import type {
@@ -37,9 +38,12 @@ import type {
 	StageBeatInfo,
 	StageGeom,
 } from "@/scene/inkStage.js";
+import { useCodex } from "@/screens/codex";
 import { IconButton } from "@/ui/controls";
+import { TabIntro } from "@/ui/intro";
 import { easeInOut, IMPACT, impact, spring, useShake } from "@/ui/motion";
 import { useTuneParam } from "@/ui/tune/useTuneParam.ts";
+import ex from "./explain.module.css";
 import { type Beat, FaceOff } from "./FaceOff.tsx";
 import { Lower } from "./Feed.tsx";
 import { fixtureGathering, fixtureStandings } from "./fixture.ts";
@@ -107,6 +111,8 @@ const WARM = [
 const SEAL_EVERY = 700;
 /** The ?tune drawer: fetched only when the address asks for it. */
 const GatheringTune = lazy(() => import("./GatheringTune.tsx"));
+/** The "?" sheet: fetched on the first tap. */
+const Explainer = lazy(() => import("./Explainer.tsx"));
 
 export function GatheringScreen() {
 	const rootRef = useRef<HTMLDivElement>(null);
@@ -136,6 +142,9 @@ export function GatheringScreen() {
 	const [hushSpan, setHushSpan] = useState(1.1);
 	const [tally, setTally] = useState<Record<SideKey, number>>({ A: 0, B: 0 });
 	const [ledgerOpen, setLedgerOpen] = useState(false);
+	// The "?" sheet: what is on screen right now. Mounted from the first ask (so it can close).
+	const [ask, setAsk] = useState<"never" | "open" | "shut">("never");
+	const { show: showCodex, sheet: codexSheet } = useCodex();
 	// Type tuning (?tune): a verdict struck again on demand, and a hold on the duel queue.
 	const tuneParam = useTuneParam();
 	const [replayed, setReplayed] = useState<{ duel: Duel; n: number } | null>(
@@ -567,6 +576,11 @@ export function GatheringScreen() {
 		ledgerCue(false);
 		setLedgerOpen(false);
 	}, []);
+	const closeAsk = useCallback(() => setAsk("shut"), []);
+	const askMore = useCallback(() => {
+		setAsk("shut");
+		showCodex("gathering", true);
+	}, [showCodex]);
 
 	return (
 		<div
@@ -667,6 +681,16 @@ export function GatheringScreen() {
 
 			<Hud ref={hudRef} data={data} vision={vision} />
 
+			<div className={ex.ask}>
+				<IconButton
+					icon={<span className={ex.askGlyph}>?</span>}
+					label={codex.explain.open}
+					size="sm"
+					aria-haspopup="dialog"
+					onClick={() => setAsk("open")}
+				/>
+			</div>
+
 			<div className={css.dock}>
 				<LedgerButton rows={rows} mine={mine} onOpen={openLedger} />
 				{playing && (
@@ -690,6 +714,23 @@ export function GatheringScreen() {
 				mine={mine}
 				onClose={closeLedger}
 			/>
+
+			{ask !== "never" && (
+				<Suspense fallback={null}>
+					<Explainer
+						open={ask === "open"}
+						onClose={closeAsk}
+						onMore={askMore}
+						pair={pair}
+						phase={active && g ? g.phase : "closed"}
+						vision={vision}
+						rounds={active && g ? g.rounds : 0}
+						perRival={g?.movesPerMatch ?? 0}
+					/>
+				</Suspense>
+			)}
+			{codexSheet}
+			<TabIntro tab="gathering" ready={ready} />
 
 			{tuneParam !== null && (
 				<Suspense fallback={null}>

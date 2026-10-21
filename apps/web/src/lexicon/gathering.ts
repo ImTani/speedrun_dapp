@@ -46,10 +46,25 @@ export const gathering = {
 	tollMark: (n: number) => roman(n),
 	tollsAria: (n: number, of: number) => `Toll ${n} of ${of}`,
 	phase: {
-		commit: "Sealing",
-		reveal: "Unveiling",
-		between: "Next toll",
+		commit: "Choosing in secret",
+		reveal: "Unveiling the choices",
+		between: "Next toll soon",
 		closed: "Between Gatherings",
+	},
+	/** One plain line under the banner: what is happening now, in words. */
+	phaseHint: {
+		commit: (sealed: number, of: number) =>
+			of > 0 && sealed >= of
+				? "All choices sealed. Unveiling soon."
+				: "Each picks Kindle or Devour, sealed until both are in.",
+		reveal: "Both choices are shown. Light is paid.",
+		between: "Light paid. The bell tolls again soon.",
+		closed: "Your Fragment will play on its own. Nothing to press.",
+	},
+	/** After the countdown: "1:24 left to choose". */
+	clockLeft: {
+		commit: "left to choose",
+		reveal: "left to unveil",
 	},
 	vision: "Replay of the last Gathering",
 

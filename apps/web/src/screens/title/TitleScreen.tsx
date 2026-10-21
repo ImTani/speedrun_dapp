@@ -12,7 +12,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { buzz, HAPTIC, useSfx } from "@/audio";
 import { LegalLinks } from "@/legal";
+import { codex } from "@/lexicon/codex";
 import { shell } from "@/lexicon/shell";
+import { useCodex, warmCodex } from "@/screens/codex";
+import entry from "@/screens/codex/entry.module.css";
 import { PrimaryButton } from "@/ui/button";
 import { link, TextButton } from "@/ui/controls";
 import { useShake } from "@/ui/motion/impact";
@@ -38,6 +41,7 @@ export function TitleScreen({
 	const [flare, setFlare] = useState(0);
 	const [struck, setStruck] = useState(false);
 	const [colophon, setColophon] = useState(false);
+	const howTo = useCodex();
 	// The bell is fetched right after the first touch (nothing loads before one).
 	const sfx = useSfx(["toll"]);
 	useTapSounds();
@@ -136,6 +140,21 @@ export function TitleScreen({
 					</PrimaryButton>
 				</motion.div>
 
+				<motion.div
+					initial={{ opacity: 0 }}
+					animate={{ opacity: struck ? 1 : 0 }}
+					transition={{ duration: 0.6, delay: 0.65 }}
+				>
+					<TextButton
+						className={entry.titleLink}
+						aria-haspopup="dialog"
+						onPointerDown={warmCodex}
+						onClick={() => howTo.show()}
+					>
+						{codex.open}
+					</TextButton>
+				</motion.div>
+
 				<motion.p
 					className={s.consent}
 					initial={{ opacity: 0 }}
@@ -174,6 +193,7 @@ export function TitleScreen({
 			</div>
 
 			<Colophon open={colophon} onClose={() => setColophon(false)} />
+			{howTo.sheet}
 		</main>
 	);
 }

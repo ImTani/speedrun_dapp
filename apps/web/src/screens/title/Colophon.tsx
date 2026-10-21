@@ -8,13 +8,17 @@
  *
  * Opened from inside the game (`inGame`) the same leaf is the settings sheet: the
  * sound switches lead, and account deletion closes it (DPDP / GDPR erasure in app).
+ * With `onHowTo` the leaf opens on a way to How to play (the caller closes this sheet and
+ * opens that one).
  */
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useId, useRef } from "react";
 import { SOUND_CREDITS, SoundSettingsList } from "@/audio";
 import { DeleteAccount, LegalLinks } from "@/legal";
 import { audio } from "@/lexicon/audio";
+import { codex } from "@/lexicon/codex";
 import { shell } from "@/lexicon/shell";
+import entry from "@/screens/codex/entry.module.css";
 import { cx, link, SecondaryButton } from "@/ui/controls";
 import { ATTRIBUTION_PATH, MASK_CREDITS } from "@/ui/masks/credits";
 import { scrim, sheet } from "@/ui/motion/presets";
@@ -28,6 +32,7 @@ export function Colophon({
 	onClose,
 	inGame = false,
 	onDeleted,
+	onHowTo,
 }: {
 	open: boolean;
 	onClose: () => void;
@@ -35,6 +40,8 @@ export function Colophon({
 	inGame?: boolean;
 	/** After the account is deleted and signed out (e.g. back to the title screen). */
 	onDeleted?: () => void;
+	/** Offer How to play at the top of the leaf. */
+	onHowTo?: () => void;
 }) {
 	const headId = useId();
 	const closeRef = useRef<HTMLButtonElement>(null);
@@ -89,6 +96,15 @@ export function Colophon({
 							<h2 id={headId} className={s.leafHead}>
 								{inGame ? C.settings : C.heading}
 							</h2>
+							{onHowTo ? (
+								<SecondaryButton
+									className={entry.settingsButton}
+									aria-haspopup="dialog"
+									onClick={onHowTo}
+								>
+									{codex.open}
+								</SecondaryButton>
+							) : null}
 							{inGame ? (
 								<section className={s.leafSection}>
 									<h3 className={s.leafRubric}>{C.sound}</h3>

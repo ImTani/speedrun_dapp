@@ -26,6 +26,7 @@ import { SettingsEntry } from "@/screens/title/SettingsEntry";
 import { PrimaryButton } from "@/ui/button";
 import { Grip, SecondaryButton, TextButton } from "@/ui/controls";
 import { GlassWindow } from "@/ui/GlassWindow";
+import { TabIntro } from "@/ui/intro";
 import { Mask } from "@/ui/Mask";
 import {
 	enter,
@@ -106,6 +107,7 @@ export function Stage({
 
 	return (
 		<div className={s.stage}>
+			<TabIntro tab="fragment" />
 			<canvas ref={floor} className={s.floor} />
 			{/* Post-processing over the floor light, under the window and every word (both are in
 			    later, higher layers): the window's halo, spill and dust reach the stone around it. */}

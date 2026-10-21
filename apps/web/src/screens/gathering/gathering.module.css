@@ -897,6 +897,19 @@
 	text-shadow: var(--sh-ink-heavy);
 	text-wrap: balance;
 }
+/* One plain line under the phase: what it means right now. */
+.phaseHint {
+	max-width: 34ch;
+	font-family: var(--g-body-font);
+	font-weight: var(--g-body-weight);
+	font-style: var(--g-body-style);
+	font-size: calc(var(--fs-micro) * var(--g-body-size));
+	line-height: 1.25;
+	letter-spacing: var(--g-body-tracking);
+	color: var(--g-body-color);
+	text-shadow: var(--sh-ink);
+	text-wrap: balance;
+}
 .clock {
 	display: inline-flex;
 	align-items: baseline;

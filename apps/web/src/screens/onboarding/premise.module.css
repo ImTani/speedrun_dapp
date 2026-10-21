@@ -1,0 +1,279 @@
+/* The premise: three full-screen beats over the dark nave, a picture and a line or two each. */
+
+.root {
+	position: fixed;
+	inset: 0;
+	z-index: var(--z-modal);
+	display: flex;
+	flex-direction: column;
+	padding: calc(var(--safe-t) + 6px) var(--pad-r) calc(var(--safe-b) + 14px)
+		var(--pad-l);
+	background:
+		radial-gradient(70% 42% at 50% 34%, #4a2f1a66 0%, transparent 72%),
+		radial-gradient(120% 60% at 50% 110%, #2a0d0e88 0%, transparent 70%),
+		#050403;
+	color: var(--c-bone-hi);
+	overflow: hidden;
+}
+
+.top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	max-width: var(--column);
+	margin-inline: auto;
+	min-height: var(--tap);
+}
+.pips {
+	display: flex;
+	gap: 8px;
+	list-style: none;
+	padding-left: 4px;
+}
+.pip {
+	width: 22px;
+	height: 4px;
+	border-radius: 2px;
+	background: var(--c-umber);
+	box-shadow: 0 1px 0 #000;
+	transition: background 0.3s ease;
+}
+.pip[data-on] {
+	background: var(--c-gilt-l);
+}
+
+/* the picture: takes what the words and the button leave */
+.stage {
+	flex: 1;
+	display: grid;
+	place-items: center;
+	min-height: 0;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+	user-select: none;
+}
+.picture {
+	display: grid;
+	place-items: center;
+	width: 100%;
+	height: 100%;
+	max-height: 420px;
+}
+.halo {
+	position: absolute;
+	inset: 8% 4%;
+	border-radius: 50%;
+	background: radial-gradient(closest-side, #f2c25a2e, transparent 75%);
+	filter: blur(6px);
+	pointer-events: none;
+}
+
+/* I: the shattered window */
+.glassScene {
+	position: relative;
+	display: grid;
+	place-items: center;
+	width: 100%;
+	height: 100%;
+}
+.window {
+	position: relative;
+	width: clamp(150px, min(54vw, calc((100dvh - 400px) * 0.7)), 240px);
+	filter: drop-shadow(0 18px 30px #000c);
+}
+.shards {
+	position: absolute;
+	inset: 0;
+	top: 52%;
+	pointer-events: none;
+}
+.shard {
+	position: absolute;
+	top: 0;
+	clip-path: polygon(50% 0, 100% 70%, 30% 100%, 0 40%);
+	opacity: 0;
+}
+
+/* II: the ring of masks */
+.ringScene {
+	position: relative;
+	width: 300px;
+	height: 300px;
+	max-width: 100%;
+}
+.ringMask {
+	position: absolute;
+	display: grid;
+	place-items: center;
+	width: 48px;
+	height: 48px;
+	margin: -24px 0 0 -24px;
+	border-radius: 50%;
+	background: #140d09;
+	box-shadow:
+		0 0 0 2px var(--c-soot),
+		0 0 0 3px var(--c-umber-l);
+	opacity: 0.6;
+	transition:
+		box-shadow 0.25s ease,
+		opacity 0.25s ease;
+}
+.ringMask[data-on] {
+	opacity: 1;
+	box-shadow:
+		0 0 0 2px var(--c-soot),
+		0 0 0 3px var(--c-gilt-l),
+		0 0 16px #f2c25a66;
+}
+.ringHeart {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+}
+.ringBig {
+	grid-area: 1 / 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+}
+.ringName {
+	font-family: var(--font-display);
+	font-weight: 800;
+	font-size: var(--fs-h3);
+	line-height: 1;
+	color: var(--c-bone-hi);
+	text-shadow: var(--sh-ink);
+}
+
+/* III: two masks trade tolls */
+.duoScene {
+	position: relative;
+	display: grid;
+	place-items: center;
+	width: 100%;
+	height: 100%;
+}
+.duo {
+	position: relative;
+	display: grid;
+	grid-template-columns: 1fr 72px 1fr;
+	align-items: start;
+	width: 100%;
+	max-width: 340px;
+}
+.duoSide {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+}
+.duoMask {
+	display: grid;
+	place-items: center;
+	height: 96px;
+}
+.duoTile {
+	display: grid;
+	place-items: center;
+	width: 60px;
+	height: 66px;
+	perspective: 500px;
+}
+.duoFace {
+	grid-area: 1 / 1;
+	display: grid;
+	place-items: center;
+	width: 56px;
+	height: 62px;
+	border: 2px solid var(--c-soot);
+	border-radius: 10px;
+	background: linear-gradient(180deg, #2a1d14, #120c09);
+}
+.duoFace[data-move="kindle"] {
+	box-shadow:
+		0 0 0 1px var(--c-gilt),
+		0 0 16px #f2c25a55;
+}
+.duoFace[data-move="devour"] {
+	box-shadow:
+		0 0 0 1px var(--c-blood-l),
+		0 0 16px #c7262c55;
+}
+.duoGlyph {
+	width: 36px;
+	height: 36px;
+	filter: drop-shadow(0 2px 0 #000);
+}
+.duoWho {
+	font-family: var(--font-roman);
+	font-weight: 700;
+	font-size: var(--fs-small);
+	color: var(--c-bone);
+}
+.duoTotal {
+	min-height: 1.6em;
+}
+/* the Light in flight, from the middle (or the one devoured) to a mask */
+.motes {
+	position: relative;
+	align-self: start;
+	height: 0;
+	margin-top: 135px;
+}
+.mote {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 8px;
+	height: 8px;
+	margin: -4px 0 0 -4px;
+	border-radius: 50%;
+	background: radial-gradient(circle, #fff1c4, #f0cf7a 50%, #c9a24f00 72%);
+	box-shadow: 0 0 10px #f2c25aaa;
+}
+
+/* the words */
+.words {
+	display: grid;
+	place-items: center;
+	min-height: calc(var(--fs-h2) * 2.5 + var(--fs-lead) * 3);
+	padding: 4px 8px 0;
+	text-align: center;
+}
+.head {
+	font-family: var(--font-display);
+	font-weight: 800;
+	font-size: var(--fs-h2);
+	line-height: var(--lh-tight);
+	color: var(--c-bone-hi);
+	text-shadow:
+		var(--sh-ink),
+		0 0 24px #c9a24f40;
+	text-wrap: balance;
+}
+.body {
+	max-width: 30ch;
+	margin: 8px auto 0;
+	font-size: var(--fs-lead);
+	line-height: 1.35;
+	color: var(--c-bone);
+	text-wrap: balance;
+}
+
+.foot {
+	display: grid;
+	gap: 6px;
+	width: 100%;
+	max-width: 440px;
+	margin-inline: auto;
+	padding-top: 10px;
+}
+.hint {
+	font-style: italic;
+	font-size: var(--fs-micro);
+	color: var(--c-bone-dd);
+	text-align: center;
+}
