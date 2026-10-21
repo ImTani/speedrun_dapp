@@ -13,8 +13,8 @@ export const HERO_VARIANTS = ["current", "a", "b", "c"] as const;
 
 export type HeroVariant = (typeof HERO_VARIANTS)[number];
 
-/** The shipped hero. Unchanged until the owner picks. */
-export const HERO_VARIANT: HeroVariant = "current";
+/** The shipped hero: The Nave, chosen by the owner. */
+export const HERO_VARIANT: HeroVariant = "a";
 
 /** The URL key that overrides HERO_VARIANT. */
 export const HERO_PARAM = "hero";

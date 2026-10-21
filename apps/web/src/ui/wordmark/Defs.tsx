@@ -333,15 +333,16 @@ export function WordmarkDefs() {
 					/>
 					<feTurbulence
 						type="fractalNoise"
-						baseFrequency="0.55"
+						baseFrequency="0.9"
 						numOctaves="2"
 						seed="5"
 						result="grain"
 					/>
+					{/* fine, light edge wear: coarser or stronger reads as a low-res, crunchy edge */}
 					<feDisplacementMap
 						in="SourceGraphic"
 						in2="grain"
-						scale="1.6"
+						scale="0.7"
 						xChannelSelector="R"
 						yChannelSelector="G"
 						result="src"
@@ -396,11 +397,14 @@ export function WordmarkDefs() {
 							tableValues="0 0 0 0 0 0 0 0 0 0 0 0 0 0.6"
 						/>
 					</feComponentTransfer>
+					<feGaussianBlur in="holes" stdDeviation="0.5" result="softHoles" />
 					<feFlood floodColor="#6a2412" />
-					<feComposite in2="holes" operator="in" />
+					<feComposite in2="softHoles" operator="in" />
 					<feComposite in2="src" operator="in" result="bole" />
 					{/* the gilder's keyline: thin, dark umber */}
-					<feMorphology in="src" operator="dilate" radius="1.5" result="d1" />
+					{/* dilate steps in whole pixels; a touch of blur gives the keyline a clean edge */}
+					<feMorphology in="src" operator="dilate" radius="1.5" />
+					<feGaussianBlur stdDeviation="0.6" result="d1" />
 					<feFlood floodColor={KEYLINE} />
 					<feComposite in2="d1" operator="in" result="key" />
 					{/* a soft ink shadow under it, for the lit floor */}
