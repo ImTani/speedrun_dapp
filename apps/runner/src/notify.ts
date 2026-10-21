@@ -36,7 +36,7 @@ function client(): WebPush | null {
 	if (webpush !== undefined) return webpush;
 	const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 	const priv = process.env.VAPID_PRIVATE_KEY;
-	const subject = process.env.VAPID_SUBJECT || "mailto:ops@smoothsend.xyz";
+	const subject = process.env.VAPID_SUBJECT || "mailto:hey@imtani.dev";
 	if (!pub || !priv) {
 		console.log("notify: VAPID keys not set; push is off");
 		webpush = null;

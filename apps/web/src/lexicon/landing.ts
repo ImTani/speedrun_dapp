@@ -45,6 +45,9 @@ export const landing = {
 		lead: "Every commit and every reveal is a real transaction. Players never see a wallet.",
 		moves: "Sponsored transactions",
 		movesNote: "On Fuji testnet",
+		/** Honest disclosure: house Fragments exist and are counted. */
+		house:
+			"Some Fragments are run by the house so every Gathering fills; they count in these numbers.",
 		gatherings: "Gatherings played",
 		fragments: "Fragments bound",
 		mainnet: "Transactions on Avalanche mainnet",

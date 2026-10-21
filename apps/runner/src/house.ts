@@ -13,7 +13,7 @@ import { ROOT } from "./config.ts";
 
 /**
  * A house agent: one signer for the agent's own smart account, one for the owner account that
- * confirms it (one agent per owner, D6), and a secret seed. The seed drives every random roll and
+ * confirms it (one agent per owner), and a secret seed. The seed drives every random roll and
  * every commit salt, so moves and salts can be recomputed after a crash and nothing else needs
  * saving.
  */

@@ -39,7 +39,7 @@ contracts/broadcast/**/dry-run/
 Thumbs.db
 *.log
 
-# Private planning docs (grant/strategy notes) — own local git repo, never pushed with the app
+# Local-only planning notes
 .private/
 
 # Soldeer-installed Solidity deps (pinned in contracts/soldeer.lock)

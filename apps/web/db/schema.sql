@@ -1,5 +1,5 @@
--- Neon Postgres schema shared by the web app (Vercel) and the runner (homelab). Non-secret data only:
--- agent keys, seeds and salts stay on the runner (D8). Idempotent; apply with psql or the Neon console.
+-- Neon Postgres schema shared by the web app (Vercel) and the runner service. Non-secret data only:
+-- agent keys, seeds and salts stay with the runner. Idempotent; apply with psql or the Neon console.
 -- chain_id separates the daily game on Fuji (43113) from the Conclave on mainnet (43114).
 
 -- One row per Privy user.
@@ -10,8 +10,9 @@ create table if not exists players (
 	created_at timestamptz not null default now()
 );
 
--- One Fragment (Arena agent) per owner account (D6). House Fragments are rows too (house = true),
--- unlabelled in the UI (D7); this flag is the private registry for accurate milestone reporting.
+-- One Fragment (Arena agent) per owner account. House Fragments (house = true) are run by the game to
+-- keep Gatherings full when few players are online; the landing page says so, and this flag lets stats
+-- and tooling tell them apart from player Fragments.
 create table if not exists fragments (
 	id bigserial primary key,
 	chain_id integer not null default 43113,
@@ -34,7 +35,7 @@ create table if not exists fragments (
 create index if not exists fragments_status on fragments (chain_id, status);
 
 -- Arena events, indexed by the runner from chain logs. The duel feed and standings read these; the
--- chain stays the source of truth (D18). `data` holds the decoded event args (bigints as strings).
+-- chain stays the source of truth. `data` holds the decoded event args (bigints as strings).
 create table if not exists arena_events (
 	chain_id integer not null,
 	block bigint not null,

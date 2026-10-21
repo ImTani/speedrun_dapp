@@ -56,6 +56,7 @@ export function Stats() {
 					<Stat label={L.mainnet} value={main.transactions} run={seen} />
 				) : null}
 			</dl>
+			<p className={s.statsNote}>{L.house}</p>
 			{phase.kind === "down" ? (
 				<p className={s.statsDown} role="status">
 					{L.down}

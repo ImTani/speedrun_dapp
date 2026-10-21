@@ -604,3 +604,12 @@
 		scroll-behavior: smooth;
 	}
 }
+
+/* Disclosure under the live numbers: house Fragments exist and are counted. */
+.statsNote {
+	margin-top: 12px;
+	font-family: var(--font-text);
+	font-size: 14px;
+	line-height: 1.4;
+	color: #c9b48a;
+}

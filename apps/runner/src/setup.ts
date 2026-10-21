@@ -8,7 +8,7 @@ import { sleep } from "./tasks.ts";
 const ATTESTATION_TTL = 3_600n;
 
 /**
- * Registers and confirms every house agent (D-reg): the agent's own account sends registerAgent with
+ * Registers and confirms every house agent: the agent's own account sends registerAgent with
  * the registrar's attestation, then its owner account sends confirmAgent. Both first ops also
  * deploy the account. Idempotent: re-running only sends what the chain doesn't show yet.
  */
