@@ -206,7 +206,7 @@
 	justify-self: center;
 	width: clamp(
 		180px,
-		min(74vw, 300px, calc(100dvh - var(--tabbar-h) - 400px)),
+		min(74vw, 300px, calc(100dvh - var(--tabbar-h) - 350px)),
 		300px
 	);
 	aspect-ratio: 1;
@@ -268,10 +268,6 @@
 		var(--sh-ink),
 		0 0 22px #c9a24f40;
 }
-.aspectMask {
-	margin: 6px auto 4px;
-	justify-content: center;
-}
 .temperament {
 	font-style: italic;
 	font-size: var(--fs-body);
@@ -281,25 +277,15 @@
 	max-width: 30ch;
 	margin-inline: auto;
 }
-/* the mask in play: one example line under the temperament */
-.playsLike {
-	margin: 6px auto 0;
-	max-width: 32ch;
-	font-style: italic;
-	font-size: var(--fs-small);
-	line-height: 1.45;
-	color: var(--c-gilt-l);
+/* the mask picker: one plain line, big enough to read at a glance */
+.pickLine {
+	margin: 8px auto 0;
+	max-width: 26ch;
+	font-size: var(--fs-lead);
+	line-height: 1.4;
+	color: var(--c-bone-hi);
 	text-align: center;
 	text-wrap: balance;
-}
-.playsLikeTag {
-	font-family: var(--font-roman);
-	font-style: normal;
-	font-weight: 700;
-	font-size: var(--fs-micro);
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
-	color: var(--c-bone-d);
 }
 .strip {
 	display: grid;
@@ -346,13 +332,6 @@
 		scroll-snap-align: start;
 	}
 }
-.swipeHint {
-	font-style: italic;
-	font-size: var(--fs-micro);
-	color: var(--c-bone-dd);
-	text-align: center;
-}
-
 /* ---------------------------------------------------------------- sigils */
 .sigilsHead {
 	display: flex;

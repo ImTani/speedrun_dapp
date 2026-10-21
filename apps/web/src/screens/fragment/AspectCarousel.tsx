@@ -21,7 +21,6 @@ import { Chip, IconButton } from "@/ui/controls";
 import { RoseWindow } from "@/ui/GlassWindow";
 import { Mask } from "@/ui/Mask";
 import { spring } from "@/ui/motion";
-import { Rubric } from "@/ui/type";
 import s from "./fragment.module.css";
 
 const N = L.aspects.length;
@@ -162,14 +161,7 @@ export function AspectCarousel({
 						transition={{ duration: 0.28 }}
 					>
 						<h2 className={s.aspectName}>{a.name}</h2>
-						<Rubric rule="both" className={s.aspectMask ?? ""}>
-							{a.mask}
-						</Rubric>
-						<p className={s.temperament}>{a.blurb}</p>
-						<p className={s.playsLike}>
-							<span className={s.playsLikeTag}>{L.bind.playsLike}</span>{" "}
-							{a.plays}
-						</p>
+						<p className={s.pickLine}>{a.blurb}</p>
 					</motion.div>
 				</AnimatePresence>
 			</div>
@@ -193,7 +185,6 @@ export function AspectCarousel({
 					</Chip>
 				))}
 			</div>
-			<p className={s.swipeHint}>{L.bind.swipe}</p>
 		</div>
 	);
 }
