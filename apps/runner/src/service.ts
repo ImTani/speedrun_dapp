@@ -3,7 +3,11 @@
  * Gatherings back to back with house and player Fragments, mints queued Marks, and sends a web push
  * when a Gathering opens.
  *
- *   pnpm --filter @arena/runner service -- [--net fuji] [--house 25] [--k 5] [--matches 1] [--conc 4] [--gap-min 0] [--max-size 60]
+ *   pnpm --filter @arena/runner service -- [--net fuji] [--house 25] [--k 5] [--matches 1] [--conc 4] [--gap-min 0] [--max-size 60] [--until <ISO time>]
+ *
+ * --until: stop for good at that time. It finishes the Gathering in progress, then exits 0. Started
+ * after it, the service exits 0 at once, so a Docker `--restart on-failure` container stays down.
+ * SIGINT/SIGTERM exit 143 instead, so the same container comes back after a host reboot.
  *
  * Docker (build from the repo root; secrets are mounted at runtime, never baked into the image):
  *   docker build -f apps/runner/Dockerfile -t arena-runner .
@@ -31,8 +35,19 @@ const { values } = parseArgs({
 		conc: { type: "string", default: "4" },
 		"gap-min": { type: "string", default: "0" },
 		"max-size": { type: "string", default: "60" },
+		until: { type: "string" },
 	},
 });
+
+const until = values.until
+	? Date.parse(values.until)
+	: Number.POSITIVE_INFINITY;
+if (Number.isNaN(until))
+	throw new Error(`--until: not a date: ${values.until}`);
+if (Date.now() >= until) {
+	console.log(`past --until ${values.until}; not starting`);
+	process.exit(0);
+}
 
 const rt = await createRuntime({
 	network: values.net,
@@ -68,22 +83,26 @@ const timers = [
 	every("notify", 10_000, () => notifyTick()),
 ];
 
-const shutdown = async () => {
+const shutdown = async (code: number) => {
 	if (stopping) process.exit(1);
 	stopping = true;
 	console.log("shutting down: no new work; waiting for in-flight ops");
 	for (const t of timers) clearInterval(t);
 	await rt.tasks.drain();
-	process.exit(0);
+	process.exit(code);
 };
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+process.on("SIGINT", () => shutdown(130));
+process.on("SIGTERM", () => shutdown(143));
 
 const arena = rt.net.deployment.arena;
 const client = rt.net.publicClient;
 const gapMs = Number(values["gap-min"]) * 60_000;
 let lastClose = 0;
 while (!stopping) {
+	if (Date.now() >= until) {
+		console.log(`reached --until ${values.until}`);
+		await shutdown(0);
+	}
 	try {
 		const active = await client.readContract({
 			address: arena,

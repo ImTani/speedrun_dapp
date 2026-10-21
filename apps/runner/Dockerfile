@@ -4,5 +4,7 @@ FROM node:24-slim
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@11.5.2 --activate
 COPY . .
-RUN pnpm install --frozen-lockfile --filter @arena/runner...
-CMD ["pnpm", "--filter", "@arena/runner", "service"]
+RUN pnpm install --frozen-lockfile --filter @arena/runner... && pnpm store prune
+WORKDIR /app/apps/runner
+# node runs the service itself (no pnpm wrapper), so SIGTERM and the exit code reach it directly.
+ENTRYPOINT ["node", "--import", "tsx", "src/service.ts"]

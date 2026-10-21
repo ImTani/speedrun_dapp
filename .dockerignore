@@ -13,5 +13,14 @@
 .worktrees
 apps/web/*
 !apps/web/package.json
+# The runner imports these two (Mark definitions and their push text).
+!apps/web/src
+apps/web/src/*
+!apps/web/src/game
+apps/web/src/game/*
+!apps/web/src/game/marks.ts
+!apps/web/src/lexicon
+apps/web/src/lexicon/*
+!apps/web/src/lexicon/marks.ts
 /contracts/*
 !/contracts/deployments
