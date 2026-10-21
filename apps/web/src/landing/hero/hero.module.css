@@ -17,6 +17,25 @@
 }
 
 /* ---------------------------------------------------------------- scene */
+/* Scroll parallax on the compositor: a layer falls behind the page by --lag (set by useLayer)
+   over the first screen of scrolling. `translate` composes with the pointer's `transform`.
+   Browsers without scroll-driven animations get no scroll parallax, never a jump. */
+@supports (animation-timeline: scroll()) {
+	.drift {
+		animation: drift linear both;
+		animation-timeline: scroll(root block);
+		animation-range: 0 100svh;
+	}
+}
+@keyframes drift {
+	from {
+		translate: 0 0;
+	}
+	to {
+		translate: 0 calc(var(--lag, 0) * 100svh);
+	}
+}
+
 .scene {
 	position: absolute;
 	inset: 0;

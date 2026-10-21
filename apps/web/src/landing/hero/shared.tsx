@@ -11,7 +11,6 @@ import {
 	motion,
 	useMotionValue,
 	useReducedMotion,
-	useScroll,
 	useSpring,
 	useTransform,
 } from "motion/react";
@@ -158,21 +157,23 @@ export type Parallax = {
 	/** Pointer, eased: -1..1 across the screen. */
 	px: MotionValue<number>;
 	py: MotionValue<number>;
-	/** Page scroll in px (0 under reduced motion). */
-	scroll: MotionValue<number>;
 	reduce: boolean;
 };
 
-/** Pointer (fine pointers only) and scroll, eased, for slow parallax. Still under reduced motion. */
+/** A long, soft ease: the scene drifts after the pointer and settles without a snap. */
+const DRIFT = { stiffness: 14, damping: 12, mass: 1.2, restDelta: 0.0005 };
+
+/**
+ * Pointer parallax (fine pointers only), eased. Still under reduced motion. Scroll parallax is
+ * not here: it runs in CSS on the compositor (h.drift, see useLayer), so it moves in step with
+ * the page's own scrolling instead of a frame behind it.
+ */
 export function useParallax(): Parallax {
 	const reduce = useReducedMotion() ?? false;
 	const rx = useMotionValue(0);
 	const ry = useMotionValue(0);
-	const px = useSpring(rx, { stiffness: 30, damping: 16, mass: 1 });
-	const py = useSpring(ry, { stiffness: 30, damping: 16, mass: 1 });
-	const { scrollY } = useScroll();
-	const still = useMotionValue(0);
-	const scroll = reduce ? still : scrollY;
+	const px = useSpring(rx, DRIFT);
+	const py = useSpring(ry, DRIFT);
 	useEffect(() => {
 		if (reduce) {
 			rx.set(0);
@@ -199,20 +200,19 @@ export function useParallax(): Parallax {
 			cancelAnimationFrame(raf);
 		};
 	}, [reduce, rx, ry]);
-	return { px, py, scroll, reduce };
+	return { px, py, reduce };
 }
 
 /**
- * A layer's offset: `depth` px of travel across the pointer's range, and `lag` of the
- * scroll (0.3 = the layer falls behind the page by 30%, so it seems further away).
+ * A layer's offset: `depth` px of travel across the pointer's range (a transform, from here),
+ * and `lag` of the scroll (0.3 = the layer falls behind the page by 30%, so it seems further
+ * away). The lag is a CSS variable for h.drift, a scroll-driven `translate` that composes with
+ * the pointer's transform; give the layer that class. No lag under reduced motion.
  */
 export function useLayer(p: Parallax, depth: number, lag = 0) {
 	const x = useTransform(p.px, (v) => -v * depth);
-	const y = useTransform(
-		[p.py, p.scroll],
-		([a, b]) => -(a as number) * depth * 0.6 + (b as number) * lag,
-	);
-	return { x, y };
+	const y = useTransform(p.py, (v) => -v * depth * 0.6);
+	return { x, y, "--lag": p.reduce ? 0 : lag } as const;
 }
 
 /** Beams from glass down to the floor, breathing (hand-drawn: retired when the shader light runs). */

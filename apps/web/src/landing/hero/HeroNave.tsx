@@ -104,7 +104,7 @@ export function HeroNave() {
 		<header className={h.hero}>
 			<motion.div
 				ref={sceneRef}
-				className={h.scene}
+				className={`${h.scene} ${h.drift}`}
 				style={{ inset: -BLEED, ...scene }}
 				aria-hidden="true"
 			>
@@ -153,7 +153,7 @@ export function HeroNave() {
 			</motion.div>
 			{box && lay && !rays && !p.reduce ? (
 				<motion.div
-					className={h.scene}
+					className={`${h.scene} ${h.drift}`}
 					style={{ inset: -BLEED, ...dust }}
 					aria-hidden="true"
 				>
