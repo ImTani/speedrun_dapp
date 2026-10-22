@@ -19,7 +19,7 @@
 import { parseArgs } from "node:util";
 import { arenaAbi } from "@arena/chain";
 import { runBout } from "./bout.ts";
-import "./db.ts";
+import { sql } from "./db.ts";
 import { fragmentsTick, syncHouse } from "./fragments.ts";
 import { indexTick } from "./indexer.ts";
 import { marksTick } from "./marks.ts";
@@ -111,7 +111,12 @@ async function notifyStop(text: string) {
 const arena = rt.net.deployment.arena;
 const client = rt.net.publicClient;
 const gapMs = Number(values["gap-min"]) * 60_000;
-let lastClose = 0;
+// The gap counts from the last close on record, so a restart or reboot doesn't open one early.
+const [last] = (await sql`select max(at) as at from arena_events
+	where chain_id = ${rt.net.chain.id} and name = 'BoutClosed'`) as {
+	at: Date | null;
+}[];
+let lastClose = last?.at ? new Date(last.at).getTime() : 0;
 let closed = 0;
 while (!stopping) {
 	if (Date.now() >= until) {
